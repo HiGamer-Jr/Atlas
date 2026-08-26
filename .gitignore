@@ -141,3 +141,5 @@ __pycache__/
 *.pyo
 
 memory/test_credentials.md
+# Local Git worktrees
+.worktrees/
