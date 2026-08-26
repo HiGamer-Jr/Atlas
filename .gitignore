@@ -143,3 +143,5 @@ __pycache__/
 memory/test_credentials.md
 # Local Git worktrees
 .worktrees/
+
+.ruff_cache/

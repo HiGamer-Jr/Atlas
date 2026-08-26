@@ -1,4 +1,4 @@
-# Atlas Foundation Implementation Plan
+﻿# Atlas Foundation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -29,7 +29,7 @@
   - Backend: `8001`
   - PostgreSQL: `5433`
 - Ambiente de desenvolvimento:
-  - Node.js `24.19.0` LTS
+  - Node.js `24.20.0` LTS
   - Python `3.13.15`
   - PostgreSQL `18.6`
 - Gerenciamento Python: `uv`; não utilizar o Python global quebrado do Windows para instalar dependências do Atlas.
@@ -199,7 +199,7 @@ Este diretório preserva o protótipo funcional que originou o Projeto Atlas.
 Create `.nvmrc`:
 
 ```text
-24.19.0
+24.20.0
 ```
 
 Create `.python-version`:
@@ -592,13 +592,13 @@ node --version
 npm --version
 ```
 
-Expected Node: `v24.19.0`.
+Expected Node: `v24.20.0`.
 
-If Node is not `24.19.0`, do not replace another project's Node installation blindly. Use NVM for Windows to install/use the pinned version before continuing:
+If Node is not `24.20.0`, do not replace another project's Node installation blindly. Use NVM for Windows to install/use the pinned version before continuing:
 
 ```powershell
-nvm install 24.19.0
-nvm use 24.19.0
+nvm install 24.20.0
+nvm use 24.20.0
 node --version
 ```
 
