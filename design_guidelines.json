@@ -1,0 +1,98 @@
+{
+  "theme": "light",
+  "design_philosophy": "Swiss Brutalism + Industrial Logistics Command Center. An anti-slop, highly professional Brazilian ERP interface designed for precision, information density, and rapid action. Avoids generic soft UI (no drop shadows, no pill buttons). Uses stark contrast, 'Grid Borders' surfaces, and monospace data representation to evoke trust and enterprise capability.",
+  "color_system": {
+    "background": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "border": "#E2E8F0",
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#64748B",
+      "tertiary": "#94A3B8"
+    },
+    "brand": {
+      "primary": "#FF5A00",
+      "primary_hover": "#CC4800",
+      "secondary": "#020617"
+    },
+    "status": {
+      "success": "#059669",
+      "warning": "#D97706",
+      "danger": "#DC2626",
+      "info": "#2563EB"
+    },
+    "sidebar_bg": "#020617",
+    "sidebar_text": "#F8FAFC"
+  },
+  "typography": {
+    "headings": {
+      "family": "Chivo",
+      "weights": ["400", "700", "900"],
+      "usage": "H1, H2, Dashboard widget titles. Use tracking-tight."
+    },
+    "body": {
+      "family": "IBM Plex Sans",
+      "weights": ["400", "500", "600"],
+      "usage": "Standard UI text, table headers, form labels, paragraph text."
+    },
+    "data_and_numbers": {
+      "family": "IBM Plex Mono",
+      "weights": ["400", "500", "600"],
+      "usage": "CRITICAL: All currencies (USD/BRL), stock counts, IDs, SKUs, and timeline dates. Align right in tables."
+    }
+  },
+  "grids": {
+    "bento_dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 or gap-6. Direct children strictly aligned. No dead space.",
+    "table_density": "High density. Use tight padding (py-2 px-3) to maximize vertical real estate for logistics and stock tables."
+  },
+  "layouts": {
+    "sidebar": "Fixed left sidebar, w-64, bg-slate-950 text-white. Creates extreme contrast from the main light app area. Use 1px bottom border on menu items for separation. Active state: border-l-4 border-orange-500 bg-slate-900.",
+    "topbar": "Sticky top, h-16, bg-white, border-b border-slate-200. Contains a highly prominent 'Real-Time USD/BRL (Dólar)' ticker in IBM Plex Mono, User Profile, and Notifications.",
+    "page_wrapper": "bg-slate-50 min-h-screen. Main content area padded generously (p-6 or p-8) but internal cards have strict boundaries."
+  },
+  "component_patterns": {
+    "cards": "Sharp edges (rounded-none or max rounded-sm), border border-slate-200, bg-white, ZERO drop shadow. Hover state: slight -translate-y-[2px] and border-slate-400.",
+    "tables": "High density, text-sm. Mono font for numeric columns. border-b for rows. hover:bg-slate-50. Right-align numeric columns.",
+    "buttons": "Square or rounded-sm. Primary: bg-orange-600 hover:bg-orange-700 text-white. Secondary: bg-slate-100 hover:bg-slate-200 text-slate-900. Sharp color transitions.",
+    "inputs": "rounded-sm border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500. Consistent height h-10.",
+    "status_badges": "Minimalist and technical. Not pill-shaped. Square badges with left border color, e.g., border-l-2 border-emerald-500 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs uppercase tracking-wider."
+  },
+  "motion": {
+    "hover": "Snappy, immediate transitions. transition-colors duration-150. No bouncy animations.",
+    "ticker": "USD/BRL ticker should pulse slightly (green or red text) when the exchange rate updates."
+  },
+  "image_urls": {
+    "login_hero": {
+      "url": "https://images.unsplash.com/photo-1613690399151-65ea69478674?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MDV8MHwxfHNlYXJjaHwzfHxjYXJnbyUyMHNoaXAlMjBhZXJpYWx8ZW58MHx8fHwxNzg0NjYxMzMxfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Aerial view of a cargo ship. Use for the login screen background or split-pane image to instantly anchor the user in the logistics context."
+    },
+    "warehouse_abstract": {
+      "url": "https://images.unsplash.com/photo-1769250707038-7cd04e685abe?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjB3YXJlaG91c2UlMjBhYnN0cmFjdHxlbnwwfHx8fDE3ODQ2NjEzMzF8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Geometric skylight warehouse. Good for subtle textured backgrounds in loading screens or auth pages."
+    }
+  },
+  "accessibility": {
+    "contrast": "Strict APCA/WCAG AA minimums. Text must be highly legible. Use Slate-900 for text, not lighter grays.",
+    "focus_states": "Every interactive element must have a focus:ring-2 focus:ring-orange-500 outline. No exceptions.",
+    "roles": "Ensure standard ARIA roles for data grids, navigation, and live regions (like the USD/BRL ticker)."
+  },
+  "instructions_to_main_agent": {
+    "general": "Build the ERP modules: Compras, Importação, Estoque, Financeiro, Agenda, Relatórios, Administração. Use React, Tailwind, and Shadcn UI. MUST strip away the 'Vercel-look' from Shadcn components by changing rounded-md to rounded-none or rounded-sm, and removing box-shadows.",
+    "modules_guidance": {
+      "Dashboard": "Implement a Bento Grid. Top left MUST be critical KPIs: Dólar Atualizado, Estoque Total. Include a task widget for 'Aprovações'.",
+      "Financeiro": "Dashboard showing 'Adiantamentos, Saldo, Numerário, Câmbio'. Heavy use of IBM Plex Mono for all R$ and $ values.",
+      "Importação": "Data tables mapping Processos, Containers, Navios. Use stepper components for container/shipment tracking.",
+      "Estoque": "Inventory table with SKU, Status, Quantities. Emphasize row-hover clarity."
+    },
+    "technical": "Use `lucide-react` for icons. Use `recharts` for the Relatórios charts. Apply `data-testid` to EVERY button, link, menu item, and form input.",
+    "font_loading": "Import Chivo, IBM Plex Sans, and IBM Plex Mono from Google Fonts in the main index.css or via next/font."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You MUST use functional brutalism: sharp edges, no shadows, 1px borders everywhere. Do not use generic rounding or soft UI.",
+    "The USD/BRL (Dólar) tracker MUST be in `IBM Plex Mono` and prominently visible in the global top bar.",
+    "All numeric data (currency, stock, quantities) MUST use the monospace font (`font-mono` mapped to IBM Plex Mono).",
+    "The sidebar must feel like an industrial control panel, contrasting deeply (dark mode sidebar against light mode main content).",
+    "NEVER use transparent backgrounds over content that makes it unreadable.",
+    "Add `data-testid` attributes to all actionable components."
+  ]
+}

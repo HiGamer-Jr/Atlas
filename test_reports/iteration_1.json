@@ -1,0 +1,31 @@
+{
+  "summary": "First-finish smoke test of ERP Cargo.Ops MVP. Backend auth, RBAC, exchange fallback, dashboard stats and CRUD across Compras/Importação/Estoque/Financeiro/Agenda all return 200 with expected fields. Frontend login → dashboard → sidebar navigation across 19 modules → DataView 'Novo' modal creates a Pedido successfully (toast 'Registro criado' + row visible) → Administração lists users → logout returns to /login. USD/BRL ticker renders (values dashed due to AwesomeAPI unreachable from sandbox, which is expected fallback).",
+  "tested_scope": ["frontend", "backend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login admin credentials → 200 with user payload + Set-Cookie access_token & refresh_token",
+    "GET /api/auth/me with valid cookie → 200; without cookie → 401",
+    "POST /api/auth/login wrong password → 401 'Credenciais inválidas'",
+    "POST /api/auth/logout → 200 + Set-Cookie Max-Age=0 clearing both tokens",
+    "GET /api/exchange/usd-brl → 200 with bid/ask/pctChange fields (fallback values, expected)",
+    "GET /api/dashboard/stats → 200 with pedidos_total, aprovacoes_pendentes, produtos_total, containers_ativos, processos_ativos",
+    "CRUD /api/compras/pedidos full cycle (POST/GET/PUT/DELETE) → 200",
+    "POST /api/estoque/produtos → 200",
+    "POST /api/importacao/processos → 200",
+    "POST /api/financeiro/adiantamentos → 200",
+    "POST /api/agenda → 200",
+    "GET /api/users as admin → 200; as non-admin (comprador) → 403 'Sem permissão'",
+    "POST /api/auth/register (admin only) creates non-admin user → 200",
+    "Frontend /login page renders and accepts admin@erp.com/admin123, redirects to /",
+    "Sidebar shows all 19 nav-* modules (dashboard, pedidos, sugestoes, aprovacoes, processos, containers, portos, navios, proformas, produtos, depositos, movimentacoes, adiantamentos, saldo, numerario, cambio, agenda, relatorios, administracao)",
+    "USD/BRL ticker visible in topbar",
+    "DataView 'Novo' opens modal, fields (field-numero, field-fornecedor, ...) work, modal-save creates record and it appears in the table with success toast",
+    "Administração page accessible to admin, lists admin@erp.com",
+    "topbar-logout logs out and returns to /login"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "AwesomeAPI 'unavailable' fallback on /api/exchange/usd-brl is expected per problem statement. Recommend full testing agent verify all module CRUDs (only Compras Pedidos verified via UI; other modules verified only via API POST) and edit/delete UI paths."
+}
