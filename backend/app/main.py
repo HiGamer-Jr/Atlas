@@ -1,8 +1,9 @@
 ﻿from fastapi import FastAPI
 
-app = FastAPI(title="Atlas API")
+from app.api.router import router as api_router
+from app.core.config import Settings
 
+settings = Settings()
 
-@app.get("/api/health")
-def health():
-    return {"status": "ok"}
+app = FastAPI(title=settings.app_name)
+app.include_router(api_router, prefix=settings.api_prefix)
