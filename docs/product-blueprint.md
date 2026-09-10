@@ -1,109 +1,129 @@
-# Cargo.Ops Supply Chain
+# Atlas Supply — Blueprint de Produto
 
 ## Proposta
 
-Sistema focado em Compras e Supply Chain para ir além de um ERP genérico: ele conecta demanda de estoque, cotação com fornecedor, pedido, aprovação, importação, câmbio e financeiro em um fluxo único.
+O Atlas é uma Control Tower de Supply Chain para centralizar Compras, Estoque, Importação, Financeiro e Relatórios em uma única plataforma corporativa.
+
+O objetivo é reduzir controles paralelos, dar visibilidade operacional e apoiar decisões com informação, alerta e inteligência.
+
+## Origem
+
+O projeto começou como Cargo.Ops.
+
+A partir da versão v1.0 de requisitos, o nome oficial é **Atlas**. O protótipo Cargo.Ops permanece preservado em `legacy/cargo-ops-prototype/` como referência visual, funcional e histórica.
+
+## Módulos
+
+### Dashboard
+
+Painel personalizado por perfil com cotações USD/BRL e EUR/BRL, indicadores de estoque, importação, financeiro e alertas por prioridade.
+
+### Compras
+
+Pedidos, sugestões de compra, cotações, fornecedores, aprovações, respostas de fornecedores e mapa comparativo.
+
+### Importação / COMEX
+
+Processos, containers, portos, navios, bookings, proformas, desembaraço aduaneiro, entrega, devolução de containers, Free Time, Time Left e demurrage.
+
+### Estoque
+
+Produtos, lojas, depósitos, movimentações, cobertura, estoque crítico, excesso, trânsito e necessidade de compra.
+
+### Financeiro
+
+Adiantamentos, saldos, numerário, câmbio utilizado, histórico cambial, pagamentos e custos de importação.
+
+### Agenda
+
+Eventos operacionais, vencimentos, alertas de agenda e atividades entre setores.
+
+### Relatórios
+
+Relatórios de estoque, cobertura, necessidade de compra, containers, importações, financeiro e exportações XLSX, CSV e PDF.
+
+### Administração
+
+Usuários, perfis, permissões, empresas, fornecedores, integrações, configurações e auditoria.
 
 ## Perfis
 
-- Coordenador: visão completa, aprovações, governança de compras e indicadores.
-- Supervisão: acompanha operação, valida compras, monitora estoque e importação.
-- Comprador: cria pedidos, dispara cotações, consulta produtos e acompanha aprovações.
-- Financeiro: gera pré-notas, acompanha adiantamentos, saldo, numerário e câmbio.
-- Administração: usuários, perfis, parâmetros e integrações.
+- Coordenação: visão ampla, aprovações e indicadores.
+- Supervisão: operação, estoque, produtos, unidades, importação e relatórios.
+- Comprador Internacional: produtos, estoque, necessidade, fornecedores, cotações e pedidos internacionais.
+- Comprador Nacional: produtos, estoque, necessidade, fornecedores, cotações e pedidos nacionais.
+- Financeiro: proformas, adiantamentos, pagamentos, saldos, numerário, câmbio e custos.
+- Administrador: usuários, perfis, permissões, integrações, auditoria e logs.
 
-## Estrutura funcional
+## Fluxo Macro
 
-Login
-↓
-Dashboard
-├── Compras
-│   ├── Pedidos
-│   ├── Sugestão de Compra
-│   ├── Aprovações
-│
-├── Importação
-│   ├── Processos
-│   ├── Containers
-│   ├── Portos
-│   ├── Navios
-│   ├── Proformas
-│
-├── Estoque
-│   ├── Produtos
-│   ├── Depósitos
-│   ├── Movimentações
-│
-├── Financeiro
-│   ├── Adiantamentos
-│   ├── Saldo
-│   ├── Numerário
-│   ├── Câmbio
-│
-├── Agenda
-│
-├── Relatórios
-│
-└── Administração
+```text
+Estoque
+  ↓
+Análise de cobertura
+  ↓
+Necessidade de compra
+  ↓
+Cotação
+  ↓
+Fornecedores
+  ↓
+Comparativo
+  ↓
+Aprovação
+  ↓
+Pedido de compra
+  ↓
+Proforma
+  ↓
+Pagamento / Adiantamento
+  ↓
+Produção
+  ↓
+Booking
+  ↓
+Embarque
+  ↓
+Container em trânsito
+  ↓
+Chegada ao Brasil
+  ↓
+Desembaraço
+  ↓
+Retirada do porto
+  ↓
+Entrega
+  ↓
+Descarga
+  ↓
+Devolução container
+  ↓
+Entrada no estoque
+  ↓
+Novo ciclo
+```
 
-## Fluxos principais
+## Diferenciais
 
-1. Cotação automática
-   - Comprador seleciona um ou mais produtos.
-   - Sistema identifica categoria, NCM, fornecedores homologados e fornecedores internacionais.
-   - Um clique gera RFQ e abre e-mail com produtos, quantidade sugerida, prazo de resposta e condições solicitadas.
-   - Em produção, esse fluxo deve evoluir para SMTP/API de e-mail, trilha de auditoria e portal do fornecedor.
+- Visão única da operação, sem depender de planilhas isoladas.
+- Estoque por loja, depósito e centro de distribuição.
+- Necessidade de compra baseada em cobertura, consumo, pedidos e trânsito.
+- Cotações com fornecedores, respostas e comparativo.
+- Tracking de containers com Free Time, Time Left e risco de demurrage.
+- Câmbio preservado por operação financeira.
+- Auditoria para alterações críticas.
+- Evolução modular para não recriar o sistema a cada nova regra.
 
-2. Sugestão de compra
-   - Estoque compara saldo atual versus estoque mínimo.
-   - Produtos abaixo do mínimo entram na fila de sugestão.
-   - Sugestão pode virar RFQ ou pedido.
+## Arquitetura Recomendada
 
-3. Aprovação
-   - Pedido nasce em aprovação.
-   - Supervisão ou Coordenador aprova/rejeita.
-   - Pedido aprovado fica disponível para financeiro gerar pré-nota e tratar pagamento.
+- Frontend: React + TypeScript + Vite.
+- Backend: FastAPI.
+- Banco: PostgreSQL.
+- Integrações: Excel, e-mail, câmbio, ERP e APIs futuras.
+- Segurança: hash de senha, autorização no backend, HTTPS em produção, audit log e controle por permissão.
 
-4. Excel
-   - Exportação de produtos e pedidos em arquivo compatível com Excel.
-   - Importação de produtos via CSV e, quando a biblioteca XLSX estiver disponível, `.xlsx`/`.xls`.
-   - Em produção, usar fila de importação com validação de SKU, NCM, duplicidade e relatório de erros.
+## Referências
 
-5. Dólar
-   - Box global USD/BRL no topo do sistema.
-   - Atualização automática a cada 5 minutos via AwesomeAPI.
-   - Fallback gracioso quando a rede/API não estiver disponível.
-
-6. Financeiro e nota fiscal
-   - O protótipo gera pré-nota/espelho fiscal operacional.
-   - Emissão fiscal real exige integração com SEFAZ, certificado digital, regras tributárias, XML NF-e/NFS-e e autorização de uso.
-   - Financeiro envia e-mails para fornecedores solicitando dados cadastrais, bancários e tratativas.
-
-## Diferenciais para superar ERPs genéricos em Compras
-
-- RFQ orientado por produto, categoria e fornecedor homologado.
-- Câmbio visível no contexto de pedido, proforma e financeiro.
-- Conversão automática USD → BRL para compras internacionais.
-- Sugestão de compra baseada em estoque mínimo.
-- Pipeline integrado: estoque → cotação → pedido → aprovação → financeiro.
-- Preparação para importação com containers, portos, navios e proformas.
-- Operação por perfil, com navegação reduzida ao papel de cada usuário.
-
-## Arquitetura recomendada para produção
-
-- Frontend: React, TypeScript, React Router, Tailwind ou design system próprio.
-- Backend: FastAPI ou NestJS, API REST/GraphQL, JWT com refresh token httpOnly.
-- Banco: PostgreSQL para dados transacionais; Redis para filas/cache; object storage para anexos.
-- Integrações: SMTP/API de e-mail, AwesomeAPI/Banco Central, SEFAZ, Receita Federal para NCM/CNPJ, ERP contábil, gateways de câmbio e planilhas.
-- Auditoria: eventos imutáveis por pedido, aprovação, cotação, nota e e-mail.
-- Segurança: RBAC por perfil, logs, LGPD, MFA para perfis críticos.
-
-## Próximos incrementos
-
-- Portal do fornecedor para responder RFQ sem e-mail.
-- Comparativo automático de propostas.
-- Workflow de alçada por valor, categoria e centro de custo.
-- Anexos em proformas, pedidos e notas.
-- Importação Excel com validação detalhada.
-- API real de NF-e com autorização SEFAZ.
-- Dashboard de saving, lead time e performance de fornecedor.
+- Requisitos v1.0: `docs/requirements/atlas-requisitos-v1.md`.
+- Arquitetura da fundação: `docs/superpowers/specs/2026-08-26-atlas-foundation-design.md`.
+- Plano da fundação: `docs/superpowers/plans/2026-08-26-atlas-foundation-implementation.md`.

@@ -9,6 +9,9 @@
 .env.*
 backend/.env
 frontend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Python
 __pycache__/
@@ -41,6 +44,9 @@ logs/
 tmp/
 temp/
 .cache/
+
+# Temporary browser profiles
+.tmp-chrome-profile*/
 
 # Sistema operacional
 .DS_Store
@@ -135,6 +141,9 @@ android-sdk/
 .env
 .env.*
 backend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 __pycache__/
 *.pyc
