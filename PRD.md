@@ -1,58 +1,86 @@
-# PRD — Cargo.Ops ERP
+# PRD — Atlas Supply
 
-## Problema Original
-Sistema para atender demanda de estoque, compras, importações, com informação atualizada do valor do dólar. Estrutura hierárquica:
-Login → Dashboard → Compras (Pedidos, Sugestão de Compra, Aprovações) | Importação (Processos, Containers, Portos, Navios, Proformas) | Estoque (Produtos, Depósitos, Movimentações) | Financeiro (Adiantamentos, Saldo, Numerário, Câmbio) | Agenda | Relatórios | Administração.
+## Problema
 
-## Escolhas do Usuário
-- Autenticação: JWT customizado (email/senha)
-- Cotação USD/BRL: AwesomeAPI (economia.awesomeapi.com.br) com fallback gracioso
-- Perfis: admin, gerente, supervisor, comprador, financeiro, logistica
-- MVP: Todos os módulos com CRUD básico funcional
-- Idioma: Português brasileiro
+Empresas que operam Compras, Estoque, Importação, COMEX e Financeiro ainda dependem de planilhas, controles manuais e sistemas separados para responder perguntas críticas da operação.
 
-## Personas
-- **Admin**: gerencia usuários e perfis; acesso total.
-- **Gerente**: aprova pedidos, supervisiona operação.
-- **Supervisor**: supervisão operacional em Compras/Estoque.
-- **Comprador**: cria pedidos, gera sugestões.
-- **Financeiro**: adiantamentos, saldo, numerário, câmbio.
-- **Logística**: importação (processos, containers, portos, navios, proformas), movimentações.
+O Atlas nasce para centralizar esses dados e transformar a operação em uma Control Tower de Supply Chain.
+
+## Objetivo
+
+Fornecer uma plataforma corporativa que mostre:
+
+- estoque físico, reservado, em trânsito e consolidado;
+- cobertura, ruptura, excesso e necessidade de compra;
+- pedidos nacionais e internacionais;
+- cotações, fornecedores, propostas e comparativos;
+- processos de importação, containers, bookings, ETA, ETD, desembaraço e Free Time;
+- adiantamentos, saldos, numerário, câmbio e custos de importação;
+- alertas, agenda, auditoria e relatórios.
+
+## Nome do Produto
+
+O nome oficial passa a ser **Atlas**.
+
+Cargo.Ops fica preservado como origem histórica e protótipo legado em `legacy/cargo-ops-prototype/`.
+
+## Perfis
+
+- Coordenação.
+- Supervisão.
+- Comprador Internacional.
+- Comprador Nacional.
+- Financeiro.
+- Administrador.
+
+## Módulos
+
+- Dashboard.
+- Compras.
+- Importação.
+- Estoque.
+- Financeiro.
+- Agenda.
+- Relatórios.
+- Administração.
+
+## Requisitos Baseline
+
+O baseline v1.0 está em:
+
+`docs/requirements/atlas-requisitos-v1.md`
+
+Resumo:
+
+- 91 requisitos funcionais.
+- 23 regras de negócio.
+- 15 requisitos não funcionais.
 
 ## Arquitetura
-- Backend FastAPI (`/app/backend/server.py`) com todos endpoints prefixados `/api`, MongoDB Motor, JWT (PyJWT), bcrypt, httpx para AwesomeAPI.
-- Frontend React 19 + React Router 7 + Tailwind + Shadcn UI. Fontes: Chivo (títulos), IBM Plex Sans (corpo), IBM Plex Mono (números/moeda). Design: Swiss Brutalism / Industrial Logistics (bordas 1px, sem drop-shadows, laranja #FF5A00 + slate-950).
-- Cookies httpOnly para access + refresh tokens.
 
-## Implementado (Fev/2026)
-- **Auth**: login/logout/me/register/refresh, seed admin, brute-force protection, RBAC.
-- **Câmbio USD/BRL** em tempo real via AwesomeAPI com fallback.
-- **Dashboard**: KPIs, ticker de dólar, quick-access, operações em andamento.
-- **CRUD completo** para 15 coleções: pedidos, sugestoes, aprovacoes, processos, containers, portos, navios, proformas, produtos, depositos, movimentacoes, adiantamentos, saldo, numerario, cambio, agenda.
-- **Agenda** com calendário Shadcn + lista.
-- **Relatórios** com gráficos Recharts (bar + pie).
-- **Administração** de usuários (criar, editar role, excluir).
-- **Sidebar** industrial dark + Topbar com ticker.
-- **Testing agent 100% passed** (backend + frontend).
+- Frontend: React + TypeScript + Vite.
+- Backend: FastAPI.
+- Banco transacional alvo: PostgreSQL.
+- Estilo inicial: Monólito Modular.
+- Comunicação: REST / JSON.
+- Integrações previstas: Excel, e-mail, câmbio, ERP e APIs futuras.
 
-## Backlog
-### P1
-- Vincular Pedidos ↔ Aprovações (workflow real com botões "Aprovar/Rejeitar")
-- Cálculo automático BRL a partir de USD × taxa em pedidos/proformas
-- Notificações in-app (badge no sino do topbar)
-- Import CSV/Excel para Produtos e Movimentações
-- Filtros avançados por status / data range nas tabelas
+## Princípio Funcional
 
-### P2
-- Anexos em Proformas / Processos (object storage)
-- Timeline visual de container tracking (stepper)
-- Exportar relatórios em PDF/Excel
-- Multi-empresa / multi-filial
+O Atlas deve evoluir em três níveis:
 
-### P3
-- Integração com Receita Federal (NCM lookup)
-- Alertas de câmbio (webhook quando USD/BRL passar de threshold)
-- App mobile
+1. **Informação:** o que está acontecendo?
+2. **Alerta:** o que necessita de atenção?
+3. **Inteligência:** o que provavelmente deve ser feito?
 
-## Credenciais de Teste
-Ver `/app/memory/test_credentials.md`.
+## Próxima Fase Recomendada
+
+Implementar Identity, Perfis e Acesso Organizacional:
+
+- autenticação;
+- sessão;
+- perfis;
+- permissões;
+- usuários;
+- unidades organizacionais;
+- escopo de comprador Nacional, Internacional ou Ambos.
