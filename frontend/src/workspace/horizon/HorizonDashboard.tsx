@@ -1,11 +1,14 @@
+import './HorizonDashboard.css'
 import HorizonSection from './HorizonSection'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { DemoRecord } from '../catalog'
 import { buyerConfiguration, getDemoSignals } from './demoData'
-import HorizonSummary, { summaryLabels, type SummaryFilter } from './HorizonSummary'
+import HorizonSummary from './HorizonSummary'
+import { summaryLabels, type SummaryFilter } from './summaryFilters'
 export default function HorizonDashboard({profileId, company, unit, operationalRecords, onOpenRelated}: {
  profileId: string; company: string; unit: string; operationalRecords: DemoRecord[]; onOpenRelated: (record: DemoRecord) => void
 }) {
+ const centerId = useId()
  const [filter, setFilter] = useState<SummaryFilter | null>(null)
  const scope = profileId === 'comprador-internacional' ? 'INTERNATIONAL' : 'NATIONAL'
  const signals = getDemoSignals(scope).filter(s => s.company === company && (unit === 'Todas as unidades' || s.unit === unit))
@@ -24,8 +27,8 @@ export default function HorizonDashboard({profileId, company, unit, operationalR
    {signals.length ? <dl>{buyerConfiguration[scope].indicators.map(indicator => <div key={indicator.label}><dt>{indicator.label}</dt><dd>{indicator.value}</dd></div>)}</dl> : <p>Sem dados demonstrativos neste contexto.</p>}
    <small>Valores de exemplo · Sem atualização ao vivo</small>
   </section>
-  <HorizonSummary counts={counts} activeFilter={filter} onFilterChange={value => setFilter(filter === value ? null : value)}/>
-  <section className="ws-panel" aria-label="Central de atenção">
+  <HorizonSummary controlsId={centerId} counts={counts} activeFilter={filter} onFilterChange={value => setFilter(filter === value ? null : value)}/>
+  <section id={centerId} className="ws-panel" aria-label="Central de atenção">
    <div className="ws-panel-title"><div><h2>Central de atenção</h2><p>{filter ? summaryLabels[filter] : 'Prioridades e próximos passos da sua operação.'}</p></div>{filter && <button onClick={() => setFilter(null)}>Limpar filtro</button>}</div>
    <div className="horizon-windows">
     <HorizonSection title="Hoje" subtitle="Ações que precisam começar agora." signals={visibleSignals.filter(s => s.window === 'TODAY')}/>
@@ -37,5 +40,3 @@ export default function HorizonDashboard({profileId, company, unit, operationalR
   </section>
  </div>
 }
-
-

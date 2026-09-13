@@ -60,9 +60,3 @@ export default function Workspace({profile,onLogout}:{profile:Profile;onLogout:(
   <dialog ref={dialog} className="ws-dialog" onCancel={close} onClose={()=>{if(detail)close()}} aria-labelledby="detail-title">{detail&&<><button className="ws-close" onClick={close} aria-label="Fechar detalhes">×</button><span className="ws-eyebrow">{detail.id} · DEMONSTRAÇÃO</span><h2 id="detail-title">{detail.title}</h2>{badges(detail.status)}<p>{detail.detail}</p><dl><dt>Empresa</dt><dd>{detail.company}</dd><dt>Unidade</dt><dd>{detail.unit}</dd><dt>Responsável</dt><dd>{detail.owner}</dd><dt>Prazo</dt><dd>{detail.due}</dd><dt>Referência</dt><dd>{detail.value}</dd></dl><p className="ws-footnote">Registro ilustrativo para validar o fluxo. Nenhuma alteração operacional será enviada.</p><button className="ws-primary" onClick={()=>{navigate(detail.module,detail.section);close()}}>Abrir página relacionada →</button></>}</dialog>
  </main>
 }
-
-
-
-
-
-

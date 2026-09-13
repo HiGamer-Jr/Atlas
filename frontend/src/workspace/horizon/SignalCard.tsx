@@ -12,4 +12,3 @@ export default function SignalCard({signal}: {signal: HorizonSignal}) {
   {expanded && <div id={evidenceId}><ul>{signal.evidence.map(line => <li key={line}>{line}</li>)}</ul></div>}
  </article>
 }
-
