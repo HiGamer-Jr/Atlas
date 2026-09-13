@@ -1,3 +1,4 @@
+import HorizonSection from './HorizonSection'
 import { useState } from 'react'
 import type { DemoRecord } from '../catalog'
 import { getDemoSignals } from './demoData'
@@ -21,9 +22,14 @@ export default function HorizonDashboard({profileId, company, unit, operationalR
   <HorizonSummary counts={counts} activeFilter={filter} onFilterChange={value => setFilter(filter === value ? null : value)}/>
   <section className="ws-panel" aria-label="Central de atenção">
    <div className="ws-panel-title"><div><h2>Central de atenção</h2><p>{filter ? summaryLabels[filter] : 'Prioridades e próximos passos da sua operação.'}</p></div>{filter && <button onClick={() => setFilter(null)}>Limpar filtro</button>}</div>
-   {visibleSignals.map(s => <article key={s.id}><h3>{s.title}</h3><p>{s.entityLabel} {s.entityId}</p><p>{s.summary}</p></article>)}
+   <div className="horizon-windows">
+    <HorizonSection title="Hoje" subtitle="Ações que precisam começar agora." signals={visibleSignals.filter(s => s.window === 'TODAY')}/>
+    <HorizonSection title="Próximos 1–7 dias" subtitle="Riscos antes do próximo recebimento." signals={visibleSignals.filter(s => s.window === 'DAYS_1_7')}/>
+    <HorizonSection title="Horizonte 7–30 dias" subtitle="Oportunidades para preparar o próximo ciclo." signals={visibleSignals.filter(s => s.window === 'DAYS_7_30')}/>
+   </div>
    <div className="ws-attention">{visibleRecords.map(r => <button key={r.id} onClick={() => onOpenRelated(r)}><div><strong>{r.title}</strong><small>{r.unit} · {r.detail}</small></div><span>{r.status}</span></button>)}</div>
    {!visibleSignals.length && !visibleRecords.length && <p className="ws-empty">Nenhum item neste contexto e filtro.</p>}
   </section>
  </div>
 }
+

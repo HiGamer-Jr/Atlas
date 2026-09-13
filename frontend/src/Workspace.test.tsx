@@ -93,3 +93,25 @@ it('filters the attention center with toggleable summary cards', () => {
  expect(attention).toHaveAttribute('aria-pressed','false')
  expect(within(center).getByText('Free Time crítico')).toBeInTheDocument()
 })
+for (const [profile, risk, opportunity, evidence] of [
+ ['comprador-internacional', 'Rolamentos: estoque antes do ETA', 'Reprogramar compra de válvulas', 'Free Time termina amanhã às 18h; tarifa demonstrativa de US$ 150/dia.'],
+ ['comprador-nacional', 'Aço: ruptura antes da chegada', 'Revisar ponto de pedido do Aço', 'Estoque disponível: 300 peças; consumo médio: 100 peças/dia.'],
+]) it(`explains three time windows for ${profile}`, () => {
+ enter(profile)
+ const center = screen.getByRole('region', {name:'Central de atenção'})
+ for (const name of ['Hoje','Próximos 1–7 dias','Horizonte 7–30 dias']) expect(within(center).getByRole('heading',{name})).toBeInTheDocument()
+ expect(within(center).getByText(risk)).toBeInTheDocument()
+ expect(within(center).getByText(opportunity)).toBeInTheDocument()
+ expect(screen.queryByText(evidence)).not.toBeInTheDocument()
+ fireEvent.click(within(center).getAllByRole('button',{name:/Por quê/})[0])
+ expect(screen.getByText(evidence)).toBeVisible()
+ const why = within(center).getAllByRole('button',{name:/Por quê/})[0]
+ expect(why).toHaveAttribute('aria-expanded','true')
+ const explanation = document.getElementById(why.getAttribute('aria-controls')!)!
+ expect(within(explanation).getAllByRole('listitem')).toHaveLength(2)
+ fireEvent.click(screen.getByRole('button',{name:/^No horizonte/}))
+ expect(within(center).queryByText(evidence)).not.toBeInTheDocument()
+ expect(within(center).getByText(risk)).toBeInTheDocument()
+ expect(within(center).getByText(opportunity)).toBeInTheDocument()
+ expect(screen.getByRole('button',{name:/^No horizonte/})).toHaveTextContent('2')
+})
