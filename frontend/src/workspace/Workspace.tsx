@@ -43,7 +43,7 @@ export default function Workspace({profile,onLogout}:{profile:Profile;onLogout:(
   </aside>
   <div className="ws-main">
    <header className="ws-header"><img className="ws-mobile-logo" src={theme==='light'?lightLogo:darkLogo} alt="HiAtlas"/><button className="ws-menu" aria-label="Alternar menu" aria-expanded={menu} onClick={()=>setMenu(!menu)}>☰</button><div className="ws-context"><label>Empresa<select aria-label="Empresa" value={company} onChange={e=>{setCompany(e.target.value);setUnit(profileUnits[0]);setDetail(null)}}><option>Aurora Distribuição</option><option>Horizonte Industrial</option></select></label><label>Unidade<select aria-label="Unidade" value={unit} onChange={e=>{setUnit(e.target.value);setDetail(null)}}>{profileUnits.map(u=><option key={u}>{u}</option>)}</select></label></div>
-    <div className="ws-rates" aria-label="Câmbio demonstrativo"><div><small>USD/BRL</small><strong>R$ 5,45</strong></div><div><small>EUR/BRL</small><strong>R$ 5,91</strong></div><span>Valores de exemplo<br/>Sem cotação ao vivo</span></div>
+    {!(active==='dashboard' && (profile.id==='comprador-nacional'||profile.id==='comprador-internacional')) && <div className="ws-rates" aria-label="Câmbio demonstrativo"><div><small>USD/BRL</small><strong>R$ 5,45</strong></div><div><small>EUR/BRL</small><strong>R$ 5,91</strong></div><span>Valores de exemplo<br/>Sem cotação ao vivo</span></div>}
     <div className="ws-themes" role="group" aria-label="Aparência"><button aria-label="Tema claro" aria-pressed={theme==='light'} onClick={()=>setTheme('light')}>☼</button><button aria-label="Tema escuro" aria-pressed={theme==='dark'} onClick={()=>setTheme('dark')}>☾</button></div>
    </header>
    <div className="ws-content"><div className="ws-breadcrumb">Workspace <span>/</span> {current.label} {section&&<> <span>/</span> {section}</>}<span className="ws-demo">DADOS DEMONSTRATIVOS</span></div>
@@ -60,6 +60,7 @@ export default function Workspace({profile,onLogout}:{profile:Profile;onLogout:(
   <dialog ref={dialog} className="ws-dialog" onCancel={close} onClose={()=>{if(detail)close()}} aria-labelledby="detail-title">{detail&&<><button className="ws-close" onClick={close} aria-label="Fechar detalhes">×</button><span className="ws-eyebrow">{detail.id} · DEMONSTRAÇÃO</span><h2 id="detail-title">{detail.title}</h2>{badges(detail.status)}<p>{detail.detail}</p><dl><dt>Empresa</dt><dd>{detail.company}</dd><dt>Unidade</dt><dd>{detail.unit}</dd><dt>Responsável</dt><dd>{detail.owner}</dd><dt>Prazo</dt><dd>{detail.due}</dd><dt>Referência</dt><dd>{detail.value}</dd></dl><p className="ws-footnote">Registro ilustrativo para validar o fluxo. Nenhuma alteração operacional será enviada.</p><button className="ws-primary" onClick={()=>{navigate(detail.module,detail.section);close()}}>Abrir página relacionada →</button></>}</dialog>
  </main>
 }
+
 
 
 

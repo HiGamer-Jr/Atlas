@@ -1,7 +1,7 @@
 import HorizonSection from './HorizonSection'
 import { useState } from 'react'
 import type { DemoRecord } from '../catalog'
-import { getDemoSignals } from './demoData'
+import { buyerConfiguration, getDemoSignals } from './demoData'
 import HorizonSummary, { summaryLabels, type SummaryFilter } from './HorizonSummary'
 export default function HorizonDashboard({profileId, company, unit, operationalRecords, onOpenRelated}: {
  profileId: string; company: string; unit: string; operationalRecords: DemoRecord[]; onOpenRelated: (record: DemoRecord) => void
@@ -19,6 +19,11 @@ export default function HorizonDashboard({profileId, company, unit, operationalR
  const visibleSignals = signals.filter(s => !filter || (filter === 'HORIZON' ? s.window !== 'TODAY' : s.severity === statusFor[filter]))
  const visibleRecords = operationalRecords.filter(r => !filter || (filter !== 'HORIZON' && r.status === statusFor[filter]))
  return <div className="horizon-dashboard">
+  <section className="horizon-indicators" aria-label="Indicadores do comprador">
+   <div><strong>{buyerConfiguration[scope].label}</strong><p>Um novo horizonte para o seu negócio.</p></div>
+   {signals.length ? <dl>{buyerConfiguration[scope].indicators.map(indicator => <div key={indicator.label}><dt>{indicator.label}</dt><dd>{indicator.value}</dd></div>)}</dl> : <p>Sem dados demonstrativos neste contexto.</p>}
+   <small>Valores de exemplo · Sem atualização ao vivo</small>
+  </section>
   <HorizonSummary counts={counts} activeFilter={filter} onFilterChange={value => setFilter(filter === value ? null : value)}/>
   <section className="ws-panel" aria-label="Central de atenção">
    <div className="ws-panel-title"><div><h2>Central de atenção</h2><p>{filter ? summaryLabels[filter] : 'Prioridades e próximos passos da sua operação.'}</p></div>{filter && <button onClick={() => setFilter(null)}>Limpar filtro</button>}</div>
@@ -32,4 +37,5 @@ export default function HorizonDashboard({profileId, company, unit, operationalR
   </section>
  </div>
 }
+
 

@@ -11,3 +11,12 @@ export function getDemoSignals(scope: PurchaseScope): HorizonSignal[] {
  return signals.filter(signal => signal.purchaseScope === scope)
 }
 
+
+export const buyerConfiguration: Record<PurchaseScope, {label: string; indicators: {label: string; value: string}[]}> = {
+ INTERNATIONAL: {label: 'Comprador Internacional', indicators: [
+  {label: 'USD/BRL', value: 'R$ 5,45'}, {label: 'EUR/BRL', value: 'R$ 5,91'}, {label: 'Containers em trânsito', value: '1'},
+ ]},
+ NATIONAL: {label: 'Comprador Nacional', indicators: [
+  {label: 'Cargas em trânsito', value: '1'}, {label: 'Entregas previstas hoje', value: '0'}, {label: 'Entregas atrasadas', value: '0'},
+ ]},
+}
