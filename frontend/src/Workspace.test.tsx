@@ -60,3 +60,17 @@ it("does not show international purchasing to the national buyer", () => {
  expect(within(screen.getByRole('navigation')).queryByRole('button',{name:'Internacional'})).not.toBeInTheDocument()
  expect(within(screen.getByRole('navigation')).getByRole('button',{name:'Nacional'})).toBeInTheDocument()
 })
+
+it('shows the international container scenario only to its buyer', () => {
+ enter('comprador-internacional')
+ expect(screen.getByText(/Free Time crítico/)).toBeInTheDocument()
+ expect(screen.getByText(/MSCU1234567/)).toBeInTheDocument()
+ expect(screen.queryByText(/NAC-2026-01842/)).not.toBeInTheDocument()
+})
+it('shows the national cargo scenario only to its buyer', () => {
+ enter('comprador-nacional')
+ expect(screen.getByText(/CD Bauru.*Aço/)).toBeInTheDocument()
+ expect(screen.getByText(/NAC-2026-01842/)).toBeInTheDocument()
+ expect(screen.getByText(/perfis, juntas e cantoneiras/i)).toBeInTheDocument()
+ expect(screen.queryByText(/MSCU1234567/)).not.toBeInTheDocument()
+})
