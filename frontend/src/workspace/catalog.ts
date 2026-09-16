@@ -1,12 +1,12 @@
 /** Fictional sample data for the HiAtlas navigable prototype. */
 export type ModuleKey = 'dashboard' | 'compras' | 'comex' | 'estoque' | 'financeiro' | 'obras' | 'datahub' | 'agenda' | 'relatorios' | 'administracao';
-export const modules: { id: ModuleKey; label: string; icon: string; children: string[] }[] = [
+export const modules: { id: ModuleKey; label: string; icon: string; children: string[]; overviewCaption?: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '◫', children: [] },
   { id: 'compras', label: 'Compras', icon: '⇄', children: ['Nacional', 'Internacional', 'Sugestão de Compra', 'Cotações', 'Fornecedores', 'Aprovações'] },
   { id: 'comex', label: 'Importação / COMEX', icon: '◈', children: ['Processos', 'Proformas', 'Bookings', 'Containers', 'Navios', 'Portos', 'Desembaraço', 'Entrega / Devolução'] },
   { id: 'estoque', label: 'Estoque', icon: '▤', children: ['Produtos', 'Lojas', 'Centros de Distribuição', 'Depósitos', 'Movimentações', 'Cobertura', 'Necessidade de Compra'] },
   { id: 'financeiro', label: 'Financeiro', icon: '◉', children: ['Adiantamentos', 'Saldo', 'Numerário', 'Câmbio', 'Custos'] },
-  { id: 'obras', label: 'Obras & Projetos', icon: '▣', children: ['Visão Geral', 'Portfólio de Obras'] },
+  { id: 'obras', label: 'Obras & Projetos', icon: '▣', overviewCaption: 'Portfólio demonstrativo', children: ['Visão Geral', 'Portfólio de Obras'] },
   { id: 'datahub', label: 'Data Hub', icon: '⌘', children: ['Excel', 'APIs', 'Integrações', 'Mapeamentos', 'Validação', 'Sincronizações'] },
   { id: 'agenda', label: 'Agenda', icon: '▦', children: [] },
   { id: 'relatorios', label: 'Relatórios', icon: '▥', children: [] },

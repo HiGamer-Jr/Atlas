@@ -209,3 +209,12 @@ it('preserves theme and company/unit filtering in Obras', () => {
  fireEvent.click(screen.getByRole('button', {name:'Tema escuro'}))
  expect(screen.getByRole('main')).toHaveAttribute('data-theme', 'dark')
 })
+
+it('describes the isolated Obras portfolio without reporting a false legacy record count', () => {
+ enter('coordenacao')
+ const card = screen.getByRole('button', {name:/Obras & Projetos.*Explorar módulo/})
+ expect(within(card).queryByText('0 registros no contexto')).not.toBeInTheDocument()
+ expect(within(card).getByText('Portfólio demonstrativo')).toBeInTheDocument()
+ fireEvent.click(card)
+ expect(screen.getByText('Ampliação CD Bauru')).toBeInTheDocument()
+})
