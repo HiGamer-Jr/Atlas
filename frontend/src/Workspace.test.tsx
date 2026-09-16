@@ -168,3 +168,12 @@ it('keeps buyer operational details and navigation working', () => {
  fireEvent.click(screen.getByRole('button',{name:'Dashboard'}))
  expect(screen.getByRole('region',{name:'Central de atenção'})).toBeInTheDocument()
 })
+
+it.each(['coordenacao', 'supervisao', 'diretoria', 'administrador'])('shows Obras & Projetos for %s', (profile) => {
+ enter(profile)
+ expect(screen.getByRole('button', {name:'Obras & Projetos'})).toBeInTheDocument()
+})
+it.each(['comprador-nacional', 'comprador-internacional', 'financeiro', 'loja', 'cd'])('does not show Obras & Projetos for %s during foundation', (profile) => {
+ enter(profile)
+ expect(screen.queryByRole('button', {name:'Obras & Projetos'})).not.toBeInTheDocument()
+})
