@@ -18,7 +18,11 @@ function formatDate(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR')
 }
 
-export default function ProjectsModule({ company, unit, section }: ProjectsModuleProps) {
+export default function ProjectsModule(props: ProjectsModuleProps) {
+  return <ProjectsView key={JSON.stringify([props.company, props.unit, props.section])} {...props} />
+}
+
+function ProjectsView({ company, unit, section }: ProjectsModuleProps) {
   const [selected, setSelected] = useState<ProjectRecord | null>(null)
 
   const projects = useMemo(
@@ -148,7 +152,7 @@ export default function ProjectsModule({ company, unit, section }: ProjectsModul
 
         <div className="projects-list">
           {projects.map(project => (
-            <button key={project.id} onClick={() => setSelected(project)}>
+            <button key={project.id} aria-label={`Abrir ${project.name}`} onClick={() => setSelected(project)}>
               <div>
                 <span className="projects-id">{project.id}</span>
                 <strong>{project.name}</strong>

@@ -65,3 +65,27 @@ it('opens project detail and returns to the portfolio', () => {
   fireEvent.click(screen.getByRole('button', {name: /Voltar ao portfólio/}))
   expect(screen.getByRole('button', {name: /Ampliação CD Bauru/})).toBeInTheDocument()
 })
+
+it('exposes a concise accessible name for opening a project', () => {
+  render(<ProjectsModule {...context} />)
+  fireEvent.click(screen.getByRole('button', {name: 'Abrir Ampliação CD Bauru'}))
+  expect(screen.getByRole('heading', {name: 'Ampliação CD Bauru'})).toBeInTheDocument()
+})
+it('filters projects by selected organizational unit', () => {
+  render(<ProjectsModule {...context} unit="Loja Centro" />)
+  expect(screen.getByText('Retrofit Loja Centro')).toBeInTheDocument()
+  expect(screen.queryByText('Ampliação CD Bauru')).not.toBeInTheDocument()
+})
+it.each([
+  {company: 'Horizonte Industrial'},
+  {unit: 'Loja Centro'},
+  {section: 'Portfólio de Obras'},
+])('clears open details when context changes: %j', (change) => {
+  const {rerender} = render(<ProjectsModule {...context} />)
+  fireEvent.click(screen.getByRole('button', {name: /Ampliação CD Bauru/}))
+  rerender(<ProjectsModule {...context} {...change} />)
+  expect(screen.queryByRole('heading', {name: 'Ampliação CD Bauru'})).not.toBeInTheDocument()
+  rerender(<ProjectsModule {...context} />)
+  expect(screen.queryByRole('heading', {name: 'Ampliação CD Bauru'})).not.toBeInTheDocument()
+  expect(screen.getByRole('button', {name: /Ampliação CD Bauru/})).toBeInTheDocument()
+})
