@@ -8,3 +8,20 @@
 .ws-mobile-logo{display:none}
 @media(max-width:850px){.ws-mobile-logo{display:block;width:50px;height:50px;object-fit:contain;background:var(--side)}.ws-context{flex-basis:65%}.ws-context label{min-width:0}.ws-context select{max-width:140px}.ws-header{gap:10px}}
 .ws-table-scroll{position:relative}.ws-sr{left:0;top:0}
+/* Compact navigation keeps the original brand image and its dimensions. */
+.ws-menu-mode{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:8px;margin:0 0 12px;font-size:10px!important;flex-shrink:0}
+.ws-menu-mode:hover,.ws-menu-mode[aria-pressed=true]{color:var(--accent);background:var(--hover)}
+.ws-sidebar .ws-nav-item{position:relative;min-height:44px}
+.ws-nav-label{min-width:0}
+.ws-sidebar.is-compact{width:164px}
+.ws-sidebar.is-compact .ws-nav-caption{display:none}
+.ws-sidebar.is-compact .ws-nav-item{justify-content:center}
+.ws-sidebar.is-compact .ws-nav-item>i{text-align:center}
+.ws-sidebar.is-compact .ws-chevron{position:absolute;right:10px;font-size:10px}
+.ws-sidebar.is-compact .ws-nav-label{display:none;position:absolute;top:calc(100% - 2px);left:0;right:0;z-index:5;padding:7px 5px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--text);font-size:10px;text-align:center;box-shadow:0 4px 12px #0003;pointer-events:none}
+.ws-sidebar.is-compact .ws-nav-item:hover .ws-nav-label,.ws-sidebar.is-compact .ws-nav-item:focus-visible .ws-nav-label{display:block}
+.ws-sidebar.is-compact .ws-subnav{margin:4px 0 10px;padding-left:6px}
+.ws-sidebar.is-compact .ws-subnav button{font-size:10px;line-height:1.5}
+.ws-sidebar.is-compact .ws-profile>div{display:none}
+.ws-sidebar.is-compact .ws-profile{padding-inline:12px}
+.ws-header>.ws-themes{margin-left:auto}
