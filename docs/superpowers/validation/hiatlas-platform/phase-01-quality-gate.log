@@ -1,0 +1,79 @@
+>> Backend tests (PostgreSQL required)
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-platform-phase-1\backend
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 76 items
+
+tests\test_audit_integrity.py ............                               [ 15%]
+tests\test_base.py .                                                     [ 17%]
+tests\test_database.py .                                                 [ 18%]
+tests\test_database_lifecycle.py .......                                 [ 27%]
+tests\test_foundation_schema.py ..............                           [ 46%]
+tests\test_health.py .                                                   [ 47%]
+tests\test_migration_lifecycle.py ...                                    [ 51%]
+tests\test_quality_gate.py ....                                          [ 56%]
+tests\test_runtime_privileges.py ................                        [ 77%]
+tests\test_settings.py ...                                               [ 81%]
+tests\test_test_database_safety.py ..............                        [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Atlas\.worktrees\hiatlas-platform-phase-1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 76 passed, 1 warning in 10.31s ========================
+>> Backend lint
+All checks passed!
+>> Frontend tests
+
+> frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 D:/Atlas/.worktrees/hiatlas-platform-phase-1/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  68 passed (68)
+   Start at  15:12:07
+   Duration  13.65s (transform 1.17s, setup 2.73s, import 2.25s, tests 10.99s, environment 11.94s)
+
+>> Frontend lint
+
+> frontend@0.0.0 lint
+> oxlint
+
+>> Frontend build
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 37 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             0.50 kB │ gzip:  0.33 kB
+dist/assets/hiatlas-dark-CfqG4lAg.png   1,001.95 kB
+dist/assets/hiatlas-light-CyXrr_ri.png  1,062.23 kB
+dist/assets/index-C36g3MIF.css             29.80 kB │ gzip:  6.31 kB
+dist/assets/index-hD2wkPjC.js             249.44 kB │ gzip: 76.56 kB
+
+✓ built in 250ms
+>> Working diff
+warning: in the working copy of 'backend/.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/alembic/env.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/core/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/db/session.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'database/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/plans/2026-09-22-hiatlas-platform-foundation/01-banco-auditoria.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/plans/2026-09-22-hiatlas-platform-foundation/04-interface-autenticada.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/plans/2026-09-22-hiatlas-platform-foundation/11-validacao-final.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/plans/2026-09-22-hiatlas-platform-foundation/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/specs/2026-09-22-hiatlas-platform-access-foundation-design.md', LF will be replaced by CRLF the next time Git touches it
+>> Staged diff
+[PASS] HiAtlas Phase Quality Gate

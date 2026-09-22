@@ -128,3 +128,12 @@ estado vazio e mensagens de erro. Contexto permanece visível no scroll.
 - [ ] Build de produção sem seletor demo ou credenciais fixas; teste prova
 entrada demo indisponível, não apenas um texto escondido.
 - [ ] Registrar phase-04.md e parar.
+
+## Ajuste aprovado: contexto por aba
+
+AccessContext fica em memória da aba; sessionStorage é permitido quando houver
+necessidade de recuperar a seleção naquela aba, com revalidação pelo servidor.
+Nunca usar localStorage para autenticação/contexto nem sincronizar contexto
+entre abas via evento storage. Token de autenticação permanece em cookie HttpOnly.
+Adicionar teste com dois ambientes de aba: selecionar B na segunda preserva A
+na primeira; contexto restaurado/expirado não libera consulta sem validação.

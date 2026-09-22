@@ -447,3 +447,21 @@ O plano executável está separado em fases no documento vinculado no cabeçalho
 com arquivos, testes de aceite, dependências e gates por etapa. Nenhuma fase foi
 executada pela aprovação arquitetural. Esta especificação não representa
 funcionalidades já implementadas.
+
+## Ajustes finais aprovados para execução da Fase 1
+
+Cabeçalho contextual: `X-HiAtlas-Context`. AccessContext por aba em memória ou
+sessionStorage; jamais localStorage para sessão/contexto autenticado. Manter uv,
+confirmado como gerenciador canônico, sem migração de ferramenta.
+
+Privilégios por categoria de tabela: dados de negócio não admitem DELETE/TRUNCATE
+pelo runtime; auditoria/acessos também não admitem UPDATE. Tabelas técnicas usam
+somente privilégios necessários e explicitamente definidos para seu ciclo de vida.
+
+Fase 11 deve documentar/testar recuperação administrativa break-glass: operação
+local restrita, identidade alvo verificada, motivo/referência, confirmação e
+revogação de sessões, com auditoria atômica. Sem endpoint público, senha padrão,
+logs de segredo ou bypass se a auditoria falhar. Não implementar isso na Fase 1.
+
+Autorização atual: somente Fase 1, quality gate, evidências e commit; parar para
+revisão antes de iniciar Fase 2.

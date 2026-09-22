@@ -1,0 +1,100 @@
+from pathlib import Path
+
+import pytest
+from alembic.config import Config
+from fastapi.testclient import TestClient
+from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from alembic import command
+from app.core.config import Settings
+from app.main import create_app
+from tests.database_harness import open_test_engines
+
+BACKEND = Path(__file__).resolve().parents[1]
+TABLES = (
+    "access_events",
+    "audit_events",
+    "platform_role_assignments",
+    "contracts",
+    "tenants",
+    "users",
+)
+
+
+@pytest.fixture(scope="session")
+def engines():
+    try:
+        result = open_test_engines()
+    except (ValueError, SQLAlchemyError):
+        pytest.fail(
+            "Disposable PostgreSQL test setup is missing or unsafe. See database/README.md.",
+            pytrace=False,
+        )
+    yield result
+    for engine in result:
+        engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def db_owner(engines):
+    return engines[0]
+
+
+@pytest.fixture(scope="session")
+def migration_config(engines):
+    config = Config(str(BACKEND / "alembic.ini"))
+    config.set_main_option("script_location", str(BACKEND / "alembic"))
+    config.attributes["runtime_role"] = engines[1].url.username
+    return config
+
+
+@pytest.fixture(scope="session")
+def migrated(db_owner, migration_config):
+    with db_owner.begin() as connection:
+        migration_config.attributes["connection"] = connection
+        command.upgrade(migration_config, "head")
+    migration_config.attributes.pop("connection", None)
+    return True
+
+
+@pytest.fixture
+def clean_database(migrated, db_owner):
+    yield
+    with db_owner.begin() as conn:
+        present = set(inspect(conn).get_table_names())
+        names = [name for name in TABLES if name in present]
+        if names:
+            conn.execute(text("TRUNCATE " + ", ".join(names) + " CASCADE"))
+
+
+@pytest.fixture
+def db_runtime(engines, clean_database):
+    return engines[1]
+
+
+@pytest.fixture
+def db(db_runtime):
+    with Session(db_runtime) as session:
+        yield session
+        session.rollback()
+
+
+@pytest.fixture
+def settings(db_runtime):
+    return Settings(
+        database_url=db_runtime.url.render_as_string(hide_password=False),
+        environment="test",
+    )
+
+
+@pytest.fixture
+def app(settings):
+    return create_app(settings)
+
+
+@pytest.fixture
+def client(app):
+    with TestClient(app, base_url="https://testserver") as test_client:
+        yield test_client

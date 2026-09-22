@@ -1,0 +1,59 @@
+import pytest
+from sqlalchemy import inspect, text
+
+from alembic import command
+
+TABLES = {
+    "users",
+    "platform_role_assignments",
+    "tenants",
+    "contracts",
+    "audit_events",
+    "access_events",
+}
+
+
+def test_upgrade_downgrade_upgrade_preserves_runtime_grants(
+    db_owner, db_runtime, migration_config
+):
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "base")
+            assert not (TABLES & set(inspect(conn).get_table_names()))
+            command.upgrade(migration_config, "head")
+            assert TABLES <= set(inspect(conn).get_table_names())
+        with db_runtime.connect() as conn:
+            assert conn.execute(
+                text("SELECT has_table_privilege(current_user,'audit_events','INSERT')")
+            ).scalar_one()
+            assert not conn.execute(
+                text("SELECT has_table_privilege(current_user,'audit_events','UPDATE')")
+            ).scalar_one()
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("unsafe", ["owner", "superuser"])
+def test_migration_rejects_unsafe_runtime_role(
+    db_owner, db_runtime, migration_config, unsafe
+):
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with pytest.raises(RuntimeError, match="role"), db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "base")
+            bad_role = (
+                db_owner.url.username
+                if unsafe == "owner"
+                else conn.execute(
+                    text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+                ).scalar_one()
+            )
+            migration_config.attributes["runtime_role"] = bad_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role
+    with db_runtime.connect() as conn:
+        assert TABLES <= set(inspect(conn).get_table_names())

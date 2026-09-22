@@ -10,7 +10,7 @@
 
 **Spec:** [Especificação aprovada e ajustada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 
-**Status:** planejamento preparado; nenhuma fase implementada ou validada.
+**Status:** Fase 1 implementada e validada; parada para revisão. Fases 2–11 não iniciadas. Evidências em ../../validation/hiatlas-platform/phase-01.md.
 **Raiz confirmada:** `D:\Atlas`. Caminhos de código abaixo são relativos a essa raiz ou ao worktree escolhido na execução.
 
 ## Global Constraints
@@ -100,7 +100,7 @@ abstrações adicionais para casos ainda inexistentes.
   pré-login; mutações usam `X-CSRF-Token` e origem permitida.
 - Sessão autenticada rotaciona token e CSRF. `GET /api/auth/me` retorna id,
   nome, papel interno opcional e capacidades mínimas, sem segredos.
-- `X-Atlas-Context` contém id opaco de AccessContext pertencente à sessão.
+- `X-HiAtlas-Context` contém id opaco de AccessContext pertencente à sessão.
   Não é tenant_id, não é credencial autossuficiente.
 - `POST /api/contexts` com `contract_id` seleciona explicitamente o contrato.
   `DELETE /api/contexts/{id}` encerra somente contexto da própria sessão.
@@ -163,7 +163,7 @@ Fase 3 cria `backend/tests/__init__.py` e `backend/tests/helpers.py`:
 def select_context(client, contract_id: str) -> dict[str, str]:
     response = client.post("/api/contexts", json={"contract_id": contract_id})
     assert response.status_code == 201, response.text
-    return {"X-Atlas-Context": response.json()["id"]}
+    return {"X-HiAtlas-Context": response.json()["id"]}
 ```
 Headers CSRF já estão no cliente das fixtures após login. Retornar contexto
 separado permite testar duas abas com a mesma sessão sem trocar estado global.
@@ -252,3 +252,18 @@ isolamento são sequenciais e o usuário pediu entregas pequenas. Nenhuma delega
 foi realizada para escrever estes planos. Não iniciar implementação nesta tarefa
 de planejamento. A autorização de execução deve identificar a fase inicial;
 não interpretar aprovação do plano como ordem para executar todas de uma vez.
+
+## Ajustes finais aprovados antes da Fase 1
+
+- Plano APROVADO; executar somente a Fase 1 e parar para revisão antes da Fase 2.
+- Cabeçalho único: `X-HiAtlas-Context` em implementação, testes e documentação.
+- AccessContext por aba, em memória e/ou sessionStorage. localStorage é proibido
+  para sessão autenticada e contexto. Preferência de tema não é sessão.
+- uv já é canônico neste repositório (uv.lock, README e scripts/check.ps1).
+  Preservar gerenciador e lockfile; não migrar gerenciador nesta fundação.
+- Privilégios por categoria: negócio SELECT/INSERT/UPDATE, sem DELETE/TRUNCATE;
+  auditoria/acessos SELECT/INSERT, sem UPDATE/DELETE/TRUNCATE; técnicas somente
+  operações necessárias por tabela. alembic_version é exclusivo da migração.
+  Nada de grants em todas as tabelas presentes/futuras.
+- Fase 11 incluirá recuperação administrativa break-glass documentada e testada,
+  sem endpoint público, senha padrão ou bypass da auditoria.

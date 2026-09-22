@@ -1,0 +1,16 @@
+"""Import models once to register metadata for Alembic and application services."""
+
+from app.audit.models import AccessEvent, AuditEvent
+from app.db.base import Base
+from app.identity.models import PlatformRoleAssignment, User
+from app.tenancy.models import Contract, Tenant
+
+__all__ = [
+    "AccessEvent",
+    "AuditEvent",
+    "Base",
+    "Contract",
+    "PlatformRoleAssignment",
+    "Tenant",
+    "User",
+]

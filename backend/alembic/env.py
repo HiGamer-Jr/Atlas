@@ -1,56 +1,43 @@
-﻿from logging.config import fileConfig
+from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 from alembic import context
-from app.core.config import Settings
-from app.db.base import Base
+from app.core.config import MigrationSettings
+from app.db.models import Base
 
 config = context.config
-
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-settings = Settings()
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.database_url.replace("%", "%%"),
-)
-
 target_metadata = Base.metadata
 
 
-def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
-
+def configure_and_run(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+def run_migrations_online():
+    supplied = config.attributes.get("connection")
+    if supplied is not None:
+        configure_and_run(supplied)
+        return
+    settings = MigrationSettings()
+    config.attributes["runtime_role"] = settings.database_runtime_role
+    engine = create_engine(
+        settings.migration_database_url, poolclass=pool.NullPool, hide_parameters=True
     )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    try:
+        with engine.connect() as connection:
+            configure_and_run(connection)
+    finally:
+        engine.dispose()
 
 
 if context.is_offline_mode():
-    run_migrations_offline()
+    raise RuntimeError(
+        "Offline migrations are disabled: role and privilege checks require PostgreSQL."
+    )
 else:
     run_migrations_online()

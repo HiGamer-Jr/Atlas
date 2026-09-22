@@ -42,7 +42,7 @@ def test_read_only_blocks_direct_and_parent_writes(support, ids):
     started = support.post("/api/support-sessions", headers=parent,
         json={"membership_id": ids["member_a"]})
     assert started.status_code == 201
-    child = {"X-Atlas-Context": started.json()["context_id"]}
+    child = {"X-HiAtlas-Context": started.json()["context_id"]}
     for context in (child, parent):
         response = support.patch(
             f"/api/memberships/{ids['member_a']}/status", headers=context,

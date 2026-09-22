@@ -131,3 +131,33 @@ navegador real nos dois temas; confirmar contexto permanente.
 - [ ] Registrar resultados reais, limitações de SMTP e ausência de handlers,
 sem chamar indisponibilidade de sucesso.
 - [ ] Entregar revisão final antes de integração/deploy; não publicar automaticamente.
+
+## Tarefa 11.3 — Recuperação administrativa break-glass
+
+**Arquivos:** criar backend/app/identity/recover_admin.py e
+backend/tests/test_admin_recovery.py; ampliar docs/operations/hiatlas-platform-foundation.md.
+**Interfaces:** CLI local `uv run python -m app.identity.recover_admin --user-id UUID`;
+sem rota HTTP. Uso restrito ao operador de infraestrutura autorizado, com acesso
+protegido ao host/credencial de manutenção, e validação externa da identidade alvo.
+
+- [ ] RED: recuperar último PLATFORM_ADMIN existente com senha perdida; exigir
+  motivo, chamado/referência e confirmação do id/e-mail verificados. Rejeitar alvo
+  externo/inexistente, papel inesperado e execução sem credencial autorizada.
+- [ ] Testar que falha ao inserir auditoria aborta a recuperação e preserva senha,
+  status e sessões anteriores. Testar revogação de todas as sessões após sucesso.
+- [ ] GREEN: CLI separado do bootstrap; não criar usuário nem administrador extra.
+  Bloquear concorrência pelo mesmo lock dos operadores e registrar ator de
+  recuperação, alvo, horário, motivo, referência e resultado, sem senha/hash/token.
+  Senha nova pelo próprio operador autorizado via entrada protegida ou fluxo
+  seguro ao titular; sem argumento de senha, senha padrão ou segredo em stdout.
+- [ ] A identidade de banco de recuperação tem somente SELECT/UPDATE necessários
+  de identidade/sessões e INSERT em auditoria; não recebe DELETE/UPDATE/TRUNCATE
+  da trilha. Nenhum caminho desliga ou ignora auditoria.
+- [ ] Rodar `uv run pytest tests/test_admin_recovery.py -v`, depois gate completo.
+- [ ] Documentar pré-requisitos de infraestrutura, verificação fora de banda,
+  aprovação da organização responsável, execução, validação do login restaurado
+  e revisão posterior do evento. Ensaio apenas com identidade fictícia em _test.
+- [ ] Provar em OpenAPI que não há endpoint de recuperação administrativa.
+- [ ] Commit: `feat: add audited offline administrator recovery procedure`.
+
+Este é um requisito da Fase 11 aprovada, não trabalho autorizado para a Fase 1.
