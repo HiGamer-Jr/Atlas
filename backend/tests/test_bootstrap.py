@@ -162,3 +162,18 @@ def test_cli_does_not_accept_password_argument_or_pipe():
     )
     assert piped.returncode != 0
     assert PASSWORD not in piped.stdout + piped.stderr
+
+
+def test_bootstrap_accepts_long_email_without_truncating_identity(db_runtime, client):
+    from tests.identity_helpers import login
+
+    email = "a" * 64 + "@" + "b" * 63 + "." + "c" * 63 + ".examplecom"
+    user_id = bootstrap(db_runtime, email)
+    with db_runtime.connect() as conn:
+        user = conn.execute(
+            text("SELECT email_normalized, display_name FROM users WHERE id=:id"),
+            {"id": user_id},
+        ).one()
+    assert user.email_normalized == email
+    assert 1 <= len(user.display_name) <= 200
+    assert login(client, email).json()["platform_role"] == "PLATFORM_ADMIN"

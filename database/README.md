@@ -1,13 +1,14 @@
-# HiAtlas — Banco e auditoria (Fase 1)
+# HiAtlas — Banco, auditoria e persistência de identidade (Fases 1–2)
 
 O backend usa PostgreSQL e **uv já é o gerenciador canônico** (uv.lock, README e
-scripts/check.ps1). Esta fase não troca gerenciador nem atualiza o lockfile.
+scripts/check.ps1). A Fase 2 preserva esse gerenciador e acrescenta apenas argon2-cffi e suas dependências ao lockfile.
 
 ## Limites desta entrega
 
 Migração 0001: users, platform_role_assignments, tenants, contracts, audit_events
-e access_events. User ainda não possui login; bootstrap de administrador, sessões
-e APIs administrativas são da Fase 2 ou posterior. A API publicada permanece /api/health.
+e access_events. A migração 0002 acrescenta auth_sessions, auth_preauth e
+auth_rate_limits. A Fase 2 implementa autenticação, bootstrap local e operadores
+internos; consulte [o guia operacional](../docs/operations/hiatlas-identity.md).
 A separação referencial tenant/contrato não substitui o contexto/autorização que
 serão implementados na Fase 3.
 
@@ -23,7 +24,8 @@ CREATEROLE, BYPASSRLS ou CREATE em public/banco.
 | Identidade/configuração de negócio | users, platform_role_assignments, tenants, contracts | SELECT, INSERT, UPDATE |
 | Trilha append-only | audit_events, access_events | SELECT, INSERT |
 | Controle técnico de migração | alembic_version | nenhum |
-| Técnica futura | sessões, tokens, filas — ainda não criadas | grants explícitos conforme ciclo de vida |
+| Identidade técnica (0002) | auth_sessions, auth_preauth, auth_rate_limits | SELECT, INSERT, UPDATE, DELETE; sem TRUNCATE |
+| Técnica futura | tokens de convite/redefinição e filas — ainda não criadas | grants explícitos conforme ciclo de vida |
 
 DELETE/TRUNCATE permanecem negados para negócio; UPDATE/DELETE/TRUNCATE para
 eventos. Tabelas técnicas não recebem uma proibição universal nem grants
@@ -94,7 +96,7 @@ uv run --frozen pytest tests/test_audit_integrity.py tests/test_runtime_privileg
 uv run --frozen pytest tests/test_migration_lifecycle.py -v
 ```
 
-O owner aplica migração e limpa apenas as seis tabelas conhecidas no banco
+O owner aplica migrações e limpa apenas as tabelas explicitamente listadas no banco
 marcado de teste. Requests e asserções de negócio usam runtime. Não executar
 pytest paralelo no mesmo banco; cada execução concorrente requer sua própria base.
 As fixtures nunca reutilizam DATABASE_URL como URL de teste.
@@ -112,14 +114,14 @@ também é revertida. Timestamp vem do banco; ambiente vem do contrato consultad
 no servidor. Não existe endpoint para gravar, editar ou apagar eventos.
 
 Os primeiros eventos tipados são identity.bootstrap e platform.role.changed,
-sem implementar essas operações de identidade nesta fase. IdentitySnapshot
+implementados pela Fase 2, junto de platform.operator.status.changed. IdentitySnapshot
 aceita apenas user_id, active, blocked e platform_role. Campos extras como senha,
 hash, token e secret são recusados sem revelar seus valores no erro.
 Novos eventos exigem schemas explícitos do serviço de domínio; não aceitar
 payload arbitrário do navegador.
 
-AccessEvent preserva histórico append-only; geração de eventos de login será
-adicionada com autenticação. A aplicação usa hide_parameters para evitar expor
+AccessEvent preserva histórico append-only; a Fase 2 registra login, logout,
+reautenticação e negações. A aplicação usa hide_parameters para evitar expor
 parâmetros em erros SQLAlchemy, mas não deve devolver mensagens de banco ao cliente.
 
 ## Contratos das próximas fases

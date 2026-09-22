@@ -10,7 +10,7 @@
 
 **Spec:** [Especificação aprovada e ajustada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 
-**Status:** Fase 1 implementada e validada; parada para revisão. Fases 2–11 não iniciadas. Evidências em ../../validation/hiatlas-platform/phase-01.md.
+**Status:** Fase 1 revisada/aprovada. Fase 2 implementada e validada; parada para revisão antes da Fase 3. Fases 3–11 não iniciadas. [Evidências da Fase 2](../../validation/hiatlas-platform/phase-02.md).
 **Raiz confirmada:** `D:\Atlas`. Caminhos de código abaixo são relativos a essa raiz ou ao worktree escolhido na execução.
 
 ## Global Constraints

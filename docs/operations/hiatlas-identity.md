@@ -129,7 +129,7 @@ habilite captura de cookies, bodies ou parâmetros sensíveis no proxy/APM.
 
 O quality gate exige PostgreSQL descartável e as variáveis documentadas para
 testes. Clientes pytest obtêm CSRF e fazem login HTTP com hash real, sem bypass
-de dependência ou rota secreta. Concorrrência usa conexões independentes.
+de dependência ou rota secreta. Concorrência usa conexões independentes.
 
 HTTPS real, proxy e recursos de produção (incluindo dimensionamento do Argon2 e
 retenção técnica) ainda exigem configuração de implantação. TestClient verifica

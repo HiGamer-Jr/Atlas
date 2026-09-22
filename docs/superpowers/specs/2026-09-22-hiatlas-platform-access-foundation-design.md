@@ -1,7 +1,7 @@
 # HiAtlas — Fundação de identidade, administração e suporte
 
 Data: 22/09/2026
-Status: APROVADA pelo usuário com os seis ajustes incorporados abaixo; implementação ainda não iniciada.
+Status: APROVADA; Fase 1 revisada e aprovada, Fase 2 implementada e validada, aguardando revisão do usuário. Fases 3–11 não iniciadas.
 Projeto: D:\Atlas
 Origem: matriz e instruções fornecidas pelo usuário nesta tarefa.
 Decisão de escopo do usuário: fundação completa, com backend e persistência reais.
@@ -463,5 +463,6 @@ local restrita, identidade alvo verificada, motivo/referência, confirmação e
 revogação de sessões, com auditoria atômica. Sem endpoint público, senha padrão,
 logs de segredo ou bypass se a auditoria falhar. Não implementar isso na Fase 1.
 
-Autorização atual: somente Fase 1, quality gate, evidências e commit; parar para
-revisão antes de iniciar Fase 2.
+Autorização atual: somente Fase 2 — identidade, sessão, bootstrap e operadores
+internos; quality gate, evidências e commit. Parar para revisão antes da Fase 3.
+Não antecipar RBAC completo, contexto tenant/contrato ou portais das Fases 3/4.

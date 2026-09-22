@@ -47,7 +47,7 @@ def bootstrap_admin(db, email: str, password: str):
         raise ApiError(409, "IDENTITY_EXISTS", "O bootstrap exige uma identidade nova.")
     user = User(
         email_normalized=identity.email,
-        display_name=identity.email,
+        display_name=identity.email[:200],
         password_hash=hash_password(password),
         active=True,
         blocked=False,
