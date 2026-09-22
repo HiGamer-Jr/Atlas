@@ -1,11 +1,16 @@
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.orm import Session
 
 from app.api.router import router as api_router
 from app.core.config import Settings
+from app.core.errors import ApiError, error_response
 from app.db import models as _models  # noqa: F401 -- register all foreign-key targets
-from app.db.session import create_database_engine
+from app.db.session import create_database_engine, validate_runtime_connection
 
 
 def create_app(settings: Settings) -> FastAPI:
@@ -16,6 +21,41 @@ def create_app(settings: Settings) -> FastAPI:
 
     application = FastAPI(title=settings.app_name, lifespan=lifespan)
     application.state.database_engine = create_database_engine(settings.database_url)
+    application.state.settings = settings
+    application.state.clock = lambda: datetime.now(UTC)
+
+    @application.middleware("http")
+    async def request_identity(request: Request, call_next):
+        request.state.request_id = uuid4()
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = str(request.state.request_id)
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
+    @application.exception_handler(ApiError)
+    def api_error(request: Request, exc: ApiError):
+        from app.identity.sessions import record_access
+
+        # The request transaction has rolled back before this independent denial log.
+        with Session(application.state.database_engine) as db, db.begin():
+            validate_runtime_connection(db.connection())
+            record_access(db, request, "auth.request.denied", "DENIED", reason=exc.code)
+        return error_response(request, exc)
+
+    @application.exception_handler(RequestValidationError)
+    async def validation_error(request: Request, _exc: RequestValidationError):
+        # FastAPI's default detail includes raw input (including passwords).
+        return error_response(
+            request, ApiError(422, "VALIDATION_ERROR", "Dados inválidos.")
+        )
+
+    @application.exception_handler(Exception)
+    async def internal_error(request: Request, _exc: Exception):
+        return error_response(
+            request,
+            ApiError(500, "INTERNAL_ERROR", "Não foi possível concluir a operação."),
+        )
+
     application.include_router(api_router, prefix=settings.api_prefix)
     return application
 

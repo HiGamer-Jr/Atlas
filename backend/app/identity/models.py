@@ -38,3 +38,43 @@ class PlatformRoleAssignment(Timestamps, Base):
     )
     role: Mapped[str] = mapped_column(String(32))
     active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+
+
+from datetime import datetime
+
+from sqlalchemy import DateTime, Integer
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    __table_args__ = (
+        CheckConstraint("expires_at > created_at", name="ck_auth_session_lifetime"),
+    )
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    csrf_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reauthenticated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AuthPreauth(Base):
+    __tablename__ = "auth_preauth"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    csrf_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class AuthRateLimit(Base):
+    __tablename__ = "auth_rate_limits"
+    __table_args__ = (CheckConstraint("failures >= 0", name="ck_auth_rate_failures"),)
+    bucket_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    failures: Mapped[int] = mapped_column(Integer)

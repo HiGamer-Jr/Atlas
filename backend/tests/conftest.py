@@ -14,6 +14,9 @@ from tests.database_harness import open_test_engines
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "auth_sessions",
+    "auth_preauth",
+    "auth_rate_limits",
     "access_events",
     "audit_events",
     "platform_role_assignments",
@@ -86,6 +89,7 @@ def settings(db_runtime):
     return Settings(
         database_url=db_runtime.url.render_as_string(hide_password=False),
         environment="test",
+        public_origin="https://testserver",
     )
 
 
@@ -98,3 +102,60 @@ def app(settings):
 def client(app):
     with TestClient(app, base_url="https://testserver") as test_client:
         yield test_client
+
+
+from contextlib import ExitStack
+
+from tests.identity_helpers import Clock, login, seed_user
+
+
+@pytest.fixture
+def clock(app):
+    clock = Clock()
+    app.state.clock = clock
+    return clock
+
+
+@pytest.fixture
+def auth_users(db_runtime):
+    return {
+        "admin_user": seed_user(db_runtime, "admin@example.test", "PLATFORM_ADMIN"),
+        "support_user": seed_user(
+            db_runtime, "support@example.test", "PLATFORM_SUPPORT"
+        ),
+        "member_user": seed_user(db_runtime, "member@example.test"),
+    }
+
+
+@pytest.fixture
+def ids(auth_users):
+    return {**auth_users, "last_admin_user": auth_users["admin_user"]}
+
+
+@pytest.fixture
+def new_client(app, clock):
+    with ExitStack() as stack:
+
+        def factory():
+            return stack.enter_context(TestClient(app, base_url="https://testserver"))
+
+        yield factory
+
+
+@pytest.fixture
+def admin(new_client, auth_users):
+    client = new_client()
+    login(client)
+    return client
+
+
+@pytest.fixture
+def support(new_client, auth_users):
+    client = new_client()
+    login(client, "support@example.test")
+    return client
+
+
+@pytest.fixture
+def last_admin(admin):
+    return admin
