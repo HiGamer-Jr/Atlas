@@ -29,7 +29,11 @@ class AuditInput(BaseModel):
     actor_role: PlatformRole
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
-    action: Literal["identity.bootstrap", "platform.role.changed"]
+    action: Literal[
+        "identity.bootstrap",
+        "platform.role.changed",
+        "platform.operator.status.changed",
+    ]
     outcome: Literal["SUCCESS", "DENIED", "FAILURE"] = "SUCCESS"
     entity_type: Literal["user", "platform_role"]
     entity_id: UUID

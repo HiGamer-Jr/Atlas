@@ -1,6 +1,16 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -38,11 +48,6 @@ class PlatformRoleAssignment(Timestamps, Base):
     )
     role: Mapped[str] = mapped_column(String(32))
     active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
-
-
-from datetime import datetime
-
-from sqlalchemy import DateTime, Integer
 
 
 class AuthSession(Base):

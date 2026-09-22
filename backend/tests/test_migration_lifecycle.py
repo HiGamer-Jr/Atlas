@@ -57,3 +57,23 @@ def test_migration_rejects_unsafe_runtime_role(
         migration_config.attributes["runtime_role"] = good_role
     with db_runtime.connect() as conn:
         assert TABLES <= set(inspect(conn).get_table_names())
+
+
+def test_incremental_session_migration_rejects_superuser_runtime(
+    db_owner, db_runtime, migration_config
+):
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0001")
+            migration_config.attributes["runtime_role"] = conn.execute(
+                text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+            ).scalar_one()
+            with pytest.raises(RuntimeError, match="role"):
+                command.upgrade(migration_config, "head")
+            migration_config.attributes["runtime_role"] = good_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role

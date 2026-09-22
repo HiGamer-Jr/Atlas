@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import delete, select
@@ -19,12 +20,16 @@ from app.core.security import (
 )
 from app.identity.dependencies import Database, require_principal
 from app.identity.models import AuthPreauth, AuthSession, User
+from app.identity.operators import change_role, change_status
 from app.identity.passwords import verify_password
 from app.identity.rate_limits import lock_buckets, record_failure
 from app.identity.schemas import (
     CsrfView,
     IdentityView,
     LoginInput,
+    OperatorRoleInput,
+    OperatorStatusInput,
+    OperatorView,
     PasswordInput,
     Principal,
 )
@@ -234,3 +239,17 @@ def reauthenticate(payload: PasswordInput, request: Request, db: Database):
         db, request, "auth.reauthenticate", "SUCCESS", user.id, principal.platform_role
     )
     return Response(status_code=204)
+
+
+@router.post("/platform/operators/{user_id}/role", response_model=OperatorView)
+def operator_role(
+    user_id: UUID, payload: OperatorRoleInput, request: Request, db: Database
+):
+    return change_role(db, request, user_id, payload)
+
+
+@router.post("/platform/operators/{user_id}/status", response_model=OperatorView)
+def operator_status(
+    user_id: UUID, payload: OperatorStatusInput, request: Request, db: Database
+):
+    return change_status(db, request, user_id, payload)

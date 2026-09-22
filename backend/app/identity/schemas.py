@@ -1,7 +1,15 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
 from app.audit.schemas import PlatformRole
 
@@ -42,3 +50,33 @@ class IdentityView(BaseModel):
 
 class CsrfView(BaseModel):
     token: str
+
+
+class RoleConfirmation(Input):
+    target_user_id: UUID
+    target_role: PlatformRole
+
+
+class OperatorRoleInput(PasswordInput):
+    role: PlatformRole
+    confirmation: RoleConfirmation
+
+
+class OperatorStatusInput(Input):
+    active: StrictBool | None = None
+    blocked: StrictBool | None = None
+
+    @model_validator(mode="after")
+    def explicit_status(self):
+        if not self.model_fields_set or any(
+            getattr(self, name) is None for name in self.model_fields_set
+        ):
+            raise ValueError("Supply explicit active/blocked booleans")
+        return self
+
+
+class OperatorView(BaseModel):
+    user_id: UUID
+    platform_role: PlatformRole | None
+    active: bool
+    blocked: bool

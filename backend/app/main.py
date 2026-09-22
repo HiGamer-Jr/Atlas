@@ -39,7 +39,19 @@ def create_app(settings: Settings) -> FastAPI:
         # The request transaction has rolled back before this independent denial log.
         with Session(application.state.database_engine) as db, db.begin():
             validate_runtime_connection(db.connection())
-            record_access(db, request, "auth.request.denied", "DENIED", reason=exc.code)
+            record_access(
+                db,
+                request,
+                "auth.request.denied",
+                "DENIED",
+                user_id=getattr(
+                    getattr(request.state, "principal", None), "user_id", None
+                ),
+                role=getattr(
+                    getattr(request.state, "principal", None), "platform_role", None
+                ),
+                reason=exc.code,
+            )
         return error_response(request, exc)
 
     @application.exception_handler(RequestValidationError)

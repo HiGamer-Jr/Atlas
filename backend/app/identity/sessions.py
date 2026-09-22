@@ -85,6 +85,7 @@ def authenticate(db, request: Request, touch=True):
     if touch:
         session.last_seen_at = now
     principal = Principal(user.id, session.id, current_role(db, user.id))
+    request.state.principal = principal
     return principal, user, session
 
 

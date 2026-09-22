@@ -19,6 +19,23 @@ def upgrade():
         or runtime == connection.execute(sa.text("SELECT current_user")).scalar_one()
     ):
         raise RuntimeError("Distinct runtime role required")
+    flags = connection.execute(
+        sa.text("""
+        SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls
+          OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member=pg_roles.oid)
+        FROM pg_roles WHERE rolname=:runtime
+    """),
+        {"runtime": runtime},
+    ).scalar_one_or_none()
+    owner_safe = connection.execute(
+        sa.text("""
+        SELECT NOT r.rolsuper AND d.datdba=r.oid
+        FROM pg_roles r CROSS JOIN pg_database d
+        WHERE r.rolname=current_user AND d.datname=current_database()
+    """)
+    ).scalar_one()
+    if flags is None or flags or not owner_safe:
+        raise RuntimeError("Migration requires safe distinct owner/runtime roles")
     op.create_table(
         "auth_sessions",
         sa.Column(

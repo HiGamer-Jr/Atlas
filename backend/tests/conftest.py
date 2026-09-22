@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from alembic import command
 from app.core.config import Settings
 from app.main import create_app
 from tests.database_harness import open_test_engines
+from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
@@ -104,11 +106,6 @@ def client(app):
         yield test_client
 
 
-from contextlib import ExitStack
-
-from tests.identity_helpers import Clock, login, seed_user
-
-
 @pytest.fixture
 def clock(app):
     clock = Clock()
@@ -136,8 +133,10 @@ def ids(auth_users):
 def new_client(app, clock):
     with ExitStack() as stack:
 
-        def factory():
-            return stack.enter_context(TestClient(app, base_url="https://testserver"))
+        def factory(**kwargs):
+            return stack.enter_context(
+                TestClient(app, base_url="https://testserver", **kwargs)
+            )
 
         yield factory
 
