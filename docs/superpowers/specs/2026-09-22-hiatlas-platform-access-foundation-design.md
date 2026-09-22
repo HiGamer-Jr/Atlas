@@ -1,10 +1,28 @@
 # HiAtlas — Fundação de identidade, administração e suporte
 
 Data: 22/09/2026
-Status: especificação para revisão; implementação ainda não iniciada.
+Status: APROVADA pelo usuário com os seis ajustes incorporados abaixo; implementação ainda não iniciada.
 Projeto: D:\Atlas
 Origem: matriz e instruções fornecidas pelo usuário nesta tarefa.
 Decisão de escopo do usuário: fundação completa, com backend e persistência reais.
+Execução: fases pequenas e verificáveis, TDD e quality gate obrigatório por fase.
+Plano: ../plans/2026-09-22-hiatlas-platform-foundation/README.md
+
+## Ajustes aprovados em 22/09/2026
+
+1. Suporte só associa perfis explicitamente support_assignable=true. Perfis
+   administrativos, Financeiro/Fiscal e demais perfis sensíveis são inelegíveis,
+   mesmo se houver tentativa de marcar a flag. Padrão da flag: false.
+2. OrganizationNode usa WORKSITE/Canteiro quando necessário. Project/Obra é entidade
+   do domínio Obras & Projetos e não será modelada pela organização.
+3. Execução em fases pequenas com TDD e quality gate individual; não executar
+   toda esta especificação como um único bloco.
+4. Financeiro/Fiscal exige acesso temporário, explícito, justificado e auditado;
+   seleção de contrato e papel de administrador não bastam.
+5. Flags, parâmetros e integrações recebem somente infraestrutura necessária,
+   sem CRUD genérico, editor de schemas ou gerenciador antes de um caso real.
+6. Correções só usam handlers de domínio registrados e testados. São proibidas
+   edição de tabela/coluna, SQL e payloads genéricos enviados pelo cliente.
 
 ## 1. Resultado esperado
 
@@ -64,8 +82,9 @@ Não serão introduzidos microserviços, Redis ou um novo framework de frontend.
 4. Catálogo de permissões, perfis de tenant e associação de usuários.
 5. Portais de Administração HiAtlas e Suporte HiAtlas.
 6. Gestão de usuários e status, inclusive bloqueio e inativação por contrato.
-7. Configuração persistente de estrutura organizacional, módulos, feature flags,
-   parâmetros tipados e metadados de integrações.
+7. Configuração persistente de estrutura organizacional e módulos contratados;
+   somente pontos de extensão mínimos para flags, parâmetros e integrações,
+   sem cadastros ou gerenciadores genéricos antecipados.
 8. Auditoria persistente, histórico de acesso e diagnósticos sanitizados.
 9. Sessões de atendimento somente leitura e de manutenção autorizada,
    com expiração, encerramento e identidade do operador preservada.
@@ -98,16 +117,23 @@ A referência de chamado é texto validado, sem integração com help desk.
 - Tenant: organização contratante, identificador imutável e status.
 - Contract: identificador, código único, tenant, ambiente e status.
   Um tenant pode possuir vários contratos; a seleção sempre inclui o contrato.
-- Membership: usuário vinculado ao tenant/contrato, status ativo/inativo/bloqueado,
-  perfil de tenant e escopo de unidades. Status não são confundidos com senha.
+- Membership: usuário vinculado ao tenant/contrato, ativo/inativo e bloqueado
+  como estados independentes, perfil de tenant e escopo de unidades.
+  Status não são confundidos com senha.
 - TenantRole e TenantRolePermission: perfil pertencente a um tenant/contrato;
-  somente capacidades do catálogo de permissões de cliente.
-- OrganizationNode: empresa, filial, unidade, loja, CD, depósito ou obra cadastral,
+  somente capacidades do catálogo de permissões de cliente. support_assignable
+  começa false, e somente PLATFORM_ADMIN pode alterá-lo com auditoria.
+  A elegibilidade exclui perfis administrativos, Financeiro/Fiscal e sensíveis;
+  classificação explícita e capacidades do perfil são verificadas no servidor.
+  Alterar permissões de perfil elegível exige revalidar essa restrição.
+- OrganizationNode: empresa, filial, unidade, loja, CD, depósito ou WORKSITE/Canteiro,
   com vínculo ao contexto e hierarquia validada, sem ciclos ou pais externos.
-- ContractModule, FeatureFlag e ContractParameter: configuração tipada,
-  identificadores permitidos e validação por schema.
-- IntegrationConfiguration: tipo conhecido, status e metadados permitidos;
-  credenciais são referências a configuração protegida, nunca texto retornável.
+  Não possui tipo PROJECT/Obra; Project pertence ao domínio Obras & Projetos.
+- ContractModule: persistência dos módulos contratados e seu estado.
+- FeatureFlag, ContractParameter e IntegrationConfiguration: pontos de extensão
+  tipados e privados à aplicação, implementados somente quando necessários ao
+  primeiro caso real. Não criar tabelas de payload livre ou endpoints genéricos.
+  Integrações futuras referenciam segredos protegidos, sem retorná-los ao cliente.
 - AuthSession: hash de token aleatório, usuário, expiração e revogação.
 - AccessContext: identificador opaco ligado à sessão, operador, tenant/contrato,
   expiração e eventual sessão de atendimento.
@@ -215,11 +241,11 @@ Menus ocultos são conveniência visual; cada ação é protegida novamente na A
 | Criar usuário/vínculo e enviar/reenviar convite | Sim | Sim, no contexto |
 | Ativar/inativar/bloquear/desbloquear vínculo | Sim | Sim, no contexto |
 | Iniciar redefinição de senha | Sim | Sim, por e-mail ao titular |
-| Associar perfil existente do mesmo contrato | Sim | Sim |
+| Associar perfil existente do mesmo contrato | Sim | Somente support_assignable=true e não sensível |
 | Atribuir papel interno | Fluxo exclusivo com confirmação | Não |
 | Ver histórico de acesso e auditoria | Sim | Leitura sanitizada no contexto |
 | Ver logs e falhas | Diagnósticos sanitizados | Subconjunto de suporte |
-| Configurar integração e importação | Sim | Não |
+| Configurar integração e importação | Capacidade reservada; exige caso implementado | Não |
 | Corrigir dado operacional | Ação autorizada e auditada | Não |
 | Reprocessar operação registrada | Sim, autorizado e auditado | Não |
 | Acessar Financeiro/Fiscal | Necessidade explícita registrada | Não |
@@ -229,9 +255,12 @@ Menus ocultos são conveniência visual; cada ação é protegida novamente na A
 | Apagar auditoria | Nunca | Nunca |
 | Hard delete de negócio | Não disponível por padrão | Não |
 
-Atribuir FINANCEIRO a um usuário do cliente não autoriza o suporte a ler dados
-financeiros desse usuário. Perfis internos não aparecem nem são aceitos pelo
-endpoint de associação de perfis do tenant.
+Suporte não pode atribuir FINANCEIRO/Fiscal, perfis administrativos ou sensíveis,
+mesmo que existam no contrato. A lista de opções e o endpoint de associação
+aplicam support_assignable=true e a política de sensibilidade no servidor.
+Perfis internos não aparecem nem são aceitos nesse endpoint. Reduzir um perfil
+sensível para outro perfil também exige administrador; gestão de status e
+redefinição de acesso não concede autorização para alterar perfis protegidos.
 
 ## 10. Sessões de atendimento
 
@@ -297,8 +326,9 @@ Reprocessamento recebe id de execução do mesmo contexto e manipulador conhecid
 Exigir justificativa, idempotência, controle de concorrência e novo evento de
 auditoria; suporte não pode disparar a ação nem por chamada direta.
 
-Configuração de integração valida tipo e parâmetros conhecidos; não permite
+O ponto de extensão de integração exige tipo e parâmetros conhecidos; não permite
 executar código, enviar requisições para URL arbitrária ou consultar segredos.
+Não haverá CRUD genérico de integração, flag ou parâmetro nesta fundação.
 Importadores/conectores reais serão registrados ao implementar cada domínio.
 Até lá, a interface informa que não há operações disponíveis.
 
@@ -329,7 +359,8 @@ Não concentrar as novas regras em Workspace.tsx ou duplicar a política de
 segurança como fonte independente no frontend.
 
 Administração: Configuração do contrato, Usuários, Perfis, Estrutura, Módulos,
-Parâmetros, Integrações, Auditoria e Manutenção.
+Auditoria e Manutenção. Parâmetros, flags e integrações não recebem gerenciadores
+nem formulários genéricos; aparecem como indisponíveis quando não houver caso real.
 Suporte: pesquisa contextual, usuários, ações de acesso, histórico e diagnósticos.
 A lista global pode ajudar a localizar usuário, mas revela apenas dados mínimos;
 detalhes e ações exigem seleção explícita do contrato.
@@ -367,6 +398,8 @@ Não basta verificar funções de política isoladas.
 3. Troca de ids, contextos de outra sessão e referências de outro contrato falham.
 4. Suporte não altera contrato, perfil, flags, financeiro, integração ou negócio.
 5. Associação aceita só perfis existentes do contrato e rejeita papéis internos.
+   Suporte exige support_assignable=true e perfil não sensível; manipular flag,
+   renomear perfil ou alterar permissões não contorna a restrição.
 6. Bloqueio/inativação de vínculo não afeta outro contrato; revogação é imediata.
 7. Convites/redefinição expiram, são de uso único e resistem a consumo concorrente.
 8. Redefinição não vaza existência de conta, senha ou token; outbox não afirma
@@ -383,6 +416,10 @@ Não basta verificar funções de política isoladas.
 17. Reiniciar API mantém usuários, contratos, eventos, revogações e filas.
 18. Frontend passa testes, lint e build; backend passa pytest e Ruff;
     migrações e constraints são verificadas em PostgreSQL.
+19. WORKSITE é aceito na organização; PROJECT/Obra é rejeitado.
+20. Sem editores genéricos de flags, parâmetros, integrações ou dados de negócio.
+21. Cada fase exige evidência RED/GREEN, regressões, revisão e quality gate antes
+    de avançar; teste ignorado por falta de infraestrutura não significa aprovado.
 
 A entrega deve informar quais controles foram efetivamente exercitados e qualquer
 dependência operacional ainda não configurada. Sem SMTP/PostgreSQL disponíveis,
@@ -390,14 +427,23 @@ não declarar validados envio real ou persistência de produção.
 
 ## 16. Sequência proposta
 
-1. Modelos, migrações, privilégios de banco e testes de isolamento.
-2. Autenticação, bootstrap, sessões, tokens, outbox e revogação.
-3. Papéis, catálogo de permissões, tenants/contratos e contexto obrigatório.
-4. Gestão de usuários, perfis e configuração do contrato.
-5. Auditoria, atendimento, correções e registros de manutenção.
-6. Portais React integrados e retirada do caminho demo do acesso real.
-7. Testes completos, documentação operacional e revisão final.
+1. Banco, migrações e auditoria imutável.
+2. Identidade, sessão, bootstrap e operadores internos.
+3. Contextos de contrato, RBAC e elegibilidade de perfis.
+4. Interface autenticada e isolamento da demonstração.
+5. Convites, redefinição e ciclo de vida de acesso.
+6. Gestão visual de usuários, perfis e consulta de auditoria.
+7. Organização com WORKSITE e módulos contratados.
+8. Atendimento somente leitura.
+9. Concessões temporárias Financeiro/Fiscal e manutenção.
+10. Handlers de correção e reprocessamento controlados.
+11. Validação integrada e documentação operacional.
 
-O plano executável será detalhado após revisão desta especificação, com arquivos,
-testes de aceite e dependências por etapa. Esta especificação não representa
+Cada fase encerra no seu quality gate; não executar o conjunto como um bloco.
+Flags, parâmetros e integrações usam contexto, catálogo e auditoria existentes;
+não criar abstrações sem consumidor só para antecipar o futuro.
+
+O plano executável está separado em fases no documento vinculado no cabeçalho,
+com arquivos, testes de aceite, dependências e gates por etapa. Nenhuma fase foi
+executada pela aprovação arquitetural. Esta especificação não representa
 funcionalidades já implementadas.
