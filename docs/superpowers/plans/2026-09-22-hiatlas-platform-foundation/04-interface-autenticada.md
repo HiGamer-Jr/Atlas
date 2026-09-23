@@ -1,6 +1,6 @@
 # Fase 4 — Interface autenticada — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Spec:** [Especificação aprovada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 **Global Constraints:** Aplicam-se integralmente as restrições, interfaces, fixtures e protocolo TDD do [plano principal](README.md). support_assignable começa false; perfis sensíveis são inelegíveis. OrganizationNode usa WORKSITE, não Project. Financeiro exige concessão temporária auditada. Correções só por handlers tipados. Flags/parâmetros/integrações não recebem CRUD genérico.
@@ -35,7 +35,7 @@ LoginForm recebe onLogin: (email:string,password:string)=>Promise<void>.
 Apenas a senha digitada pelo próprio titular pode ser revelada por toggle local;
 nenhuma tela administrativa recebe senha de outro usuário.
 
-- [ ] **RED:**
+- [x] **RED:**
 ```tsx
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
@@ -53,8 +53,8 @@ it('does not offer a role selector', () => {
 AuthProvider.test.tsx usa respostas HTTP controladas na fronteira fetch para
 testar login, CSRF, logout, 401 e falha de rede, verificando UI e requisição;
 nenhum teste usa role local para estabelecer autenticação.
-- [ ] Rodar em frontend: `npm test -- src/auth/LoginForm.test.tsx src/auth/AuthProvider.test.tsx`.
-- [ ] **GREEN:** fetch com credentials: 'include', CSRF nas mutações e
+- [x] Rodar em frontend: `npm test -- src/auth/LoginForm.test.tsx src/auth/AuthProvider.test.tsx`.
+- [x] **GREEN:** fetch com credentials: 'include', CSRF nas mutações e
 AbortSignal; nunca serializar senha em logs nem guardar tokens no localStorage.
 ```ts
 const response = await fetch('/api/auth/me', {
@@ -71,9 +71,9 @@ em desenvolvimento por configuração explícita e não possui transporte real.
 Mover montagem antiga para DemoApp; testes de Workspace importam DemoApp para
 preservar regressão demonstrativa sem afirmar segurança de dados fictícios.
 Não reescrever módulos de obras ou dashboards.
-- [ ] Atualizar App.test.tsx para login real; preservar testes visuais do
+- [x] Atualizar App.test.tsx para login real; preservar testes visuais do
 LoginScreen demonstrativo sob arquivo de teste explicitamente demo.
-- [ ] Commit: `feat: separate authenticated app from demonstration workspace`.
+- [x] Commit consolidado da Fase 4: `3df1a48`.
 
 ## Tarefa 4.2 — Seleção explícita e shell de contrato
 
@@ -89,7 +89,7 @@ select(contractId): Promise<void>, clear(): Promise<void>.
 ContractShell mostra nome interno Administrador HiAtlas ou Suporte HiAtlas,
 empresa, contrato, ambiente, sair/trocar contexto e apenas áreas entregues.
 
-- [ ] **RED:** criar `renderContextFlow` em
+- [x] **RED:** criar `renderContextFlow` em
 frontend/src/test/platformHarness.tsx. A fixture renderiza App com fetch
 roteado por method/path; retorna `resolveContractA` para concluir uma resposta
 adiada. Respostas vêm de constantes fictícias de /me, /contracts e /contexts.
@@ -105,8 +105,8 @@ it('ignores an old response after switching contracts', async () => {
 ```
 Harness usa clicks/findBy* da Testing Library, sem setState direto.
 Adicionar testes de reload sem contrato, 403/contexto expirado e dois contextos.
-- [ ] Rodar `npm test -- src/platform/ContractContext.test.tsx src/api/client.test.ts`.
-- [ ] **GREEN:** contrato é seleção explícita por aba; estado em memória, sem
+- [x] Rodar `npm test -- src/platform/ContractContext.test.tsx src/api/client.test.ts`.
+- [x] **GREEN:** contrato é seleção explícita por aba; estado em memória, sem
 reabrir automaticamente outro contrato. Cancelar requests e incrementar geração
 ao selecionar/limpar; aceitar resposta somente da geração atual:
 ```ts
@@ -118,16 +118,16 @@ setSelected(result)
 Tipos ContractContext definidos em ContextProvider.tsx com os campos do contrato.
 Na troca, limpar dados antes da nova busca, encerrar contexto anterior e não
 exibir métricas/demo como fallback. Módulos sem backend mostram indisponibilidade.
-- [ ] Inspecionar fluxo admin e suporte nos dois temas, teclado, tela estreita,
+- [x] Inspecionar fluxo admin e suporte nos dois temas, teclado, tela estreita,
 estado vazio e mensagens de erro. Contexto permanece visível no scroll.
-- [ ] Commit: `feat: add explicit contract selection to platform portal`.
+- [x] Commit consolidado da Fase 4: `3df1a48`.
 
 ## Quality gate e parada
 
-- [ ] Gate completo e inspeção UI, sem validar segurança apenas por menus.
-- [ ] Build de produção sem seletor demo ou credenciais fixas; teste prova
+- [x] Gate completo e inspeção UI, sem validar segurança apenas por menus.
+- [x] Build de produção sem seletor demo ou credenciais fixas; teste prova
 entrada demo indisponível, não apenas um texto escondido.
-- [ ] Registrar phase-04.md e parar.
+- [x] Registrar phase-04.md e parar.
 
 ## Ajuste aprovado: contexto por aba
 
@@ -154,3 +154,6 @@ na primeira; contexto restaurado/expirado não libera consulta sem validação.
   corrigidos: contexto malformado, logout falho durante validação e retry da lista.
 - Commit de implementação e documentação de validação encerram a fase; não há
   push, merge, deploy ou implementação de telas das fases seguintes.
+
+- A repetição do E2E encontrou corrida de loading em StrictMode; RED/GREEN,
+  geração invalidada no cleanup e revisão independente adicional concluídos.
