@@ -213,3 +213,69 @@ def test_context_removed_while_request_waits_fails_closed(
                 sleep(0.02)
             assert waiting
         assert future.result(timeout=10).status_code == expected
+
+
+@pytest.mark.parametrize("operation", ["select", "contract", "close"])
+def test_session_expiry_during_scope_lock_prevents_mutation(
+    admin, new_client, scope_ids, db_runtime, clock, operation
+):
+    from concurrent.futures import ThreadPoolExecutor
+    from time import monotonic, sleep
+
+    context = select_context(admin, scope_ids["contract_a"])
+    safe = new_client(raise_server_exceptions=False)
+    safe.cookies.update(admin.cookies)
+    safe.headers.update(admin.headers)
+    with db_runtime.connect() as conn:
+        before = conn.execute(text("SELECT count(*) FROM audit_events")).scalar_one()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with db_runtime.begin() as blocker:
+            blocker.execute(
+                text("SELECT id FROM tenants WHERE id=:id FOR UPDATE"),
+                {"id": scope_ids["tenant_a"]},
+            )
+            if operation == "select":
+                future = pool.submit(
+                    safe.post,
+                    "/api/contexts",
+                    json={"contract_id": str(scope_ids["contract_a"])},
+                )
+            elif operation == "contract":
+                future = pool.submit(
+                    safe.post,
+                    f"/api/tenants/{scope_ids['tenant_a']}/contracts",
+                    json={"name": "Expired", "code": "EXPIRED", "environment": "TEST"},
+                )
+            else:
+                future = pool.submit(
+                    safe.delete, f"/api/contexts/{context[CONTEXT_HEADER]}"
+                )
+            deadline = monotonic() + 10
+            waiting = False
+            while monotonic() < deadline:
+                with db_runtime.connect() as monitor:
+                    waiting = monitor.execute(
+                        text(
+                            "SELECT EXISTS(SELECT 1 FROM pg_stat_activity "
+                            "WHERE datname=current_database() AND usename=current_user "
+                            "AND wait_event_type='Lock')"
+                        )
+                    ).scalar_one()
+                if waiting:
+                    break
+                sleep(0.02)
+            assert waiting, "Request did not wait for tenant lock"
+            clock.advance(hours=9)
+        assert future.result(timeout=10).status_code == 401
+    with db_runtime.connect() as conn:
+        assert (
+            conn.execute(text("SELECT count(*) FROM audit_events")).scalar_one()
+            == before
+        )
+        assert (
+            conn.execute(
+                text("SELECT revoked_at FROM access_contexts WHERE id=:id"),
+                {"id": context[CONTEXT_HEADER]},
+            ).scalar_one()
+            is None
+        )

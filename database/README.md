@@ -126,7 +126,12 @@ parâmetros em erros SQLAlchemy, mas não deve devolver mensagens de banco ao cl
 
 ## Contratos das próximas fases
 
-O cabeçalho contextual será X-HiAtlas-Context. Contexto autenticado por aba em
+A Fase 3 implementa X-HiAtlas-Context; consulte [operação dos contextos](../docs/operations/hiatlas-contexts.md). Contexto autenticado por aba em
 memória/sessionStorage, nunca localStorage compartilhado. Recuperação administrativa
 break-glass terá documentação e testes na Fase 11, sem endpoint público ou bypass
 de auditoria; não está implementada na Fase 1.
+
+A migração 0003 adiciona tenant_roles, tenant_role_permissions e memberships como
+dados de negócio (SELECT/INSERT/UPDATE), e access_contexts como tabela técnica
+(SELECT/INSERT/UPDATE/DELETE, sem TRUNCATE). FKs compostas preservam vínculo ao
+contrato e à sessão/ator. Permissões de perfil são inativadas, não removidas.

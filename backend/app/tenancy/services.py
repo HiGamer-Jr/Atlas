@@ -11,7 +11,8 @@ from app.audit.schemas import (
 )
 from app.audit.service import append_event
 from app.core.errors import ApiError
-from app.identity.models import AuthSession, User
+from app.identity.models import User
+from app.identity.sessions import authenticate
 from app.platform.policy import (
     effective_capabilities,
     require_capability,
@@ -139,6 +140,8 @@ def create_contract(db, request, principal, tenant_id, payload):
     )
     if tenant is None:
         raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
+    principal, _, _ = authenticate(db, request, touch=False)
+    require_global(principal, "contracts.create")
     contract = Contract(tenant_id=tenant.id, **payload.model_dump())
     db.add(contract)
     try:
@@ -182,7 +185,7 @@ def select_context(db, request, principal, contract_id):
         _, role = membership_role(db, principal.user_id, tenant.id, contract.id)
         if role is None:
             raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
-    session = db.get(AuthSession, principal.session_id)
+    principal, _, session = authenticate(db, request, touch=False)
     clock = now(db)
     context = AccessContext(
         session_id=principal.session_id,
@@ -241,6 +244,7 @@ def close_context(db, request, principal, context_id):
     )
     if context is None:
         raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
+    principal, _, _ = authenticate(db, request, touch=False)
     if context.revoked_at is None:
         context.revoked_at = now(db)
         scope = AccessScope(

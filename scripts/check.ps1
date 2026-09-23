@@ -41,8 +41,8 @@ try {
         }
 
         $index = Get-Content -Raw .\web\index.html
-        if ($index -notmatch "Atlas Supply") {
-            throw "web/index.html does not identify Atlas Supply."
+        if ($index -notmatch "HiAtlas") {
+            throw "web/index.html does not identify HiAtlas."
         }
 
         if ($index -match 'src="/assets|href="/assets') {

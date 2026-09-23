@@ -1,11 +1,11 @@
 # Fase 3 — Contextos e permissões — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Spec:** [Especificação aprovada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 **Global Constraints:** Aplicam-se integralmente as restrições, interfaces, fixtures e protocolo TDD do [plano principal](README.md). support_assignable começa false; perfis sensíveis são inelegíveis. OrganizationNode usa WORKSITE, não Project. Financeiro exige concessão temporária auditada. Correções só por handlers tipados. Flags/parâmetros/integrações não recebem CRUD genérico.
 **Tech Stack:** FastAPI, SQLAlchemy, Alembic, PostgreSQL, pytest/Ruff; React, TypeScript, Vite, Vitest e Testing Library.
-**Status:** não executado. Não marcar checkbox por existir apenas o código de exemplo neste plano.
+**Status:** Fase 3 implementada, revisada e validada (234 backend, 68 frontend; gate completo passou). Evidências em [phase-03.md](../../validation/hiatlas-platform/phase-03.md). Parada obrigatória antes da Fase 4.
 
 **Goal:** Impedir acesso cruzado e implementar elegibilidade de perfis no servidor.
 **Architecture:** Contexto por sessão/aba, catálogo fechado e negação por padrão.
@@ -38,7 +38,7 @@ auditoria global com alvo explícito; não precisam contexto de cliente preexist
 POST/DELETE /api/contexts; GET /api/context para cabeçalho e estado atual.
 GET /api/memberships/{id} será protegido por contexto já nesta fase.
 
-- [ ] **RED:**
+- [x] **RED:**
 ```python
 from tests.helpers import select_context
 
@@ -53,8 +53,8 @@ def test_context_belongs_to_auth_session(admin, support, ids):
 ```
 Testar ausência de contexto, contrato inativo, contexto expirado, cliente sem
 membership e duas abas com seleção A/B sem mudar A.
-- [ ] Rodar `uv run pytest tests/test_context_api.py tests/test_tenant_isolation.py -v`.
-- [ ] **GREEN:** AccessContext com id UUID aleatório, session_id, actor_id,
+- [x] Rodar `uv run pytest tests/test_context_api.py tests/test_tenant_isolation.py -v`.
+- [x] **GREEN:** AccessContext com id UUID aleatório, session_id, actor_id,
 tenant_id, contract_id, created_at, expires_at e revoked_at. Válido no máximo
 até a sessão principal; negar qualquer contexto cujo proprietário mudou.
 ```python
@@ -71,9 +71,9 @@ Perfil/unidade associados por FKs compostas. Membership usa active e blocked
 independentes; índices únicos user_id/tenant_id/contract_id.
 Criar modelos TenantRole/Permission nesta migração porque membership referencia role;
 comportamento e catálogo seguem na tarefa 3.2.
-- [ ] Revogar contexto ao encerrar; criar evento de seleção/encerramento. Global
+- [x] Revogar contexto ao encerrar; criar evento de seleção/encerramento. Global
 admin não pode consultar operação por um tenant_id livre sem AccessContext.
-- [ ] Commit: `feat: require explicit contract context for tenant access`.
+- [x] Commit: `feat: require explicit contract context for tenant access`.
 
 ## Tarefa 3.2 — Catálogo e regras support_assignable
 
@@ -90,7 +90,7 @@ PUT /api/memberships/{id}/role com role_id e expected_version.
 A lista assignable e a mutação compartilham a mesma política.
 Somente admin cria/edita role, support_assignable, classificação e permissões.
 
-- [ ] **RED:**
+- [x] **RED:**
 ```python
 from tests.helpers import select_context
 
@@ -110,8 +110,8 @@ def test_support_assignable_list_excludes_sensitive(support, ids):
 Testar atribuição permitida, role de outro contrato, códigos PLATFORM_*, perfil
 renomeado com finance.read, edição concorrente da flag e tentativa de tornar
 um perfil sensível support_assignable.
-- [ ] Rodar `uv run pytest tests/test_role_policy.py tests/test_role_assignment_api.py -v`.
-- [ ] **GREEN:** catálogo em código define capacidade, domínio e sensitivity;
+- [x] Rodar `uv run pytest tests/test_role_policy.py tests/test_role_assignment_api.py -v`.
+- [x] **GREEN:** catálogo em código define capacidade, domínio e sensitivity;
 não inferir sensibilidade pelo nome exibido. Role tem classification
 STANDARD/ADMINISTRATIVE/FINANCIAL_FISCAL/SENSITIVE e flag default false:
 ```python
@@ -131,13 +131,13 @@ não confiar na lista renderizada. Impedir alterar perfil de identidade interna
 por endpoint de tenant, bem como transferir vínculos entre contextos.
 Eventos de role.create/update/assign capturam diffs permitidos e revogam
 autorizações afetadas. Nenhum papel interno aparece em GET /roles.
-- [ ] Catalogar capacidades de plataforma da matriz, mas endpoints ausentes
+- [x] Catalogar capacidades de plataforma da matriz, mas endpoints ausentes
 não se tornam disponíveis só por existir código de permissão.
-- [ ] Commit: `feat: enforce tenant role eligibility for platform support`.
+- [x] Commit: `feat: enforce tenant role eligibility for platform support`.
 
 ## Quality gate e parada
 
-- [ ] Gate completo com matriz admin/suporte/cliente e dois tenants/três contratos.
-- [ ] Revisar todos os endpoints criados, incluindo listagens e criação global.
-- [ ] Provar transação/auditoria da atribuição e recusa de role desconhecida.
-- [ ] Registrar phase-03.md; parar antes da fase 4.
+- [x] Gate completo com matriz admin/suporte/cliente e dois tenants/três contratos.
+- [x] Revisar todos os endpoints criados, incluindo listagens e criação global.
+- [x] Provar transação/auditoria da atribuição e recusa de role desconhecida.
+- [x] Registrar phase-03.md; parar antes da fase 4.
