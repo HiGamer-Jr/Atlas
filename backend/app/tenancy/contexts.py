@@ -143,12 +143,19 @@ def revalidate(db, principal, scope):
     tenant, contract = contract_rows(db, candidate.contract_id)
     context = db.scalar(
         select(AccessContext)
-        .where(AccessContext.id == scope.id)
+        .where(
+            AccessContext.id == scope.id,
+            AccessContext.session_id == principal.session_id,
+            AccessContext.actor_id == principal.user_id,
+            AccessContext.tenant_id == scope.tenant_id,
+            AccessContext.contract_id == scope.contract_id,
+        )
         .with_for_update()
         .execution_options(populate_existing=True)
     )
     if (
-        context.revoked_at is not None
+        context is None
+        or context.revoked_at is not None
         or context.expires_at <= clock
         or not contract.active
         or not tenant.active

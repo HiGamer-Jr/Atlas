@@ -167,3 +167,49 @@ def test_new_business_tables_remain_protected(db_runtime, table, verb):
     with pytest.raises(DBAPIError) as failure, db_runtime.begin() as conn:
         conn.execute(text(f"{verb} {table}"))
     assert failure.value.orig.sqlstate == "42501"
+
+
+@pytest.mark.parametrize("operation,expected", [("read", 403), ("close", 404)])
+def test_context_removed_while_request_waits_fails_closed(
+    admin, new_client, scope_ids, db_runtime, operation, expected
+):
+    from concurrent.futures import ThreadPoolExecutor
+    from time import monotonic, sleep
+
+    headers = select_context(admin, scope_ids["contract_a"])
+    safe = new_client(raise_server_exceptions=False)
+    safe.cookies.update(admin.cookies)
+    safe.headers.update(admin.headers)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with db_runtime.begin() as cleanup:
+            cleanup.execute(
+                text("SELECT id FROM contracts WHERE id=:id FOR UPDATE"),
+                {"id": scope_ids["contract_a"]},
+            )
+            cleanup.execute(
+                text("DELETE FROM access_contexts WHERE id=:id"),
+                {"id": headers[CONTEXT_HEADER]},
+            )
+            future = (
+                pool.submit(safe.get, "/api/context", headers=headers)
+                if operation == "read"
+                else pool.submit(
+                    safe.delete,
+                    f"/api/contexts/{headers[CONTEXT_HEADER]}",
+                    headers=headers,
+                )
+            )
+            deadline = monotonic() + 10
+            waiting = False
+            while monotonic() < deadline:
+                with db_runtime.connect() as monitor:
+                    waiting = monitor.execute(
+                        text(
+                            "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=current_user AND wait_event_type='Lock')"
+                        )
+                    ).scalar_one()
+                if waiting:
+                    break
+                sleep(0.02)
+            assert waiting
+        assert future.result(timeout=10).status_code == expected

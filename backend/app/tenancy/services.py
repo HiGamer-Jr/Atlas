@@ -239,6 +239,8 @@ def close_context(db, request, principal, context_id):
     context = db.scalar(
         query.with_for_update().execution_options(populate_existing=True)
     )
+    if context is None:
+        raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
     if context.revoked_at is None:
         context.revoked_at = now(db)
         scope = AccessScope(
