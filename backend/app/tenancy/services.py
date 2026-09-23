@@ -224,6 +224,8 @@ def context_view(db, principal, scope):
         contract_id=contract.id,
         tenant_name=tenant.name,
         contract_name=contract.name,
+        contract_code=contract.code,
+        environment=contract.environment,
         expires_at=context.expires_at,
         capabilities=sorted(effective_capabilities(db, principal, scope)),
     )

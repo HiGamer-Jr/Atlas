@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
-import App from "./App"
+import App from "./demo/DemoApp"
 
 afterEach(() => {
   cleanup()
@@ -49,4 +49,12 @@ it('reveals the password and explains demo password recovery', () => {
  expect(password).toHaveAttribute('type','password')
  fireEvent.click(screen.getByRole('button',{name:'Esqueceu sua senha?'}))
  expect(screen.getByRole('status')).toHaveTextContent('recuperação de senha')
+})
+
+it('keeps demonstration fully independent from authentication APIs', () => {
+ const request=vi.fn();vi.stubGlobal('fetch',request)
+ render(<App />)
+ fireEvent.click(screen.getByRole('button',{name:'Entrar no HiAtlas'}))
+ expect(request).not.toHaveBeenCalled()
+ vi.unstubAllGlobals()
 })

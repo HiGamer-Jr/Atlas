@@ -159,3 +159,26 @@ def test_client_cannot_select_unrelated_or_unknown_contract(member, scope_ids):
 )
 def test_context_payload_cannot_override_owner_or_tenant(admin, payload):
     assert admin.post("/api/contexts", json=payload).status_code == 422
+
+
+def test_context_creation_returns_only_opaque_identifier(admin, scope_ids):
+    response = admin.post(
+        "/api/contexts", json={"contract_id": str(scope_ids["contract_a"])}
+    )
+    assert response.status_code == 201
+    assert set(response.json()) == {"id"}
+
+
+def test_validated_context_includes_current_header_metadata(admin, scope_ids, db_owner):
+    headers = select_context(admin, scope_ids["contract_a"])
+    with db_owner.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE contracts SET code='CTR-UPDATED', environment='PRODUCTION' WHERE id=:id"
+            ),
+            {"id": scope_ids["contract_a"]},
+        )
+    response = admin.get("/api/context", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["contract_code"] == "CTR-UPDATED"
+    assert response.json()["environment"] == "PRODUCTION"

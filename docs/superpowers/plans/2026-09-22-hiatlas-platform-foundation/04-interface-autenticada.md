@@ -5,7 +5,7 @@
 **Spec:** [Especificação aprovada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 **Global Constraints:** Aplicam-se integralmente as restrições, interfaces, fixtures e protocolo TDD do [plano principal](README.md). support_assignable começa false; perfis sensíveis são inelegíveis. OrganizationNode usa WORKSITE, não Project. Financeiro exige concessão temporária auditada. Correções só por handlers tipados. Flags/parâmetros/integrações não recebem CRUD genérico.
 **Tech Stack:** FastAPI, SQLAlchemy, Alembic, PostgreSQL, pytest/Ruff; React, TypeScript, Vite, Vitest e Testing Library.
-**Status:** não executado. Não marcar checkbox por existir apenas o código de exemplo neste plano.
+**Status:** implementação e revisão realizadas em 23/09/2026; evidências e gate final em ../../validation/hiatlas-platform/phase-04.md.
 
 **Goal:** Entrar por login real e selecionar explicitamente contrato antes de qualquer tela de cliente.
 **Architecture:** Cliente HTTP único, AuthProvider e shell separado do protótipo.
@@ -137,3 +137,20 @@ Nunca usar localStorage para autenticação/contexto nem sincronizar contexto
 entre abas via evento storage. Token de autenticação permanece em cookie HttpOnly.
 Adicionar teste com dois ambientes de aba: selecionar B na segunda preserva A
 na primeira; contexto restaurado/expirado não libera consulta sem validação.
+
+## Decisões de execução da Fase 4
+
+- Mantida a worktree isolada existente e a branch feat/hiatlas-platform-phase-3,
+  conforme pedido de preservação; base c8cb6d9. D:\Cargo.Ops está desatualizado.
+- Execução direta, com TDD e revisão independente final. Escopo detalhado da
+  solicitação prevalece sobre os exemplos do plano; nenhuma Fase 5 foi iniciada.
+- Criação de contexto retorna somente id; GET /context recebe código/ambiente
+  atuais para evitar reconstruir o cabeçalho por cache da listagem. Sem migração.
+- Callbacks de hooks/tipos compartilhados ficam em auth/state.ts e
+  platform/state.ts; o cliente não permite headers arbitrários de autenticação.
+- CSRF obtido por mutação para acompanhar rotação de cookies entre abas.
+- Sem polling de sessão, que impediria expiração por inatividade.
+- Revisão encontrou três casos de recuperação; todos reproduzidos em RED e
+  corrigidos: contexto malformado, logout falho durante validação e retry da lista.
+- Commit de implementação e documentação de validação encerram a fase; não há
+  push, merge, deploy ou implementação de telas das fases seguintes.

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react"
 import { afterEach, expect, it } from "vitest"
-import App from "./App"
+import App from "./demo/DemoApp"
 afterEach(() => { cleanup(); localStorage.clear() })
 function enter(profile = "administrador") {
  render(<App />)

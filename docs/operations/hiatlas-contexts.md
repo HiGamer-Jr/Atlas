@@ -10,7 +10,7 @@ configurada. O identificador de contexto não substitui a autenticação.
    ativos; clientes veem somente seus vínculos ativos com perfil ativo.
    search aceita até 128 caracteres; limit 1–100 e offset 0–10000.
 2. POST /api/contexts recebe apenas {"contract_id":"UUID"} e devolve o id opaco,
-   tenant/contrato para apresentação, expiração e capabilities atuais.
+   somente como {"id":"UUID"}. A leitura GET /api/context retorna tenant/contrato, código, ambiente, expiração e capabilities atuais.
    O servidor verifica o contrato e a identidade antes de criar o contexto.
 3. Enviar esse id no header X-HiAtlas-Context para cada operação contextual.
    Ausência/header inválido: 403; sessão inválida: 401. Não há contrato implícito.
@@ -18,10 +18,10 @@ configurada. O identificador de contexto não substitui a autenticação.
    /api/context permite consultar o contexto vigente. Encerrar contexto não
    encerra os demais. Logout invalida todos os contextos da sessão.
 
-Na integração futura, manter o id em memória/sessionStorage **por aba**.
+Na interface da Fase 4, o id fica em memória/sessionStorage **por aba**.
 Não armazenar sessão autenticada ou contexto em localStorage. Não tratar
 capabilities retornadas como autoridade: cada operação revalida tudo no servidor.
-O frontend autenticado e a seleção visual não fazem parte desta entrega.
+Consulte [a interface autenticada](hiatlas-frontend.md) para execução e validação da Fase 4.
 
 CONTEXT_SECONDS: padrão 3600, intervalo 60–28800; expiração nunca ultrapassa a
 sessão autenticada e não é renovada ao usar o contexto. Inatividade/expiração e

@@ -52,12 +52,18 @@ class ContractList(BaseModel):
     items: list[ContractView]
 
 
+class ContextCreated(BaseModel):
+    id: UUID
+
+
 class ContextView(BaseModel):
     id: UUID
     tenant_id: UUID
     contract_id: UUID
     tenant_name: str
     contract_name: str
+    contract_code: str
+    environment: str
     expires_at: datetime
     capabilities: list[str]
 

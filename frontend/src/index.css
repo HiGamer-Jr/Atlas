@@ -24,3 +24,4 @@ body {
 a {
   color: inherit;
 }
+.demo-banner {position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#ffdf74;color:#322700;text-align:center;padding:8px;font-size:13px;font-weight:700}

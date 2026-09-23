@@ -8,6 +8,7 @@ from app.tenancy.contexts import authenticated
 from app.tenancy.dependencies import Context
 from app.tenancy.schemas import (
     ContextCreate,
+    ContextCreated,
     ContextView,
     ContractCreate,
     ContractList,
@@ -49,7 +50,7 @@ def contract_create(
     )
 
 
-@router.post("/contexts", status_code=201, response_model=ContextView)
+@router.post("/contexts", status_code=201, response_model=ContextCreated)
 def context_create(payload: ContextCreate, request: Request, db: Database):
     return services.select_context(
         db, request, authenticated(db, request), payload.contract_id
