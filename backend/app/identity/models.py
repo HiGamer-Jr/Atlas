@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -54,6 +55,7 @@ class AuthSession(Base):
     __tablename__ = "auth_sessions"
     __table_args__ = (
         CheckConstraint("expires_at > created_at", name="ck_auth_session_lifetime"),
+        UniqueConstraint("id", "user_id", name="uq_auth_session_actor"),
     )
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")

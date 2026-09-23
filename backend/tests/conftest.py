@@ -16,6 +16,10 @@ from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "access_contexts",
+    "memberships",
+    "tenant_role_permissions",
+    "tenant_roles",
     "auth_sessions",
     "auth_preauth",
     "auth_rate_limits",
@@ -158,3 +162,17 @@ def support(new_client, auth_users):
 @pytest.fixture
 def last_admin(admin):
     return admin
+
+
+@pytest.fixture
+def scope_ids(db_runtime, auth_users):
+    from tests.helpers import seed_scope
+
+    return seed_scope(db_runtime, auth_users)
+
+
+@pytest.fixture
+def member(new_client, scope_ids):
+    browser = new_client()
+    login(browser, "member@example.test")
+    return browser

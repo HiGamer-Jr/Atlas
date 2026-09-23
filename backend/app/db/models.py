@@ -9,9 +9,17 @@ from app.identity.models import (
     PlatformRoleAssignment,
     User,
 )
-from app.tenancy.models import Contract, Tenant
+from app.tenancy.models import (
+    AccessContext,
+    Contract,
+    Membership,
+    Tenant,
+    TenantRole,
+    TenantRolePermission,
+)
 
 __all__ = [
+    "AccessContext",
     "AccessEvent",
     "AuditEvent",
     "AuthPreauth",
@@ -19,7 +27,10 @@ __all__ = [
     "AuthSession",
     "Base",
     "Contract",
+    "Membership",
     "PlatformRoleAssignment",
     "Tenant",
+    "TenantRole",
+    "TenantRolePermission",
     "User",
 ]

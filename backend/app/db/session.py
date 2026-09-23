@@ -33,4 +33,6 @@ def validate_runtime_connection(connection: Connection) -> None:
 def get_db(request: Request) -> Iterator[Session]:
     with Session(request.app.state.database_engine) as db, db.begin():
         validate_runtime_connection(db.connection())
+        db.info["clock"] = request.app.state.clock
+        db.info["settings"] = request.app.state.settings
         yield db
