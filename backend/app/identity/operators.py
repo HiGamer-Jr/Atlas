@@ -2,13 +2,13 @@
 
 from datetime import timedelta
 
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, text
 
 from app.audit.schemas import AuditInput, IdentitySnapshot
 from app.audit.service import append_event
 from app.core.errors import ApiError, error_response
 from app.core.security import client_source, require_csrf, require_origin
-from app.identity.models import AuthSession, PlatformRoleAssignment, User
+from app.identity.models import PlatformRoleAssignment, User
 from app.identity.passwords import verify_password
 from app.identity.rate_limits import lock_buckets, record_failure
 from app.identity.schemas import OperatorView
@@ -115,6 +115,7 @@ def protect_last_admin(db, target, role, new_role, active, blocked):
             .join(PlatformRoleAssignment, PlatformRoleAssignment.user_id == User.id)
             .where(
                 User.active.is_(True),
+                User.password_hash.is_not(None),
                 User.blocked.is_(False),
                 PlatformRoleAssignment.active.is_(True),
                 PlatformRoleAssignment.role == "PLATFORM_ADMIN",
@@ -129,12 +130,10 @@ def protect_last_admin(db, target, role, new_role, active, blocked):
 
 
 def finish_change(db, request, principal, target, before, role, action):
+    from app.identity.tokens import revoke_sessions
+
+    revoke_sessions(db, target.id, request.app.state.clock())
     after = snapshot(target, role)
-    db.execute(
-        update(AuthSession)
-        .where(AuthSession.user_id == target.id)
-        .values(revoked_at=request.app.state.clock())
-    )
     append_event(
         db,
         AuditInput(

@@ -85,3 +85,57 @@ class AuthRateLimit(Base):
     bucket_key: Mapped[str] = mapped_column(String(64), primary_key=True)
     window_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     failures: Mapped[int] = mapped_column(Integer)
+
+
+class SecurityToken(Base):
+    __tablename__ = "security_tokens"
+    __table_args__ = (
+        CheckConstraint(
+            "purpose IN ('INVITE','PASSWORD_RESET')", name="ck_security_purpose"
+        ),
+        CheckConstraint("expires_at > created_at", name="ck_security_lifetime"),
+    )
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    purpose: Mapped[str] = mapped_column(String(32))
+    recipient_user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), index=True
+    )
+    recipient_email: Mapped[str] = mapped_column(String(320))
+    membership_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("memberships.id", ondelete="RESTRICT")
+    )
+    issuer_role: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class EmailOutbox(Base):
+    __tablename__ = "email_outbox"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('QUEUED','DISPATCHING','SENT','FAILED','CANCELLED','UNKNOWN')",
+            name="ck_outbox_status",
+        ),
+        CheckConstraint("attempts >= 0", name="ck_outbox_attempts"),
+    )
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    token_id: Mapped[UUID] = mapped_column(
+        ForeignKey("security_tokens.id", ondelete="RESTRICT"), unique=True
+    )
+    message_type: Mapped[str] = mapped_column(String(32))
+    recipient: Mapped[str] = mapped_column(String(320))
+    status: Mapped[str] = mapped_column(String(16), default="QUEUED")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    ciphertext: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failure_code: Mapped[str | None] = mapped_column(String(64))

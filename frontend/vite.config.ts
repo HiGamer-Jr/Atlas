@@ -7,13 +7,15 @@ const key = process.env.HIATLAS_TLS_KEY;
 if (!!cert !== !!key)
     throw new Error('Configure both HIATLAS_TLS_CERT and HIATLAS_TLS_KEY');
 export default defineConfig({
-    base: './',
+    base: '/',
     plugins: [react()],
     server: {
         host: '127.0.0.1',
         port: 5174,
+        headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' },
         https: cert && key ? { cert: readFileSync(cert), key: readFileSync(key) } : undefined,
         proxy: { '/api': { target: process.env.HIATLAS_API_TARGET || 'http://127.0.0.1:8000', changeOrigin: false } },
     },
+    preview: { headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' } },
     test: { environment: 'jsdom', setupFiles: './src/test/setup.ts' },
 });

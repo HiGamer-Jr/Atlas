@@ -6,7 +6,9 @@ from app.identity.models import (
     AuthPreauth,
     AuthRateLimit,
     AuthSession,
+    EmailOutbox,
     PlatformRoleAssignment,
+    SecurityToken,
     User,
 )
 from app.tenancy.models import (
@@ -27,8 +29,10 @@ __all__ = [
     "AuthSession",
     "Base",
     "Contract",
+    "EmailOutbox",
     "Membership",
     "PlatformRoleAssignment",
+    "SecurityToken",
     "Tenant",
     "TenantRole",
     "TenantRolePermission",

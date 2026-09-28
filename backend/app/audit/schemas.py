@@ -53,6 +53,14 @@ class MembershipRoleSnapshot(BaseModel):
     version: int
 
 
+class MembershipStateSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    active: bool
+    blocked: bool
+    invitation_pending: bool
+    version: int
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -67,6 +75,15 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "access.invite.requested",
+        "access.invite.resent",
+        "access.invite.consumed",
+        "access.reset.requested",
+        "access.reset.resent",
+        "access.reset.consumed",
+        "access.sessions.revoked",
+        "membership.status.changed",
+        "membership.invited",
         "tenant.created",
         "contract.created",
         "context.selected",
@@ -96,6 +113,7 @@ class AuditInput(BaseModel):
         | ContextSnapshot
         | TenantRoleSnapshot
         | MembershipRoleSnapshot
+        | MembershipStateSnapshot
         | None
     ) = None
     after: (
@@ -105,6 +123,7 @@ class AuditInput(BaseModel):
         | ContextSnapshot
         | TenantRoleSnapshot
         | MembershipRoleSnapshot
+        | MembershipStateSnapshot
         | None
     ) = None
     reason: str | None = Field(default=None, min_length=1, max_length=2000)
@@ -116,3 +135,12 @@ class AuditInput(BaseModel):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
         return self
+
+
+class SystemCancellationAuditInput(AuditInput):
+    """Narrow system provenance: never impersonate a human for worker revalidation."""
+
+    actor_id: None = None
+    actor_role: None = None
+    action: Literal["access.invite.invalidated"] = "access.invite.invalidated"
+    reason: Literal["POLICY_REVALIDATION"] = "POLICY_REVALIDATION"

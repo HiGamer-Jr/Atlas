@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -23,8 +23,38 @@ class Settings(BaseSettings):
     auth_identifier_limit: int = Field(default=10, ge=1)
     auth_source_limit: int = Field(default=100, ge=1)
 
+    invite_seconds: int = Field(default=86400, ge=60)
+    password_reset_seconds: int = Field(default=1800, ge=60)
+    password_min_length: int = Field(default=12, ge=8)
+    password_max_length: int = Field(default=1024, ge=64, le=1024)
+    reauthentication_seconds: int = Field(default=300, ge=30, le=900)
+    outbox_key: SecretStr | None = Field(default=None, repr=False)
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = Field(default=None, repr=False)
+    smtp_sender: str | None = None
+    smtp_timeout_seconds: int = Field(default=15, ge=1, le=60)
+    email_max_attempts: int = Field(default=5, ge=1, le=10)
+    email_retry_seconds: int = Field(default=60, ge=1, le=3600)
+    email_retry_max_seconds: int = Field(default=3600, ge=1, le=86400)
+    email_lease_seconds: int = Field(default=120, ge=90, le=3600)
+    recovery_response_floor_seconds: float = Field(default=0.25, ge=0.1, le=2)
+    access_request_limit: int = Field(default=5, ge=1)
+    access_source_limit: int = Field(default=100, ge=1)
+    access_window_seconds: int = Field(default=900, ge=60)
+
     @model_validator(mode="after")
     def validate_security(self):
+        if self.password_max_length < self.password_min_length:
+            raise ValueError("Password length configuration is invalid")
+        if self.outbox_key:
+            from cryptography.fernet import Fernet
+
+            try:
+                Fernet(self.outbox_key.get_secret_value().encode())
+            except (ValueError, TypeError):
+                raise ValueError("OUTBOX_KEY must be a valid encryption key") from None
         origin = urlsplit(self.public_origin)
         if (
             origin.scheme != "https"

@@ -1,0 +1,8 @@
+.lifecycle-page p { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.lifecycle-page .forgot-password { text-align: center; }
+.lifecycle-page [role="alert"] { border-left: 3px solid var(--access-accent); padding: 8px 12px; }
+.lifecycle-page [role="status"] { color: var(--access-text); }
+.lifecycle-page button:disabled { opacity: .65; cursor: wait; }
+.hiatlas-access a:focus-visible { outline: 2px solid var(--access-accent); outline-offset: 3px; }
+.lifecycle-page .access-content { width: min(100%, 420px); }
+@media (max-width: 480px) { .lifecycle-page .hiatlas-logo { width: 150px; height: 150px; } }

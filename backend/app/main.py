@@ -21,6 +21,9 @@ def create_app(settings: Settings) -> FastAPI:
 
     application = FastAPI(title=settings.app_name, lifespan=lifespan)
     application.state.database_engine = create_database_engine(settings.database_url)
+    from app.identity.email_transport import SMTPEmailTransport
+
+    application.state.email_transport = SMTPEmailTransport(settings)
     application.state.settings = settings
     application.state.clock = lambda: datetime.now(UTC)
 
@@ -30,6 +33,7 @@ def create_app(settings: Settings) -> FastAPI:
         response = await call_next(request)
         response.headers["X-Request-ID"] = str(request.state.request_id)
         response.headers["Cache-Control"] = "no-store"
+        response.headers["Referrer-Policy"] = "no-referrer"
         return response
 
     @application.exception_handler(ApiError)

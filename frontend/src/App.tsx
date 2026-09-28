@@ -4,6 +4,7 @@ import darkLogo from './assets/hiatlas-dark.png';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/state';
 import LoginForm from './auth/LoginForm';
+import AccessLifecycle from './auth/AccessLifecycle';
 import { ContextProvider } from './platform/ContextProvider';
 import { useAccessContext } from './platform/state';
 import ContractPicker from './platform/ContractPicker';
@@ -39,9 +40,13 @@ function AuthenticatedApp() {
   {loading ? <p role="status">Verificando sessão…</p> : user ? (user.platform_role === 'PLATFORM_ADMIN' || user.platform_role === 'PLATFORM_SUPPORT' ? <ContextProvider key={user.user_id}><Portal /></ContextProvider> : <section className="portal-content"><h1>Acesso indisponível</h1><p>Este portal está disponível para operadores internos autorizados.</p></section>) : <section className="access-content">
    <img className="hiatlas-logo" src={theme === 'light' ? lightLogo : darkLogo} alt="HiAtlas — Supply Chain Intelligence" width="1254" height="1254"/>
    <div className="access-welcome"><h1>Bem-vindo à HiAtlas</h1><p>Um novo horizonte para o seu negócio</p></div>
-   <LoginForm onLogin={login}/>
+   <LoginForm onLogin={login}/><a className="forgot-password" href="/password/forgot">Esqueci minha senha</a>
   </section>}
   <footer className="access-footer">© HiGamer</footer>
  </main>;
 }
-export default function App() { return <AuthProvider><AuthenticatedApp /></AuthProvider>; }
+export default function App() {
+    const path = window.location.pathname;
+    if (['/password/forgot', '/password/reset', '/invite/accept'].includes(path)) return <AccessLifecycle path={path} />;
+    return <AuthProvider><AuthenticatedApp /></AuthProvider>;
+}

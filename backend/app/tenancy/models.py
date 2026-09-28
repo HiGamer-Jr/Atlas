@@ -119,6 +119,12 @@ class TenantRolePermission(Base):
 
 
 class Membership(Timestamps, Base):
+    invite_requires_admin: Mapped[bool] = mapped_column(
+        Boolean, server_default=text("false")
+    )
+    invitation_pending: Mapped[bool] = mapped_column(
+        Boolean, server_default=text("false")
+    )
     __tablename__ = "memberships"
     __table_args__ = (
         UniqueConstraint(

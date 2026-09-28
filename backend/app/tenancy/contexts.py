@@ -67,7 +67,12 @@ def membership_role(db, user_id, tenant_id, contract_id):
         .with_for_update()
         .execution_options(populate_existing=True)
     )
-    if not membership or not membership.active or membership.blocked:
+    if (
+        not membership
+        or not membership.active
+        or membership.blocked
+        or membership.invitation_pending
+    ):
         return None, None
     role = db.scalar(
         select(TenantRole)

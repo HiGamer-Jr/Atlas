@@ -19,3 +19,16 @@ def verify_password(stored: str | None, password: str) -> bool:
         return bool(stored) and valid
     except (VerificationError, InvalidHashError):
         return False
+
+
+def validate_password(password: str, settings) -> None:
+    from app.core.errors import ApiError
+
+    if (
+        not settings.password_min_length
+        <= len(password)
+        <= settings.password_max_length
+    ):
+        raise ApiError(
+            422, "PASSWORD_INVALID", "A senha não atende aos requisitos de tamanho."
+        )

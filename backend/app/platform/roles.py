@@ -215,6 +215,17 @@ def patch_role(db, request, principal, scope, role_id, payload):
         )
     role.version += 1
     set_permissions(db, role, desired)
+    if not role_support_eligible(role, desired):
+        from app.identity.tokens import cancel_member_invites
+
+        for pending in db.scalars(
+            select(Membership)
+            .where(
+                Membership.role_id == role.id, Membership.invitation_pending.is_(True)
+            )
+            .with_for_update()
+        ):
+            cancel_member_invites(db, pending, now(db), requires_admin=True)
     users = select(Membership.user_id).where(
         Membership.role_id == role.id,
         Membership.tenant_id == scope.tenant_id,
@@ -274,6 +285,12 @@ def assign_role(db, request, principal, scope, member_id, payload):
         )
     require_capability(db, principal, scope, "roles.assign")
     before = MembershipRoleSnapshot(role_id=member.role_id, version=member.version)
+    if member.invitation_pending:
+        from app.identity.tokens import cancel_member_invites
+
+        cancel_member_invites(
+            db, member, now(db), requires_admin=role_sensitive(role, granted)
+        )
     member.role_id = role.id
     member.version += 1
     revoke_contexts(db, scope, [member.user_id])

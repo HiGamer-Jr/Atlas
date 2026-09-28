@@ -8,6 +8,10 @@ from app.tenancy.schemas import AccessScope
 
 
 def require_context(request: Request, db: Database) -> AccessScope:
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        from app.identity.tokens import lifecycle_lock
+
+        lifecycle_lock(db)
     principal = authenticated(db, request)
     return resolve_context(db, request, principal)
 

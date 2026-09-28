@@ -16,6 +16,8 @@ from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "email_outbox",
+    "security_tokens",
     "access_contexts",
     "memberships",
     "tenant_role_permissions",
@@ -176,3 +178,17 @@ def member(new_client, scope_ids):
     browser = new_client()
     login(browser, "member@example.test")
     return browser
+
+
+@pytest.fixture
+def mail(app, settings, clock, db_runtime):
+    from cryptography.fernet import Fernet
+    from pydantic import SecretStr
+
+    from app.identity.delivery import DeliveryWorker
+    from app.identity.email_transport import FakeEmailTransport
+
+    settings.outbox_key = SecretStr(Fernet.generate_key().decode())
+    transport = FakeEmailTransport()
+    app.state.email_transport = transport
+    return transport, DeliveryWorker(db_runtime, settings, transport, clock)

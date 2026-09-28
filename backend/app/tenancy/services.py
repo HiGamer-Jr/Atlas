@@ -72,6 +72,7 @@ def list_contracts(db, principal, search, limit, offset):
                 Membership.contract_id == Contract.id,
                 Membership.tenant_id == Contract.tenant_id,
                 Membership.active.is_(True),
+                Membership.invitation_pending.is_(False),
                 Membership.blocked.is_(False),
                 TenantRole.active.is_(True),
             )
