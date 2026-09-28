@@ -1,6 +1,8 @@
 # Fase 5 — Convites, recuperação e ciclo de vida — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+
+**Status:** Implementada e validada em 2026-09-28; parada para revisão. Commit consolidado das tarefas 5.1/5.2: `ef6b7c5`. [Evidências e ajustes de execução](../../validation/hiatlas-platform/phase-05.md). Frontend consolidado em AccessLifecycle.tsx; entrega incerta usa UNKNOWN sem reenvio automático; ausência global de transporte retorna 503 uniforme também na recuperação pública.
 
 **Spec:** [Especificação aprovada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 **Global Constraints:** Aplicam-se integralmente as restrições, interfaces, fixtures e protocolo TDD do [plano principal](README.md). support_assignable começa false; perfis sensíveis são inelegíveis. OrganizationNode usa WORKSITE, não Project. Financeiro exige concessão temporária auditada. Correções só por handlers tipados. Flags/parâmetros/integrações não recebem CRUD genérico.
@@ -39,7 +41,7 @@ deliver_batch(limit) -> DeliverySummary(sent, failed, cancelled).
 CLI worker: `uv run python -m app.identity.delivery --once --limit 20`.
 Rotas POST /api/auth/recovery (resposta genérica), /reset-password e /accept-invite.
 
-- [ ] **RED:** fixture `mailbox` é lista de EmailMessage recebidas por adaptador
+- [x] **RED:** fixture `mailbox` é lista de EmailMessage recebidas por adaptador
 falso no limite SMTP; token só é extraído desse e-mail no código de teste:
 ```python
 from urllib.parse import urlparse, parse_qs
@@ -54,8 +56,8 @@ def test_reset_token_is_single_use(client, mailbox, reset_delivery):
 Fixtures client e reset_delivery preparam CSRF pré-auth válido e origem de teste.
 Adicionar expiração, token de finalidade errada, reenvio, concorrência real
 com dois clientes e rollback se fila não for gravada.
-- [ ] Rodar `uv run pytest tests/test_access_tokens.py tests/test_email_outbox.py -v`.
-- [ ] **GREEN:** token aleatório 32 bytes, hash persistido, expiração 24h convite/
+- [x] Rodar `uv run pytest tests/test_access_tokens.py tests/test_email_outbox.py -v`.
+- [x] **GREEN:** token aleatório 32 bytes, hash persistido, expiração 24h convite/
 30min reset; consumo com UPDATE condicionado a consumed_at/revoked_at/expiry:
 ```python
 stmt = update(SecurityToken).where(
@@ -73,13 +75,13 @@ e nunca serialize segredo/token para diagnóstico. Worker tem claim transacional
 com SKIP LOCKED, prazo de lease e máximo de 5 tentativas com atraso limitado.
 SMTP não garante exatamente uma entrega após crash: documentar possível
 duplicata, mas token permanece único e invalida mensagens obsoletas.
-- [ ] Registrar queued/sent/failed/cancelled, apagar ciphertext após entrega/
+- [x] Registrar queued/sent/failed/cancelled, apagar ciphertext após entrega/
 expiração, revalidar token imediatamente antes do envio. Testar erro do SMTP e
 ausência de configuração (503 para operação interna; recovery pública genérica).
-- [ ] Páginas capturam token do fragment, removem URL visível após captura,
+- [x] Páginas capturam token do fragment, removem URL visível após captura,
 enviam no body protegido por CSRF e usam Referrer-Policy: no-referrer.
 Teste de frontend: token ausente, expirado, consumido e sucesso sem auto-login.
-- [ ] Commit: `feat: deliver single-use access invitations and password resets`.
+- [x] Commit: `feat: deliver single-use access invitations and password resets`.
 
 ## Tarefa 5.2 — Gestão de vínculos e status
 
@@ -97,7 +99,7 @@ POST /memberships recebe email, display_name e role_id; nunca password ou platfo
 POST /api/platform/operators/invite é exclusivo de admin, com reautenticação/
 confirmação da fase 2; usa a mesma entrega segura, sem identidade de tenant.
 
-- [ ] **RED:**
+- [x] **RED:**
 ```python
 from tests.helpers import select_context
 def test_support_invitation_respects_role_eligibility(support, ids):
@@ -117,8 +119,8 @@ def test_activate_does_not_unblock(support, ids):
 Acrescentar blocked_member às fixtures. Testar bloqueio A preservando B,
 invalidar contexto de usuário ativo ao bloquear, convite de usuário existente,
 tentativa de gerenciar operador interno e convite com papel não elegível.
-- [ ] Rodar `uv run pytest tests/test_membership_lifecycle.py tests/test_membership_invitations.py -v`.
-- [ ] **GREEN:** vínculo novo fica pendente até aceite; conta existente mantém
+- [x] Rodar `uv run pytest tests/test_membership_lifecycle.py tests/test_membership_invitations.py -v`.
+- [x] **GREEN:** vínculo novo fica pendente até aceite; conta existente mantém
 senha e demais contratos. Identidade interna não é alvo desses endpoints.
 Convite de usuário existente não revela existência ou vínculos externos;
 destinatário confirma posse por sessão autenticada/reauth antes de aceitar.
@@ -133,11 +135,11 @@ Usar expected_version e rollback em auditoria; status global só por fluxo
 interno autorizado. Suporte não edita e-mail global nem cria papel interno
 por campos extras. Revalidar elegibilidade do role no aceite também; se mudou
 para sensível, cancelar atribuição pendente e exigir reemissão por admin.
-- [ ] Commit: `feat: manage contract memberships without cross-client effects`.
+- [x] Commit: `feat: manage contract memberships without cross-client effects`.
 
 ## Quality gate e parada
 
-- [ ] Gate completo, consumo concorrente, revogação após reinício e outbox
+- [x] Gate completo, consumo concorrente, revogação após reinício e outbox
 persistida. Não afirmar entrega real por usar adaptador falso.
-- [ ] Garantir testes sem e-mails reais e sem dumps de tokens em relatórios.
-- [ ] Registrar phase-05.md e parar.
+- [x] Garantir testes sem e-mails reais e sem dumps de tokens em relatórios.
+- [x] Registrar phase-05.md e parar.
