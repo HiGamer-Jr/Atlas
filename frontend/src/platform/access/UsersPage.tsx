@@ -1,0 +1,28 @@
+import { useState } from 'react';
+import ErrorNotice from '../../api/ErrorNotice';
+import { useAccessContext } from '../state';
+import { useScopedQuery } from './useScopedQuery';
+import type { Member, Page } from './types';
+import UserActions from './UserActions';
+import NewUser from './NewUser';
+import RoleOptions from './RoleOptions';
+import AccessHistory from '../../audit/AccessHistory';
+import { formatDate, timezone } from './types';
+const invitationLabels: Record<string, string> = { QUEUED: 'Na fila', SENT: 'Envio registrado', FAILED: 'Falha no envio', CANCELLED: 'Cancelado', UNKNOWN: 'Estado indisponível', CONSUMED: 'Utilizado', EXPIRED: 'Expirado' };
+function MemberDetail({ id, onChanged, onNotice }: {
+    id: string;
+    onChanged: () => void;
+    onNotice: (text: string) => void;
+}) { const { data, error, loading, retry } = useScopedQuery<Member>(`/memberships/${encodeURIComponent(id)}`); const { selected } = useAccessContext(); return <section className="member-detail" aria-label="Detalhes do usuário"><h3>Detalhes do usuário</h3>{loading && <p role="status">Carregando vínculo…</p>}<ErrorNotice error={error}/>{!!error && <button onClick={retry}>Tentar novamente</button>}{data && <><h4>Identidade</h4><p>{data.display_name} · {data.email}</p><h4>Vínculo neste contrato</h4><p>Perfil: {data.role_name}</p><MemberStatus member={data}/><p>Convite: {data.invitation_status ? (invitationLabels[data.invitation_status] ?? 'Estado indisponível') : data.invitation_pending ? 'Pendente' : 'Não registrado'}</p><p>{data.last_access_at ? `Último acesso: ${formatDate(data.last_access_at)} (${timezone})` : 'Último acesso não registrado neste contexto.'}</p><UserActions refreshing={loading || !!error} refreshError={error} member={data} onChanged={() => { retry(); onChanged(); }} onNotice={onNotice}/>{selected?.capabilities?.includes('logs.access.read') && <AccessHistory memberId={data.id}/>}</>}</section>; }
+function MemberStatus({ member }: {
+    member: Member;
+}) { return <div className="status-badges"><span>{member.active ? 'Ativo' : 'Inativo'}</span><span>{member.blocked ? 'Bloqueado' : 'Não bloqueado'}</span>{member.invitation_pending && <span>Convite pendente</span>}</div>; }
+export default function UsersPage() {
+    const { selected } = useAccessContext();
+    const [search, setSearch] = useState(''), [status, setStatus] = useState(''), [role, setRole] = useState(''), [filters, setFilters] = useState(''), [offset, setOffset] = useState(0), [detail, setDetail] = useState<string | null>(null), [create, setCreate] = useState(false), [notice, setNotice] = useState('');
+    const { data, error, loading, retry } = useScopedQuery<Page<Member>>(`/memberships?limit=20&offset=${offset}${filters}`);
+    return <section className="access-page"><div className="page-title"><div><h2>Usuários</h2><p>Identidades e vínculos do contrato selecionado.</p></div>{selected?.capabilities?.includes('users.create') && <button onClick={() => { setCreate(true); setNotice(''); }}>Novo usuário</button>}</div><form className="access-filters" onSubmit={event => { event.preventDefault(); const query = new URLSearchParams(); if (search.trim())
+        query.set('search', search.trim()); if (status)
+        query.set('status', status); if (role)
+        query.set('role_id', role); setOffset(0); setDetail(null); setFilters(query.size ? `&${query}` : ''); retry(); }}><label>Nome ou e-mail<input value={search} maxLength={200} onChange={event => setSearch(event.target.value)}/></label><label>Estado do vínculo<select aria-label="Estado do vínculo" value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos os estados</option><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option><option value="BLOCKED">Bloqueado</option><option value="PENDING">Convite pendente</option></select></label>{selected?.capabilities?.includes('roles.assign') && <RoleOptions label="Perfil do filtro" required={false} value={role} onChange={setRole}/>}<button>Pesquisar usuários</button></form>{notice && <p role="status">{notice}</p>}{loading && <p role="status">Carregando usuários…</p>}<ErrorNotice error={error}/>{!!error && <button onClick={retry}>Tentar novamente</button>}{data && <>{data.items.length === 0 ? <p>Nenhum usuário encontrado neste contrato.</p> : <div className="table-scroll"><table><caption>Vínculos neste contrato</caption><thead><tr><th>Usuário</th><th>Perfil</th><th>Estado</th><th>Ações</th></tr></thead><tbody>{data.items.map(member => <tr key={member.id}><td><strong>{member.display_name}</strong><br />{member.email}</td><td>{member.role_name}</td><td><MemberStatus member={member}/></td><td><button onClick={() => { setDetail(member.id); setNotice(''); }} aria-label={`Detalhes de ${member.display_name}`}>Detalhes</button></td></tr>)}</tbody></table></div>}<div className="pagination"><button disabled={offset === 0} onClick={() => { setOffset(Math.max(0, offset - 20)); setDetail(null); }}>Página anterior</button><span>{data.total === 0 ? '0 usuários' : `${offset + 1}–${Math.min(offset + data.items.length, data.total)} de ${data.total} usuários`}</span><button disabled={offset + data.limit >= data.total} onClick={() => { setOffset(offset + 20); setDetail(null); }}>Próxima página</button></div></>}{detail && <MemberDetail key={detail} id={detail} onChanged={retry} onNotice={setNotice}/>}{create && <NewUser onClose={() => setCreate(false)} onCreated={() => { setCreate(false); setNotice('Solicitação aceita. Aguarde o processamento do acesso.'); retry(); }}/>}</section>;
+}

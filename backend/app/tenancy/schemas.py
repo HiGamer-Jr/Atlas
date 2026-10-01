@@ -75,3 +75,18 @@ class MembershipView(BaseModel):
     active: bool
     blocked: bool
     version: int
+
+
+class ManagedMembershipView(MembershipView):
+    display_name: str
+    email: str
+    role_name: str
+    invitation_pending: bool
+    allowed_actions: list[str]
+    last_access_at: datetime | None
+    invitation_status: (
+        Literal[
+            "QUEUED", "SENT", "FAILED", "CANCELLED", "UNKNOWN", "CONSUMED", "EXPIRED"
+        ]
+        | None
+    )

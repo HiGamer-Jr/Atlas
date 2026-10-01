@@ -85,6 +85,7 @@ class TenantRole(Timestamps, Base):
     contract_id: Mapped[UUID]
     code: Mapped[str] = mapped_column(String(64))
     name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(String(2000), server_default=text("''"))
     classification: Mapped[str] = mapped_column(
         String(32), server_default=text("'STANDARD'")
     )

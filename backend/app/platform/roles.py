@@ -1,4 +1,4 @@
-from sqlalchemy import exists, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.audit.schemas import MembershipRoleSnapshot, TenantRoleSnapshot
@@ -17,7 +17,6 @@ from app.tenancy.models import (
     TenantRole,
     TenantRolePermission,
 )
-from app.tenancy.schemas import MembershipView
 from app.tenancy.services import audit
 
 
@@ -41,6 +40,7 @@ def role_snapshot(role, granted):
     return TenantRoleSnapshot(
         code=role.code,
         name=role.name,
+        description=role.description,
         classification=role.classification,
         support_assignable=role.support_assignable,
         sensitivity_locked=role.sensitivity_locked,
@@ -50,9 +50,10 @@ def role_snapshot(role, granted):
     )
 
 
-def view(role, granted):
+def view(role, granted, member_count=0):
     return RoleView(
         id=role.id,
+        member_count=member_count,
         **role_snapshot(role, granted).model_dump(),
         support_eligible=role_support_eligible(role, granted),
     )
@@ -70,43 +71,41 @@ def list_roles(db, principal, scope, assignable, limit, offset):
     )
     if assignable:
         query = query.where(TenantRole.active.is_(True))
-        if fresh.platform_role == "PLATFORM_SUPPORT":
-            from app.platform.capabilities import CATALOG
+    if fresh.platform_role == "PLATFORM_SUPPORT":
+        from app.platform.policy import safe_role_predicate
 
-            safe = [
-                code
-                for code, cap in CATALOG.items()
-                if not cap.sensitive and cap.tenant_role
-            ]
-            sensitive = exists(
-                select(TenantRolePermission.role_id).where(
-                    TenantRolePermission.role_id == TenantRole.id,
-                    TenantRolePermission.active.is_(True),
-                    TenantRolePermission.capability.not_in(safe),
-                )
-            )
-            query = query.where(
-                TenantRole.support_assignable.is_(True),
-                TenantRole.classification == "STANDARD",
-                TenantRole.sensitivity_locked.is_(False),
-                ~sensitive,
-            )
-    rows = db.scalars(
-        query.order_by(TenantRole.code, TenantRole.id)
-        .limit(limit)
-        .offset(offset)
-        .with_for_update()
+        query = query.where(
+            TenantRole.support_assignable.is_(True),
+            TenantRole.active.is_(True),
+            safe_role_predicate(),
+        )
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = list(
+        db.scalars(
+            query.order_by(TenantRole.code, TenantRole.id)
+            .limit(limit)
+            .offset(offset)
+            .with_for_update()
+        )
     )
-    items = []
-    for role in rows:
-        granted = permissions(db, role)
-        if (
-            not assignable
-            or fresh.platform_role != "PLATFORM_SUPPORT"
-            or role_support_eligible(role, granted)
-        ):
-            items.append(view(role, granted))
-    return {"items": items}
+    require_capability(
+        db, principal, scope, "roles.assign" if assignable else "roles.read"
+    )
+    items = [view(role, permissions(db, role), member_count(db, role)) for role in rows]
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
+
+
+def member_count(db, role):
+    return db.scalar(
+        select(func.count())
+        .select_from(Membership)
+        .where(
+            Membership.role_id == role.id,
+            Membership.tenant_id == role.tenant_id,
+            Membership.contract_id == role.contract_id,
+            ~exists().where(PlatformRoleAssignment.user_id == Membership.user_id),
+        )
+    )
 
 
 def set_permissions(db, role, desired):
@@ -189,7 +188,8 @@ def create_role(db, request, principal, scope, payload):
         after=role_snapshot(role, desired),
         scope=scope,
     )
-    return view(role, desired)
+    require_capability(db, principal, scope, "roles.manage")
+    return view(role, desired, member_count(db, role))
 
 
 def patch_role(db, request, principal, scope, role_id, payload):
@@ -243,7 +243,8 @@ def patch_role(db, request, principal, scope, role_id, payload):
         after=role_snapshot(role, desired),
         scope=scope,
     )
-    return view(role, desired)
+    require_capability(db, principal, scope, "roles.manage")
+    return view(role, desired, member_count(db, role))
 
 
 def assign_role(db, request, principal, scope, member_id, payload):
@@ -305,11 +306,6 @@ def assign_role(db, request, principal, scope, member_id, payload):
         after=MembershipRoleSnapshot(role_id=member.role_id, version=member.version),
         scope=scope,
     )
-    return MembershipView(
-        id=member.id,
-        user_id=member.user_id,
-        role_id=member.role_id,
-        active=member.active,
-        blocked=member.blocked,
-        version=member.version,
-    )
+    from app.tenancy.member_queries import member_view
+
+    return member_view(db, fresh, scope, member)

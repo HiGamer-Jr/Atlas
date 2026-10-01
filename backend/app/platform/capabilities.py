@@ -66,6 +66,19 @@ PHASE3_ADMIN = frozenset(
 PHASE3_SUPPORT = frozenset(
     {"contracts.read", "memberships.read", "roles.read", "roles.assign"}
 )
+PHASE6_ACCESS = frozenset(
+    {
+        "users.create",
+        "users.invite",
+        "users.status",
+        "users.password_reset",
+        "audit.read",
+        "logs.access.read",
+    }
+)
 INTERNAL_GRANTS = MappingProxyType(
-    {"PLATFORM_ADMIN": PHASE3_ADMIN, "PLATFORM_SUPPORT": PHASE3_SUPPORT}
+    {
+        "PLATFORM_ADMIN": PHASE3_ADMIN | PHASE6_ACCESS,
+        "PLATFORM_SUPPORT": PHASE3_SUPPORT | PHASE6_ACCESS,
+    }
 )

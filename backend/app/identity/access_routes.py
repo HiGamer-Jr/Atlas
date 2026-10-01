@@ -136,8 +136,11 @@ def reset_password(payload: ResetInput, request: Request, db: Database):
     user.password_hash = hash_password(payload.new_password.get_secret_value())
     consume(db, token, now)
     revoke_sessions(db, user.id, now)
-    event(db, user.id, "access.reset.consumed", request.state.request_id)
-    event(db, user.id, "access.sessions.revoked", request.state.request_id)
+    member = db.get(Membership, token.membership_id) if token.membership_id else None
+    event(db, user.id, "access.reset.consumed", request.state.request_id, member=member)
+    event(
+        db, user.id, "access.sessions.revoked", request.state.request_id, member=member
+    )
     return Response(status_code=204)
 
 

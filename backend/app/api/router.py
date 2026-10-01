@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.audit.routes import router as audit_router
 from app.identity.access_routes import router as access_router
 from app.identity.routes import router as identity_router
 from app.platform.routes import router as platform_router
@@ -13,6 +14,7 @@ router.include_router(membership_router)
 
 router.include_router(tenancy_router)
 router.include_router(platform_router)
+router.include_router(audit_router)
 
 
 @router.get("/health")

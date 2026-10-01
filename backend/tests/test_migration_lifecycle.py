@@ -77,3 +77,34 @@ def test_incremental_session_migration_rejects_superuser_runtime(
     finally:
         migration_config.attributes.pop("connection", None)
         migration_config.attributes["runtime_role"] = good_role
+
+
+@pytest.mark.parametrize("unsafe", ["owner", "superuser", "missing"])
+def test_incremental_phase6_migration_rejects_unsafe_runtime_before_ddl(
+    db_owner, db_runtime, migration_config, unsafe
+):
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0004")
+            bad_role = (
+                db_owner.url.username
+                if unsafe == "owner"
+                else conn.execute(
+                    text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+                ).scalar_one()
+                if unsafe == "superuser"
+                else None
+            )
+            migration_config.attributes["runtime_role"] = bad_role
+            with pytest.raises(RuntimeError, match="role"):
+                command.upgrade(migration_config, "0005")
+            assert "description" not in {
+                column["name"] for column in inspect(conn).get_columns("tenant_roles")
+            }
+            migration_config.attributes["runtime_role"] = good_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role

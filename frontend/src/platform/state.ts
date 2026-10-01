@@ -6,6 +6,7 @@ export type AccessContext = {
     contract_code: string;
     environment: string;
     expires_at: string;
+    capabilities: string[];
 };
 export type ContextState = {
     selected: AccessContext | null;

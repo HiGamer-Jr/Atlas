@@ -13,7 +13,7 @@ from app.tenancy.schemas import (
     ContractCreate,
     ContractList,
     ContractView,
-    MembershipView,
+    ManagedMembershipView,
     TenantCreate,
     TenantView,
 )
@@ -68,6 +68,6 @@ def context_get(request: Request, db: Database, scope: Context):
     return services.context_view(db, request.state.principal, scope)
 
 
-@router.get("/memberships/{member_id}", response_model=MembershipView)
+@router.get("/memberships/{member_id}", response_model=ManagedMembershipView)
 def membership_get(member_id: UUID, request: Request, db: Database, scope: Context):
     return services.get_membership(db, request.state.principal, scope, member_id)

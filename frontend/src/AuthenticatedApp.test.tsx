@@ -268,3 +268,13 @@ it('StrictMode does not show login while the live session restoration is pending
     await screen.findByLabelText('E-mail');
     expect(sessionStorage.getItem(key)).toBeNull();
 });
+const phase6Member={id:'member-a',user_id:'customer',display_name:'Cliente real',email:'customer@example.test',role_id:'buyer',role_name:'Comprador Nacional',active:true,blocked:false,invitation_pending:false,invitation_status:null,version:1,allowed_actions:['block'],last_access_at:null};
+function installPhase6Endpoints(failureStatus:number,failureCode:string){const original=fetch;vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>{
+ if(url==='/api/context')return Promise.resolve(response({id:'opaque-a',tenant_name:'GDSUL',contract_id:'contract-a',contract_code:'CTR-2026-001',environment:'PRODUCTION',expires_at:'2099-01-01T00:00:00Z',capabilities:['memberships.read','users.status']}));
+ if(url.startsWith('/api/memberships?'))return Promise.resolve(response({items:[phase6Member],total:1,limit:20,offset:0}));
+ if(url==='/api/memberships/member-a')return Promise.resolve(response(phase6Member));
+ if(url==='/api/memberships/member-a/status')return Promise.resolve(response({code:failureCode},failureStatus));
+ return original(url,init);
+}));}
+it('Phase6 mutation 401 removes dialog and contextual records through the session handler',async()=>{logged=true;installPhase6Endpoints(401,'SESSION_INVALID');render(<App/>);await screen.findByRole('heading',{name:'Selecionar ambiente'});await select();fireEvent.click(await screen.findByRole('button',{name:'Detalhes de Cliente real'}));fireEvent.click(await screen.findByRole('button',{name:'Bloquear acesso'}));fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));await screen.findByLabelText('E-mail');expect(screen.queryByRole('dialog')).not.toBeInTheDocument();expect(screen.queryByText('Cliente real')).not.toBeInTheDocument();expect(sessionStorage.getItem(key)).toBeNull();});
+it('Phase6 mutation context revocation returns to picker and clears contextual dialogs',async()=>{logged=true;installPhase6Endpoints(403,'CONTEXT_INVALID');render(<App/>);await screen.findByRole('heading',{name:'Selecionar ambiente'});await select();fireEvent.click(await screen.findByRole('button',{name:'Detalhes de Cliente real'}));fireEvent.click(await screen.findByRole('button',{name:'Bloquear acesso'}));fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));await screen.findByRole('heading',{name:'Selecionar ambiente'});expect(screen.queryByRole('dialog')).not.toBeInTheDocument();expect(screen.queryByText('Cliente real')).not.toBeInTheDocument();expect(sessionStorage.getItem(key)).toBeNull();});

@@ -213,6 +213,10 @@ def test_scoped_membership_list_finds_pending_without_other_memberships(
         "invitation_pending",
         "email",
         "display_name",
+        "role_name",
+        "allowed_actions",
+        "last_access_at",
+        "invitation_status",
     }
 
 

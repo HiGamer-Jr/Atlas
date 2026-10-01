@@ -213,7 +213,7 @@ def eligible_token(db, token, user, purpose, now):
         raise ApiError(400, "TOKEN_EXPIRED", "Este link expirou. Solicite um novo.")
     if purpose == "PASSWORD_RESET" and not user.password_hash:
         raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
-    if purpose == "INVITE" and token.membership_id:
+    if token.membership_id:
         from app.tenancy.contexts import contract_rows
 
         member = db.get(Membership, token.membership_id)
@@ -243,7 +243,8 @@ def eligible_token(db, token, user, purpose, now):
         if (
             not member
             or member.user_id != user.id
-            or not member.invitation_pending
+            or (purpose == "INVITE" and not member.invitation_pending)
+            or (purpose == "PASSWORD_RESET" and member.invitation_pending)
             or member.blocked
             or not member.active
             or not role
@@ -255,11 +256,18 @@ def eligible_token(db, token, user, purpose, now):
         ):
             raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
         if token.issuer_role == "PLATFORM_SUPPORT":
-            from app.platform.policy import role_support_eligible
+            from app.platform.policy import role_sensitive, role_support_eligible
             from app.tenancy.contexts import permissions
 
-            if not role_support_eligible(role, permissions(db, role)):
-                cancel_member_invites(db, member, now, requires_admin=True)
+            granted = permissions(db, role)
+            allowed = (
+                role_support_eligible(role, granted)
+                if purpose == "INVITE"
+                else not role_sensitive(role, granted)
+            )
+            if not allowed:
+                if purpose == "INVITE":
+                    cancel_member_invites(db, member, now, requires_admin=True)
                 raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
     return token
 

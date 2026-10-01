@@ -34,6 +34,7 @@ class ContextSnapshot(BaseModel):
 
 
 class TenantRoleSnapshot(BaseModel):
+    description: str = Field(default="", max_length=2000)
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
     code: str
     name: str = Field(min_length=1, max_length=200)

@@ -34,3 +34,26 @@ def require_capability(db, principal, scope, capability):
 def require_global(principal, capability):
     if capability not in INTERNAL_GRANTS.get(principal.platform_role, frozenset()):
         raise ApiError(403, "CAPABILITY_DENIED", "Ação não permitida.")
+
+
+def safe_role_predicate():
+    """Filter sensitive roles before count/pagination; unknown capabilities fail closed."""
+    from sqlalchemy import exists, select
+
+    from app.tenancy.models import TenantRole, TenantRolePermission
+
+    safe = [
+        code for code, cap in CATALOG.items() if not cap.sensitive and cap.tenant_role
+    ]
+    unsafe = exists(
+        select(TenantRolePermission.role_id).where(
+            TenantRolePermission.role_id == TenantRole.id,
+            TenantRolePermission.active.is_(True),
+            TenantRolePermission.capability.not_in(safe),
+        )
+    )
+    return (
+        (TenantRole.classification == "STANDARD")
+        & TenantRole.sensitivity_locked.is_(False)
+        & ~unsafe
+    )

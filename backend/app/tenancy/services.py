@@ -24,7 +24,6 @@ from app.tenancy.schemas import (
     AccessScope,
     ContextView,
     ContractView,
-    MembershipView,
     TenantView,
 )
 
@@ -272,20 +271,7 @@ def close_context(db, request, principal, context_id):
 
 def get_membership(db, principal, scope, member_id):
     require_capability(db, principal, scope, "memberships.read")
-    member = db.scalar(
-        select(Membership).where(
-            Membership.id == member_id,
-            Membership.tenant_id == scope.tenant_id,
-            Membership.contract_id == scope.contract_id,
-        )
-    )
-    if member is None:
-        raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
-    return MembershipView(
-        id=member.id,
-        user_id=member.user_id,
-        role_id=member.role_id,
-        active=member.active,
-        blocked=member.blocked,
-        version=member.version,
-    )
+    from app.tenancy.member_queries import member_view, read_member
+
+    member = read_member(db, principal, scope, member_id)
+    return member_view(db, principal, scope, member)

@@ -12,7 +12,7 @@ from app.platform.role_schemas import (
     RoleView,
 )
 from app.tenancy.dependencies import Context
-from app.tenancy.schemas import MembershipView
+from app.tenancy.schemas import ManagedMembershipView
 
 router = APIRouter()
 
@@ -53,7 +53,7 @@ def role_patch(
     )
 
 
-@router.put("/memberships/{member_id}/role", response_model=MembershipView)
+@router.put("/memberships/{member_id}/role", response_model=ManagedMembershipView)
 def member_role(
     member_id: UUID,
     payload: RoleAssignment,
@@ -64,3 +64,18 @@ def member_role(
     return roles.assign_role(
         db, request, request.state.principal, scope, member_id, payload
     )
+
+
+@router.get("/capabilities")
+def capabilities(request: Request, db: Database, scope: Context):
+    from app.platform.capabilities import CATALOG
+    from app.platform.policy import require_capability
+
+    require_capability(db, request.state.principal, scope, "roles.manage")
+    return {
+        "items": [
+            {"code": cap.code, "domain": cap.domain, "sensitive": cap.sensitive}
+            for cap in sorted(CATALOG.values(), key=lambda item: item.code)
+            if cap.tenant_role
+        ]
+    }

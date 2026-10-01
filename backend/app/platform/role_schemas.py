@@ -40,6 +40,7 @@ class RoleFields(Input):
 class RoleCreate(RoleFields):
     code: str = Field(min_length=2, max_length=64, pattern=r"^[A-Z][A-Z0-9_]+$")
     name: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=2000)
     classification: Classification = "STANDARD"
     support_assignable: StrictBool = False
     active: StrictBool = True
@@ -56,6 +57,7 @@ class RoleCreate(RoleFields):
 class RolePatch(RoleFields):
     expected_version: int = Field(gt=0, strict=True)
     name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
     classification: Classification | None = None
     support_assignable: StrictBool | None = None
     active: StrictBool | None = None
@@ -75,6 +77,8 @@ class RoleAssignment(Input):
 
 
 class RoleView(BaseModel):
+    description: str = ""
+    member_count: int = 0
     id: UUID
     code: str
     name: str
@@ -89,3 +93,6 @@ class RoleView(BaseModel):
 
 class RoleList(BaseModel):
     items: list[RoleView]
+    total: int
+    limit: int
+    offset: int
