@@ -16,6 +16,13 @@ def role_support_eligible(role, granted):
 
 
 def effective_capabilities(db, principal, scope):
+    from app.support.services import effective_access, support_for_context
+
+    support = support_for_context(db, scope.id)
+    if support and support.context_id == scope.id:
+        return effective_access(db, principal, support)
+    if support_for_context(db, scope.id, active_only=True):
+        return set()
     fresh, _, _, _, role = revalidate(db, principal, scope)
     if fresh.platform_role in INTERNAL_GRANTS:
         return set(INTERNAL_GRANTS[fresh.platform_role])

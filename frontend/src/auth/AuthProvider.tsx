@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ApiClient } from '../api/client';
 import { ApiError, isAbort } from '../api/errors';
 import { storeContext } from '../platform/storage';
+import { storeSupport } from '../support/storage';
 import { AuthContext, type Identity } from './state';
 export function AuthProvider({ children }: {
     children: ReactNode;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: {
         api.cancelAll();
         api.setContext(null);
         storeContext(null);
+        storeSupport(null);
         setUser(null);
         setLoading(false);
         setBusy(false);
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: {
             await api.request('/auth/login', { method: 'POST', body: { email, password }, contextId: null });
             const identity = await api.request<Identity>('/auth/me', { contextId: null });
             storeContext(null);
+        storeSupport(null);
             api.setContext(null);
             setUser(identity);
         }

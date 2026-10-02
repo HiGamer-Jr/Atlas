@@ -132,6 +132,13 @@ class Membership(Timestamps, Base):
             "user_id", "tenant_id", "contract_id", name="uq_membership_user_scope"
         ),
         UniqueConstraint("tenant_id", "contract_id", "id", name="uq_membership_scope"),
+        UniqueConstraint(
+            "tenant_id",
+            "contract_id",
+            "id",
+            "user_id",
+            name="uq_membership_support_target",
+        ),
         ForeignKeyConstraint(
             ["tenant_id", "contract_id"],
             ["contracts.tenant_id", "contracts.id"],
@@ -170,6 +177,14 @@ class AccessContext(Base):
             ondelete="RESTRICT",
         ),
         CheckConstraint("expires_at > created_at", name="ck_context_lifetime"),
+        UniqueConstraint(
+            "tenant_id",
+            "contract_id",
+            "id",
+            "session_id",
+            "actor_id",
+            name="uq_context_support_binding",
+        ),
     )
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")

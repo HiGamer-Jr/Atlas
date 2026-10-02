@@ -8,6 +8,20 @@ CATALOG = MappingProxyType(
     {
         item.code: item
         for item in (
+            *[
+                Capability(
+                    code,
+                    "support",
+                    read_only_safe=code != "support.session.start",
+                    mutates_business_state=False,
+                )
+                for code in (
+                    "support.session.start",
+                    "support.session.read",
+                    "support.session.end",
+                    "support.history.read",
+                )
+            ],
             Capability("contracts.read", "platform"),
             Capability("tenants.create", "platform", True),
             Capability("contracts.create", "platform", True),
@@ -44,7 +58,6 @@ CATALOG = MappingProxyType(
                     ("imports.manage", "maintenance", True),
                     ("corrections.execute", "maintenance", True),
                     ("reprocess.execute", "maintenance", True),
-                    ("support.session.start", "support", False),
                     ("maintenance.authorize", "maintenance", True),
                 )
             ],
@@ -76,12 +89,22 @@ PHASE6_ACCESS = frozenset(
         "logs.access.read",
     }
 )
+SUPPORT_SESSION_GRANTS = frozenset(
+    {
+        "support.session.start",
+        "support.session.read",
+        "support.session.end",
+        "support.history.read",
+    }
+)
 INTERNAL_GRANTS = MappingProxyType(
     {
-        "PLATFORM_ADMIN": PHASE3_ADMIN
+        "PLATFORM_ADMIN": SUPPORT_SESSION_GRANTS
+        | PHASE3_ADMIN
         | PHASE6_ACCESS
         | frozenset({"organization.manage", "modules.read", "modules.manage"}),
-        "PLATFORM_SUPPORT": PHASE3_SUPPORT
+        "PLATFORM_SUPPORT": SUPPORT_SESSION_GRANTS
+        | PHASE3_SUPPORT
         | PHASE6_ACCESS
         | frozenset({"modules.read"}),
     }

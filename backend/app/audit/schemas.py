@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -95,6 +96,19 @@ class MembershipUnitScopeSnapshot(BaseModel):
     version: int = Field(ge=1)
 
 
+class SupportSessionSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    operator_id: UUID
+    operator_role: PlatformRole
+    viewed_membership_id: UUID
+    viewed_user_id: UUID
+    mode: Literal["READ_ONLY"]
+    status: Literal["ACTIVE", "ENDED", "EXPIRED", "REVOKED"]
+    started_at: datetime
+    expires_at: datetime
+    ended_at: datetime | None
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -104,11 +118,16 @@ class AuditInput(BaseModel):
         str_strip_whitespace=True,
         frozen=True,
     )
+    support_session_id: UUID | None = None
     actor_id: UUID
     actor_role: PlatformRole | None
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "support.session.started",
+        "support.session.ended",
+        "support.session.expired",
+        "support.session.revoked",
         "access.invite.requested",
         "access.invite.resent",
         "access.invite.consumed",
@@ -137,6 +156,7 @@ class AuditInput(BaseModel):
     entity_type: Literal[
         "user",
         "platform_role",
+        "support_session",
         "tenant",
         "contract",
         "access_context",
@@ -147,7 +167,8 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        IdentitySnapshot
+        SupportSessionSnapshot
+        | IdentitySnapshot
         | TenantSnapshot
         | ContractSnapshot
         | ContextSnapshot
@@ -160,7 +181,8 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        IdentitySnapshot
+        SupportSessionSnapshot
+        | IdentitySnapshot
         | TenantSnapshot
         | ContractSnapshot
         | ContextSnapshot
@@ -180,6 +202,20 @@ class AuditInput(BaseModel):
     def validate_scope(self):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
+        if self.action.startswith("support.session."):
+            if (
+                self.tenant_id is None
+                or self.entity_type != "support_session"
+                or self.support_session_id != self.entity_id
+                or not isinstance(self.after, SupportSessionSnapshot)
+                or self.after.operator_id != self.actor_id
+                or self.after.operator_role != self.actor_role
+            ):
+                raise ValueError("Support action requires bound typed provenance")
+            if self.action != "support.session.started" and not isinstance(
+                self.before, SupportSessionSnapshot
+            ):
+                raise ValueError("Terminal support action requires before state")
         registered = {
             "organization.node.created": (
                 "organization_node",

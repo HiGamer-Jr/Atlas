@@ -313,6 +313,11 @@ def consume(db, token, now):
 
 
 def revoke_sessions(db, user_id, now):
+    from app.support.services import revoke_owned
+
+    request = db.info.get("request")
+    if request is not None:
+        revoke_owned(db, request, user_id=user_id)
     db.execute(
         update(AuthSession)
         .where(AuthSession.user_id == user_id, AuthSession.revoked_at.is_(None))

@@ -218,7 +218,11 @@ def select_context(db, request, principal, contract_id):
 
 def context_view(db, principal, scope):
     _, context, tenant, contract, _ = revalidate(db, principal, scope)
+    from app.support.services import support_for_context
+
+    support = support_for_context(db, scope.id, active_only=True)
     return ContextView(
+        support_session_id=support.id if support else None,
         id=context.id,
         tenant_id=tenant.id,
         contract_id=contract.id,

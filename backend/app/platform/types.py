@@ -8,3 +8,6 @@ class Capability:
     sensitive: bool = False
     tenant_role: bool = False
     tenant_enabled: bool = False
+    mutates_business_state: bool = True
+    read_only_safe: bool = False
+    module_code: str | None = None

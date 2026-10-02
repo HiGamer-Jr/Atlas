@@ -1,0 +1,4 @@
+export type SupportSession = { id:string; context_id:string; parent_context_id:string; tenant_id:string; contract_id:string; tenant_name:string; contract_code:string; environment:string; operator:{user_id:string;display_name:string;platform_role:string}; viewed:{membership_id:string;user_id:string;display_name:string;role_id:string;role_name:string}; mode:'READ_ONLY';reason:string;reference:string|null;started_at:string;expires_at:string;ended_at:string|null;status:'ACTIVE'|'ENDED'|'EXPIRED'|'REVOKED' };
+export type SupportHistory = Omit<SupportSession,'context_id'|'parent_context_id'>;
+export type EffectiveAccess = {read_only:true;capabilities:string[]};
+export type WorkspaceView = {effective_access:EffectiveAccess;modules:{code:string;label:string;contracted:boolean;active:boolean;enabled:boolean;operational_available:boolean}[]};

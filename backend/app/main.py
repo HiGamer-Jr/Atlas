@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,13 @@ def create_app(settings: Settings) -> FastAPI:
         yield
         application.state.database_engine.dispose()
 
-    application = FastAPI(title=settings.app_name, lifespan=lifespan)
+    from app.support.gate import observe_request
+
+    application = FastAPI(
+        title=settings.app_name,
+        lifespan=lifespan,
+        dependencies=[Depends(observe_request)],
+    )
     application.state.database_engine = create_database_engine(settings.database_url)
     from app.identity.email_transport import SMTPEmailTransport
 
@@ -43,19 +49,25 @@ def create_app(settings: Settings) -> FastAPI:
         # The request transaction has rolled back before this independent denial log.
         with Session(application.state.database_engine) as db, db.begin():
             validate_runtime_connection(db.connection())
-            record_access(
-                db,
-                request,
-                "auth.request.denied",
-                "DENIED",
-                user_id=getattr(
-                    getattr(request.state, "principal", None), "user_id", None
-                ),
-                role=getattr(
-                    getattr(request.state, "principal", None), "platform_role", None
-                ),
-                reason=exc.code,
-            )
+            support_denial = getattr(request.state, "support_denial", None)
+            if support_denial is not None:
+                from app.support.services import record_denial
+
+                record_denial(db, request, support_denial, exc.code)
+            else:
+                record_access(
+                    db,
+                    request,
+                    "auth.request.denied",
+                    "DENIED",
+                    user_id=getattr(
+                        getattr(request.state, "principal", None), "user_id", None
+                    ),
+                    role=getattr(
+                        getattr(request.state, "principal", None), "platform_role", None
+                    ),
+                    reason=exc.code,
+                )
         return error_response(request, exc)
 
     @application.exception_handler(RequestValidationError)

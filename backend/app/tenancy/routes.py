@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Query, Request, Response
 
 from app.identity.dependencies import Database
+from app.support.gate import support_control
 from app.tenancy import services
 from app.tenancy.contexts import authenticated
 from app.tenancy.dependencies import Context
@@ -64,6 +65,7 @@ def context_close(context_id: UUID, request: Request, db: Database):
 
 
 @router.get("/context", response_model=ContextView)
+@support_control("context")
 def context_get(request: Request, db: Database, scope: Context):
     return services.context_view(db, request.state.principal, scope)
 

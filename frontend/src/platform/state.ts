@@ -7,6 +7,7 @@ export type AccessContext = {
     environment: string;
     expires_at: string;
     capabilities: string[];
+    support_session_id?: string | null;
 };
 export type ContextState = {
     selected: AccessContext | null;
@@ -17,6 +18,9 @@ export type ContextState = {
     select: (id: string) => Promise<void>;
     clear: () => Promise<void>;
     retry: () => void;
+    invalidate?: (notice?: string) => void;
+    notice?: string | null;
+    registerSupport?: (id: string | null) => void;
 };
 export const Context = createContext<ContextState | null>(null);
 export function useAccessContext() { const context = useContext(Context); if (!context)

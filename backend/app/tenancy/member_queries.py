@@ -104,6 +104,10 @@ def member_view(db, principal, scope, member):
             and "users.password_reset" in caps
         ):
             actions.append("reset_password")
+    from app.support.services import target_eligible
+
+    if "support.session.start" in caps and target_eligible(db, member, role, user):
+        actions.append("start_support")
     return ManagedMembershipView(
         id=member.id,
         user_id=member.user_id,

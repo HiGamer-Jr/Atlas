@@ -16,6 +16,7 @@ from app.organization.models import (
     MembershipUnitScope,
     OrganizationNode,
 )
+from app.support.models import SupportSession
 from app.tenancy.models import (
     AccessContext,
     Contract,
@@ -41,6 +42,7 @@ __all__ = [
     "OrganizationNode",
     "PlatformRoleAssignment",
     "SecurityToken",
+    "SupportSession",
     "Tenant",
     "TenantRole",
     "TenantRolePermission",

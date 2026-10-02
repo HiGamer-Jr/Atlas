@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/state';
 import { ApiError, isAbort } from '../api/errors';
 import { readContext, storeContext } from './storage';
+import { readSupport, storeSupport } from '../support/storage';
 import { Context, type AccessContext } from './state';
 export function ContextProvider({ children }: {
     children: ReactNode;
@@ -10,12 +11,21 @@ export function ContextProvider({ children }: {
     const [selected, setSelected] = useState<AccessContext | null>(null);
     const [loading, setLoading] = useState(() => !!readContext()), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
     const [recovering, setRecovering] = useState(() => !!readContext());
+    const [notice,setNotice]=useState<string|null>(null);
+    const supportReference = useRef<string|null>(null);
+    const registerSupport = useCallback((id:string|null)=>{supportReference.current=id;},[]);
     const generation = useRef(0), locked = useRef(false), active = useRef<string | null>(null);
-    const forget = useCallback(() => {
+    const forget = useCallback((message?: string) => {
+        const supportId = supportReference.current ?? readSupport();
+        const wasActive = active.current !== null;
+        const terminal = message ?? (supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : null);
+        setNotice(previous => terminal ?? (wasActive ? null : previous));
+        supportReference.current = null;
         generation.current++;
         api.setContext(null);
         active.current = null;
         storeContext(null);
+        storeSupport(null);
         setSelected(null);
         setLoading(false);
         setRecovering(false);
@@ -30,6 +40,7 @@ export function ContextProvider({ children }: {
         if (result.id !== id || !result.tenant_name || !result.contract_code || !result.environment || !Number.isFinite(Date.parse(result.expires_at)))
             throw new ApiError(503);
         active.current = id;
+        if (result.support_session_id) supportReference.current=result.support_session_id;
         api.setContext(id);
         storeContext(id);
         setSelected(previous => JSON.stringify(previous) === JSON.stringify(result) ? previous : result);
@@ -83,11 +94,15 @@ export function ContextProvider({ children }: {
         };
         const onFocus = () => { void verify(); };
         const remaining = Date.parse(selected.expires_at) - Date.now();
-        const expiry = window.setTimeout(forget, Math.min(Math.max(remaining, 0), 2147483647));
+        const expiry = window.setTimeout(() => {
+            const supportId = supportReference.current ?? selected.support_session_id ?? readSupport();
+            forget(supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : undefined);
+            if (supportId) void api.request('/support-sessions/' + encodeURIComponent(supportId), { contextId: selected.id }).catch(() => {});
+        }, Math.min(Math.max(remaining, 0), 2147483647));
         // Do not poll: polling would renew an otherwise idle server session.
         window.addEventListener('focus', onFocus);
         return () => { controller.abort(); window.clearTimeout(expiry); window.removeEventListener('focus', onFocus); };
-    }, [selected, validate, forget]);
+    }, [selected, validate, forget, api]);
     async function select(contractId: string) {
         if (locked.current || active.current)
             return;
@@ -142,5 +157,5 @@ export function ContextProvider({ children }: {
             setBusy(false);
         }
     }
-    return <Context.Provider value={{ selected, loading, busy, error, recovering, select, clear, retry: () => void restore() }}>{children}</Context.Provider>;
+    return <Context.Provider value={{ selected, loading, busy, error, recovering, select, clear, notice, registerSupport, invalidate: forget, retry: () => void restore() }}>{children}</Context.Provider>;
 }

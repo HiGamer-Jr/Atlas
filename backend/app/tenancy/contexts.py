@@ -158,6 +158,12 @@ def revalidate(db, principal, scope):
         .with_for_update()
         .execution_options(populate_existing=True)
     )
+    clock = now(db)  # Recompute after contract/context lock waits.
+    if (
+        session.expires_at <= clock
+        or session.last_seen_at + timedelta(seconds=idle) <= clock
+    ):
+        raise ApiError(401, "SESSION_INVALID", "Autenticação necessária.")
     if (
         context is None
         or context.revoked_at is not None

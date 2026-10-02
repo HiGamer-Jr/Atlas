@@ -31,8 +31,23 @@ def validate_runtime_connection(connection: Connection) -> None:
 
 
 def get_db(request: Request) -> Iterator[Session]:
-    with Session(request.app.state.database_engine) as db, db.begin():
-        validate_runtime_connection(db.connection())
-        db.info["clock"] = request.app.state.clock
-        db.info["settings"] = request.app.state.settings
-        yield db
+    from app.core.errors import ApiError
+    from app.support.gate import check_request, observe_request
+
+    try:
+        with Session(request.app.state.database_engine) as db, db.begin():
+            validate_runtime_connection(db.connection())
+            db.info.update(
+                clock=request.app.state.clock,
+                settings=request.app.state.settings,
+                request=request,
+            )
+            error = check_request(db, request)
+            if error:
+                raise error
+            yield db
+    except ApiError:
+        # The endpoint transaction and ALL its locks have closed. Observe again
+        # to persist any expiry/revoke crossed while waiting in the service.
+        observe_request(request)
+        raise

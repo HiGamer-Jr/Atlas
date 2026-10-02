@@ -41,6 +41,7 @@ from app.identity.sessions import (
     record_access,
     session_candidate,
 )
+from app.support.gate import support_control
 
 router = APIRouter()
 
@@ -72,12 +73,13 @@ def csrf_scope(db, request, lock=False):
 
 
 @router.get("/auth/csrf", response_model=CsrfView)
+@support_control("csrf")
 def csrf(request: Request, response: Response, db: Database):
     now, settings = request.app.state.clock(), request.app.state.settings
     try:
         _, _, session = authenticate(db, request, touch=False)
     except ApiError as error:
-        if error.status != 401:
+        if error.status != 401 or getattr(request.state, "support_no_touch", False):
             raise
         session = None
     supplied = request.cookies.get(CSRF_COOKIE)
@@ -175,14 +177,19 @@ def login(payload: LoginInput, request: Request, response: Response, db: Databas
 
 
 @router.get("/auth/me", response_model=IdentityView)
+@support_control("identity")
 def me(principal: Annotated[Principal, Depends(require_principal)], db: Database):
     return identity_view(principal, db.get(User, principal.user_id))
 
 
 @router.post("/auth/logout", status_code=204)
+@support_control("logout")
 def logout(request: Request, db: Database):
     principal, _, session = authenticate(db, request)
     require_csrf(request, session.csrf_hash)
+    from app.support.services import revoke_owned
+
+    revoke_owned(db, request, session_id=principal.session_id)
     session.revoked_at = request.app.state.clock()
     record_access(
         db,

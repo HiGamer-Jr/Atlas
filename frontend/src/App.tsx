@@ -13,10 +13,10 @@ import ErrorNotice from './api/ErrorNotice';
 import './LoginScreen.css';
 import './platform/Platform.css';
 function Portal() {
-    const { selected, loading, error, recovering, retry, clear } = useAccessContext();
+    const { selected, loading, error, recovering, retry, clear, notice } = useAccessContext();
     if (loading || (recovering && !error && !selected))
         return <p role="status">Validando contexto…</p>;
-    return <><ErrorNotice error={error}/>{!!error && recovering && <div className="recovery-actions"><button onClick={retry}>Validar contexto novamente</button><button onClick={() => void clear()}>Encerrar contexto</button></div>}{selected ? <ContractShell /> : !recovering ? <ContractPicker /> : null}</>;
+    return <>{notice&&<p role="status">{notice}</p>}<ErrorNotice error={error}/>{!!error && recovering && <div className="recovery-actions"><button onClick={retry}>Validar contexto novamente</button><button onClick={() => void clear()}>Encerrar contexto</button></div>}{selected ? <ContractShell /> : !recovering ? <ContractPicker /> : null}</>;
 }
 function AuthenticatedApp() {
     const { user, loading, error, busy, login, logout, retry } = useAuth();
