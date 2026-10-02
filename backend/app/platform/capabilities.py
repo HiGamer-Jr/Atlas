@@ -78,7 +78,11 @@ PHASE6_ACCESS = frozenset(
 )
 INTERNAL_GRANTS = MappingProxyType(
     {
-        "PLATFORM_ADMIN": PHASE3_ADMIN | PHASE6_ACCESS,
-        "PLATFORM_SUPPORT": PHASE3_SUPPORT | PHASE6_ACCESS,
+        "PLATFORM_ADMIN": PHASE3_ADMIN
+        | PHASE6_ACCESS
+        | frozenset({"organization.manage", "modules.read", "modules.manage"}),
+        "PLATFORM_SUPPORT": PHASE3_SUPPORT
+        | PHASE6_ACCESS
+        | frozenset({"modules.read"}),
     }
 )

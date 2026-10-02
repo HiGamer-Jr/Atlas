@@ -12,7 +12,7 @@ export default function AccessDialog({ title, children, onClose, busy = false }:
     useEffect(() => { const previous = document.activeElement as HTMLElement | null; const dialog = ref.current; if (dialog && typeof dialog.showModal === 'function')
         dialog.showModal();
     else
-        dialog?.setAttribute('open', ''); dialog?.querySelector<HTMLElement>('input,select,button')?.focus(); return () => { dialog?.close?.(); previous?.focus(); }; }, []);
+        dialog?.setAttribute('open', ''); dialog?.querySelector<HTMLElement>('input,select,button')?.focus(); return () => { dialog?.close?.(); if (previous?.isConnected && !previous.matches(':disabled')) previous.focus(); else previous?.closest<HTMLElement>('[tabindex]')?.focus(); }; }, []);
     return <dialog ref={ref} className="access-dialog" aria-labelledby={id} onCancel={event => { event.preventDefault(); if (!busy)
         onClose(); }} onKeyDown={event => { if (event.key === 'Escape') {
         event.preventDefault();

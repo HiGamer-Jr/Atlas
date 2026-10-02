@@ -16,6 +16,7 @@ export function useScopedQuery<T>(path: string | null) {
         request: string;
     }>({ data: null, error: null, key: '', request: '' });
     const retry = useCallback(() => setRevision(value => value + 1), []);
+    const discardAndRetry = useCallback(() => { setState({ data: null, error: null, key: '', request: '' }); setRevision(value => value + 1); }, []);
     useEffect(() => {
         if (!path || !contextId)
             return;
@@ -29,5 +30,5 @@ export function useScopedQuery<T>(path: string | null) {
         });
         return () => controller.abort();
     }, [api, path, contextId, key, request]);
-    return { data: state.request === request ? state.data : null, error: state.key === key ? state.error : null, loading: !!path && state.key !== key, retry };
+    return { data: state.request === request ? state.data : null, error: state.key === key ? state.error : null, loading: !!path && state.key !== key, retry, discardAndRetry };
 }

@@ -62,6 +62,39 @@ class MembershipStateSnapshot(BaseModel):
     version: int
 
 
+class OrganizationNodeSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    kind: Literal[
+        "COMPANY",
+        "BRANCH",
+        "UNIT",
+        "STORE",
+        "DISTRIBUTION_CENTER",
+        "WAREHOUSE",
+        "OFFICE",
+        "WORKSITE",
+    ]
+    name: str = Field(min_length=1, max_length=200)
+    code: str = Field(min_length=1, max_length=64)
+    parent_id: UUID | None
+    active: bool
+    version: int = Field(ge=1)
+
+
+class ContractModuleSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    code: Literal["PROCUREMENT", "COMEX", "INVENTORY", "FINANCE", "PROJECTS", "DATAHUB"]
+    contracted: bool
+    active: bool
+    version: int = Field(ge=0)
+
+
+class MembershipUnitScopeSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    node_ids: list[UUID] = Field(max_length=100)
+    version: int = Field(ge=1)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -85,6 +118,10 @@ class AuditInput(BaseModel):
         "access.sessions.revoked",
         "membership.status.changed",
         "membership.invited",
+        "organization.node.created",
+        "organization.node.updated",
+        "contract.module.updated",
+        "membership.unit_scope.updated",
         "tenant.created",
         "contract.created",
         "context.selected",
@@ -104,6 +141,8 @@ class AuditInput(BaseModel):
         "contract",
         "access_context",
         "tenant_role",
+        "organization_node",
+        "contract_module",
         "membership",
     ]
     entity_id: UUID
@@ -115,6 +154,9 @@ class AuditInput(BaseModel):
         | TenantRoleSnapshot
         | MembershipRoleSnapshot
         | MembershipStateSnapshot
+        | OrganizationNodeSnapshot
+        | ContractModuleSnapshot
+        | MembershipUnitScopeSnapshot
         | None
     ) = None
     after: (
@@ -125,6 +167,9 @@ class AuditInput(BaseModel):
         | TenantRoleSnapshot
         | MembershipRoleSnapshot
         | MembershipStateSnapshot
+        | OrganizationNodeSnapshot
+        | ContractModuleSnapshot
+        | MembershipUnitScopeSnapshot
         | None
     ) = None
     reason: str | None = Field(default=None, min_length=1, max_length=2000)
@@ -135,6 +180,33 @@ class AuditInput(BaseModel):
     def validate_scope(self):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
+        registered = {
+            "organization.node.created": (
+                "organization_node",
+                OrganizationNodeSnapshot,
+            ),
+            "organization.node.updated": (
+                "organization_node",
+                OrganizationNodeSnapshot,
+            ),
+            "contract.module.updated": ("contract_module", ContractModuleSnapshot),
+            "membership.unit_scope.updated": (
+                "membership",
+                MembershipUnitScopeSnapshot,
+            ),
+        }.get(self.action)
+        if registered:
+            entity, snapshot = registered
+            if (
+                self.tenant_id is None
+                or self.entity_type != entity
+                or not isinstance(self.after, snapshot)
+            ):
+                raise ValueError("Action requires its registered scoped snapshot")
+            if self.before is not None and not isinstance(self.before, snapshot):
+                raise ValueError("Before state must use the registered snapshot")
+            if self.action != "organization.node.created" and self.before is None:
+                raise ValueError("Update requires a before state")
         return self
 
 

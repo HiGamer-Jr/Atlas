@@ -3,8 +3,11 @@
 from pydantic import ValidationError
 
 from app.audit.schemas import (
+    ContractModuleSnapshot,
     MembershipRoleSnapshot,
     MembershipStateSnapshot,
+    MembershipUnitScopeSnapshot,
+    OrganizationNodeSnapshot,
     TenantRoleSnapshot,
 )
 from app.identity.models import User
@@ -27,6 +30,10 @@ ACCESS_ACTIONS = frozenset(
 )
 ROLE_ACTIONS = frozenset({"tenant.role.created", "tenant.role.updated"})
 SNAPSHOTS = {
+    "organization.node.created": OrganizationNodeSnapshot,
+    "organization.node.updated": OrganizationNodeSnapshot,
+    "contract.module.updated": ContractModuleSnapshot,
+    "membership.unit_scope.updated": MembershipUnitScopeSnapshot,
     "membership.status.changed": MembershipStateSnapshot,
     "membership.role.assigned": MembershipRoleSnapshot,
     "tenant.role.created": TenantRoleSnapshot,

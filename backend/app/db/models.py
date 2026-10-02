@@ -11,6 +11,11 @@ from app.identity.models import (
     SecurityToken,
     User,
 )
+from app.organization.models import (
+    ContractModule,
+    MembershipUnitScope,
+    OrganizationNode,
+)
 from app.tenancy.models import (
     AccessContext,
     Contract,
@@ -29,8 +34,11 @@ __all__ = [
     "AuthSession",
     "Base",
     "Contract",
+    "ContractModule",
     "EmailOutbox",
     "Membership",
+    "MembershipUnitScope",
+    "OrganizationNode",
     "PlatformRoleAssignment",
     "SecurityToken",
     "Tenant",

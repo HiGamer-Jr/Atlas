@@ -131,6 +131,7 @@ class Membership(Timestamps, Base):
         UniqueConstraint(
             "user_id", "tenant_id", "contract_id", name="uq_membership_user_scope"
         ),
+        UniqueConstraint("tenant_id", "contract_id", "id", name="uq_membership_scope"),
         ForeignKeyConstraint(
             ["tenant_id", "contract_id"],
             ["contracts.tenant_id", "contracts.id"],
