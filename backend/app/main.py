@@ -30,6 +30,9 @@ def create_app(settings: Settings) -> FastAPI:
     from app.identity.email_transport import SMTPEmailTransport
 
     application.state.email_transport = SMTPEmailTransport(settings)
+    from app.grants.registry import MaintenanceActionRegistry
+
+    application.state.maintenance_registry = MaintenanceActionRegistry()
     application.state.settings = settings
     application.state.clock = lambda: datetime.now(UTC)
 
@@ -50,7 +53,12 @@ def create_app(settings: Settings) -> FastAPI:
         with Session(application.state.database_engine) as db, db.begin():
             validate_runtime_connection(db.connection())
             support_denial = getattr(request.state, "support_denial", None)
-            if support_denial is not None:
+            grant_denial = getattr(request.state, "grant_denial", None)
+            if grant_denial is not None:
+                from app.grants.gate import record_denial as record_grant_denial
+
+                record_grant_denial(db, request, grant_denial, exc.code)
+            elif support_denial is not None:
                 from app.support.services import record_denial
 
                 record_denial(db, request, support_denial, exc.code)

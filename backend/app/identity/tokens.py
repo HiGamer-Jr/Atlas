@@ -318,6 +318,8 @@ def revoke_sessions(db, user_id, now):
     request = db.info.get("request")
     if request is not None:
         revoke_owned(db, request, user_id=user_id)
+        from app.grants.services import revoke_owned as revoke_grants
+        revoke_grants(db, request, user_id=user_id)
     db.execute(
         update(AuthSession)
         .where(AuthSession.user_id == user_id, AuthSession.revoked_at.is_(None))

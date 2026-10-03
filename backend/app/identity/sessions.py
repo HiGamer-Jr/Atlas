@@ -82,7 +82,7 @@ def authenticate(db, request: Request, touch=True):
         + timedelta(seconds=request.app.state.settings.session_idle_seconds)
     ):
         raise ApiError(401, "SESSION_INVALID", "Autenticação necessária.")
-    if touch and not getattr(request.state, "support_no_touch", False):
+    if touch and not (getattr(request.state, "support_no_touch", False) or getattr(request.state, "privileged_no_touch", False)):
         session.last_seen_at = now
     principal = Principal(user.id, session.id, current_role(db, user.id))
     request.state.principal = principal

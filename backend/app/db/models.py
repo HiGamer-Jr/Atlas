@@ -2,6 +2,7 @@
 
 from app.audit.models import AccessEvent, AuditEvent
 from app.db.base import Base
+from app.grants.models import MaintenanceGrantScope, TemporaryPrivilegedGrant
 from app.identity.models import (
     AuthPreauth,
     AuthRateLimit,
@@ -37,12 +38,14 @@ __all__ = [
     "Contract",
     "ContractModule",
     "EmailOutbox",
+    "MaintenanceGrantScope",
     "Membership",
     "MembershipUnitScope",
     "OrganizationNode",
     "PlatformRoleAssignment",
     "SecurityToken",
     "SupportSession",
+    "TemporaryPrivilegedGrant",
     "Tenant",
     "TenantRole",
     "TenantRolePermission",

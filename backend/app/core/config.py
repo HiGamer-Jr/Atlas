@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://atlas:atlas@localhost:5433/atlas", repr=False
     )
+    grant_seconds: int = Field(default=1800, ge=60, le=1800)
     support_session_seconds: int = Field(default=1800, ge=60, le=1800)
     context_seconds: int = Field(default=3600, ge=60, le=28800)
     public_origin: str = "https://localhost:5173"

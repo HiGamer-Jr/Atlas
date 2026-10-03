@@ -78,7 +78,7 @@ def independent(db, request, candidate, supplied):
     )
 
 
-def check_request(db, request):
+def check_support_request(db, request):
     # Global lifecycle lock precedes route-specific population/identity locks.
     # Normal/unrelated requests acquire NO shared OPERATOR or identity row lock;
     # operator management is free to take its required exclusive lock first.
@@ -175,10 +175,18 @@ def check_request(db, request):
     return ApiError(403, "SUPPORT_READ_ONLY", "Sessão de suporte somente leitura.")
 
 
+def check_request(db, request):
+    error = check_support_request(db, request)
+    if error:
+        return error
+    from app.grants.gate import check_request as check_grant_request
+    return check_grant_request(db, request)
+
+
 def observe_request(request: Request):
     if not request.cookies.get(SESSION_COOKIE) and not request.headers.get(
         "X-HiAtlas-Context"
-    ):
+    ) and not getattr(request.scope.get("endpoint"), "privileged_read", None):
         return
     from app.db.session import validate_runtime_connection
 

@@ -58,6 +58,7 @@ class ContextCreated(BaseModel):
 
 class ContextView(BaseModel):
     support_session_id: UUID | None = None
+    privileged_context_id: UUID | None = None
     id: UUID
     tenant_id: UUID
     contract_id: UUID

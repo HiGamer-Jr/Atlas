@@ -71,7 +71,9 @@ export class ApiClient {
             assertCurrent();
             if (!response.ok) {
                 const error = new ApiError(response.status, payload && typeof payload === 'object' ? payload : {});
-                if (response.status === 401 && path !== '/auth/login')
+                // A rejected password confirmation does not revoke a valid authenticated session.
+                const rejectedReauthentication = path === '/auth/reauthenticate' && error.code === 'AUTH_INVALID';
+                if (response.status === 401 && path !== '/auth/login' && !rejectedReauthentication)
                     this.onUnauthorized();
                 if (context && error.code === 'CONTEXT_INVALID')
                     this.onContextInvalid();

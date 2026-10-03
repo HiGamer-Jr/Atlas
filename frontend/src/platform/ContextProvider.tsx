@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/state';
 import { ApiError, isAbort } from '../api/errors';
 import { readContext, storeContext } from './storage';
+import { readPrivileged, storePrivileged } from '../privileged/storage';
 import { readSupport, storeSupport } from '../support/storage';
 import { Context, type AccessContext } from './state';
 export function ContextProvider({ children }: {
@@ -12,20 +13,25 @@ export function ContextProvider({ children }: {
     const [loading, setLoading] = useState(() => !!readContext()), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
     const [recovering, setRecovering] = useState(() => !!readContext());
     const [notice,setNotice]=useState<string|null>(null);
+    const privilegedReference = useRef<string|null>(null);
+    const registerPrivileged = useCallback((id:string|null)=>{privilegedReference.current=id;},[]);
     const supportReference = useRef<string|null>(null);
     const registerSupport = useCallback((id:string|null)=>{supportReference.current=id;},[]);
     const generation = useRef(0), locked = useRef(false), active = useRef<string | null>(null);
     const forget = useCallback((message?: string) => {
         const supportId = supportReference.current ?? readSupport();
+        const privilegedId = privilegedReference.current ?? readPrivileged();
         const wasActive = active.current !== null;
-        const terminal = message ?? (supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : null);
+        const terminal = message ?? (supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : privilegedId ? 'Acesso temporário encerrado, expirado ou revogado. Selecione um ambiente para continuar.' : null);
         setNotice(previous => terminal ?? (wasActive ? null : previous));
         supportReference.current = null;
+        privilegedReference.current = null;
         generation.current++;
         api.setContext(null);
         active.current = null;
         storeContext(null);
         storeSupport(null);
+        storePrivileged(null);
         setSelected(null);
         setLoading(false);
         setRecovering(false);
@@ -41,6 +47,7 @@ export function ContextProvider({ children }: {
             throw new ApiError(503);
         active.current = id;
         if (result.support_session_id) supportReference.current=result.support_session_id;
+        if (result.privileged_context_id) privilegedReference.current=result.privileged_context_id;
         api.setContext(id);
         storeContext(id);
         setSelected(previous => JSON.stringify(previous) === JSON.stringify(result) ? previous : result);
@@ -96,7 +103,9 @@ export function ContextProvider({ children }: {
         const remaining = Date.parse(selected.expires_at) - Date.now();
         const expiry = window.setTimeout(() => {
             const supportId = supportReference.current ?? selected.support_session_id ?? readSupport();
-            forget(supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : undefined);
+            const privilegedId = privilegedReference.current ?? selected.privileged_context_id ?? readPrivileged();
+            forget(supportId ? 'Sessão de suporte encerrada, expirada ou indisponível. Selecione um ambiente para continuar.' : privilegedId ? 'Acesso temporário encerrado, expirado ou revogado. Selecione um ambiente para continuar.' : undefined);
+            if (privilegedId) void api.request('/grants/context', {contextId:privilegedId}).catch(()=>{});
             if (supportId) void api.request('/support-sessions/' + encodeURIComponent(supportId), { contextId: selected.id }).catch(() => {});
         }, Math.min(Math.max(remaining, 0), 2147483647));
         // Do not poll: polling would renew an otherwise idle server session.
@@ -157,5 +166,5 @@ export function ContextProvider({ children }: {
             setBusy(false);
         }
     }
-    return <Context.Provider value={{ selected, loading, busy, error, recovering, select, clear, notice, registerSupport, invalidate: forget, retry: () => void restore() }}>{children}</Context.Provider>;
+    return <Context.Provider value={{ selected, loading, busy, error, recovering, select, clear, notice, registerSupport, registerPrivileged, invalidate: forget, retry: () => void restore() }}>{children}</Context.Provider>;
 }

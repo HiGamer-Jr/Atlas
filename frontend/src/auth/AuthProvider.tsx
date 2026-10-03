@@ -3,6 +3,7 @@ import { ApiClient } from '../api/client';
 import { ApiError, isAbort } from '../api/errors';
 import { storeContext } from '../platform/storage';
 import { storeSupport } from '../support/storage';
+import { storePrivileged } from '../privileged/storage';
 import { AuthContext, type Identity } from './state';
 export function AuthProvider({ children }: {
     children: ReactNode;
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: {
         api.setContext(null);
         storeContext(null);
         storeSupport(null);
+        storePrivileged(null);
         setUser(null);
         setLoading(false);
         setBusy(false);
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: {
             const identity = await api.request<Identity>('/auth/me', { contextId: null });
             storeContext(null);
         storeSupport(null);
+        storePrivileged(null);
             api.setContext(null);
             setUser(identity);
         }

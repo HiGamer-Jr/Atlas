@@ -17,6 +17,7 @@ def test_support_incremental_upgrade_downgrade_upgrade_and_explicit_runtime_gran
             command.downgrade(migration_config, "0006")
             assert "support_sessions" not in inspect(conn).get_table_names()
             command.upgrade(migration_config, "0007")
+            command.upgrade(migration_config, "head")
             assert set(Base.metadata.tables["support_sessions"].columns.keys()) == {
                 column["name"]
                 for column in inspect(conn).get_columns("support_sessions")

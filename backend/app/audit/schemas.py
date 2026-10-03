@@ -109,6 +109,27 @@ class SupportSessionSnapshot(BaseModel):
     ended_at: datetime | None
 
 
+class PrivilegedScopeSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+    action_code: str = Field(pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
+    entity_type: str = Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")
+    entity_id: UUID | None = None
+
+
+class PrivilegedGrantSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+    operator_id: UUID
+    operator_role: Literal["PLATFORM_ADMIN"]
+    grant_type: Literal["FINANCIAL_FISCAL", "MAINTENANCE"]
+    status: Literal["ACTIVE", "ENDED", "EXPIRED", "REVOKED"]
+    started_at: datetime
+    expires_at: datetime
+    ended_at: datetime | None
+    revoked_at: datetime | None
+    version: int = Field(ge=1)
+    scopes: list[PrivilegedScopeSnapshot] = Field(max_length=20)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -124,6 +145,10 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "privileged_grant.started",
+        "privileged_grant.ended",
+        "privileged_grant.expired",
+        "privileged_grant.revoked",
         "support.session.started",
         "support.session.ended",
         "support.session.expired",
@@ -156,6 +181,7 @@ class AuditInput(BaseModel):
     entity_type: Literal[
         "user",
         "platform_role",
+        "privileged_grant",
         "support_session",
         "tenant",
         "contract",
@@ -167,7 +193,8 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        SupportSessionSnapshot
+        PrivilegedGrantSnapshot
+        | SupportSessionSnapshot
         | IdentitySnapshot
         | TenantSnapshot
         | ContractSnapshot
@@ -181,7 +208,8 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        SupportSessionSnapshot
+        PrivilegedGrantSnapshot
+        | SupportSessionSnapshot
         | IdentitySnapshot
         | TenantSnapshot
         | ContractSnapshot
@@ -202,6 +230,13 @@ class AuditInput(BaseModel):
     def validate_scope(self):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
+        if self.action.startswith("privileged_grant."):
+            if (self.tenant_id is None or self.entity_type != "privileged_grant"
+                or not isinstance(self.after, PrivilegedGrantSnapshot)
+                or self.after.operator_id != self.actor_id or self.after.operator_role != self.actor_role):
+                raise ValueError("Privileged action requires typed real operator provenance")
+            if self.action != "privileged_grant.started" and not isinstance(self.before, PrivilegedGrantSnapshot):
+                raise ValueError("Terminal grant action requires before state")
         if self.action.startswith("support.session."):
             if (
                 self.tenant_id is None

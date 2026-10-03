@@ -221,7 +221,10 @@ def context_view(db, principal, scope):
     from app.support.services import support_for_context
 
     support = support_for_context(db, scope.id, active_only=True)
+    from app.grants.models import TemporaryPrivilegedGrant
+    grant = db.scalar(select(TemporaryPrivilegedGrant).where(TemporaryPrivilegedGrant.parent_context_id == scope.id, TemporaryPrivilegedGrant.status == "ACTIVE"))
     return ContextView(
+        privileged_context_id=grant.context_id if grant else None,
         support_session_id=support.id if support else None,
         id=context.id,
         tenant_id=tenant.id,

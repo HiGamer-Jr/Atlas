@@ -79,7 +79,7 @@ def csrf(request: Request, response: Response, db: Database):
     try:
         _, _, session = authenticate(db, request, touch=False)
     except ApiError as error:
-        if error.status != 401 or getattr(request.state, "support_no_touch", False):
+        if error.status != 401 or getattr(request.state, "support_no_touch", False) or getattr(request.state, "privileged_no_touch", False):
             raise
         session = None
     supplied = request.cookies.get(CSRF_COOKIE)
@@ -190,6 +190,8 @@ def logout(request: Request, db: Database):
     from app.support.services import revoke_owned
 
     revoke_owned(db, request, session_id=principal.session_id)
+    from app.grants.services import revoke_owned as revoke_grants
+    revoke_grants(db, request, session_id=principal.session_id)
     session.revoked_at = request.app.state.clock()
     record_access(
         db,

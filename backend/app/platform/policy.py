@@ -16,8 +16,14 @@ def role_support_eligible(role, granted):
 
 
 def effective_capabilities(db, principal, scope):
-    from app.support.services import effective_access, support_for_context
+    from sqlalchemy import select
 
+    from app.grants.models import TemporaryPrivilegedGrant
+    from app.grants.services import effective_access as grant_access
+    from app.support.services import effective_access, support_for_context
+    grant = db.scalar(select(TemporaryPrivilegedGrant).where(TemporaryPrivilegedGrant.context_id == scope.id))
+    if grant is not None:
+        return grant_access(db, principal, grant)
     support = support_for_context(db, scope.id)
     if support and support.context_id == scope.id:
         return effective_access(db, principal, support)

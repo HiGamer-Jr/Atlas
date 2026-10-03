@@ -8,6 +8,7 @@ export type AccessContext = {
     expires_at: string;
     capabilities: string[];
     support_session_id?: string | null;
+    privileged_context_id?: string | null;
 };
 export type ContextState = {
     selected: AccessContext | null;
@@ -21,6 +22,7 @@ export type ContextState = {
     invalidate?: (notice?: string) => void;
     notice?: string | null;
     registerSupport?: (id: string | null) => void;
+    registerPrivileged?: (id: string | null) => void;
 };
 export const Context = createContext<ContextState | null>(null);
 export function useAccessContext() { const context = useContext(Context); if (!context)
