@@ -4,7 +4,8 @@ Data: 2026-10-03. Somente Fase 10; parada obrigatória antes da Fase 11.
 
 - Branch: `feat/hiatlas-platform-phase-10`.
 - Base aprovada: `1b01fa9ee3d0a826b5346ffc28745d590453aa67`.
-- Commit de implementação: pendente do encerramento.
+- Commit de implementação: `4f425da502fe32b348e0082e448387a33531bfdf` — feat: implement phase 10 controlled maintenance.
+- Commit de evidências: `docs: record phase 10 final validation`, imediatamente posterior; SHA final informado no retorno para revisão.
 - Migração incremental: `0009_processing_runs`, após `0008`.
 - Handlers reais de produção registrados: **zero**. Registro normal vazio, sem operações fictícias.
 - Handler controlado: `FIXTURE_NODE_RENAME`, somente fixture/factory e entry frontend separados de teste.
@@ -89,7 +90,7 @@ Controlado: login Admin → contrato A → solicitação MAINTENANCE com entidad
 
 ## Encerramento
 
-API/Vite próprios encerrados e listeners ausentes. PostgreSQL próprio parado e cluster descartável removido. Diretório temporário da Fase 10, senhas/chaves de teste, TLS, logs brutos e scratch removidos após validação dos caminhos e ausência de reparse points; workspace SDD antigo preservado. Portas próprias 55490/8010/5180 sem listeners. E2E normal/controlado completo executados e capturas inspecionadas. Commits são registrados ao concluir; sem deploy, merge ou Fase 11.
+API/Vite próprios encerrados e listeners ausentes. PostgreSQL próprio parado e cluster descartável removido. Diretório temporário da Fase 10, senhas/chaves de teste, TLS, logs brutos e scratch removidos após validação dos caminhos e ausência de reparse points; workspace SDD antigo preservado. Portas próprias 55490/8010/5180 sem listeners. E2E normal/controlado completo executados e capturas inspecionadas. Implementação registrada no commit indicado acima, seguida da consolidação de evidências. Worktree preservada para revisão; estado Git limpo verificado após o commit final. Sem deploy, merge ou Fase 11.
 ### Adendo de conferência final
 
 A primeira execução completa do backend passou com 695/695 em 624.20s, zero skips. Após incluir cinco casos diretos obrigatórios, a repetição completa passou com 700/700 em 614.20s, zero skips. Casos novos: Admin em SupportSession READ_ONLY, FINANCIAL_FISCAL, Suporte usando contexto de Admin, nova AuthSession do mesmo Admin e segunda ação conhecida fora do grant. Cada caso chama preview/correção/reprocess, exige negação, Original/versão 1, nenhum run derivado e nenhuma auditoria de sucesso. A suíte adicional completa passou 12/12; revisão independente do adendo sem achados.
