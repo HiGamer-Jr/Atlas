@@ -46,6 +46,7 @@ class TemporaryPrivilegedGrant(Base):
             for name in ("parent_context_id", "context_id")
         ],
         UniqueConstraint("context_id", name="uq_grant_context"),
+        UniqueConstraint("tenant_id","contract_id","id","context_id","operator_session_id","operator_id","grant_type",name="uq_grant_processing_binding"),
         UniqueConstraint("tenant_id", "contract_id", "id", name="uq_grant_scope"),
         CheckConstraint("operator_role='PLATFORM_ADMIN'", name="ck_grant_operator"),
         CheckConstraint(
@@ -140,6 +141,7 @@ class MaintenanceGrantScope(Base):
             ondelete="RESTRICT",
         ),
         UniqueConstraint("grant_id", "action_code", name="uq_maintenance_action_scope"),
+        UniqueConstraint("tenant_id","contract_id","grant_id","action_code","entity_type","entity_id",name="uq_maintenance_processing_binding"),
     )
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")

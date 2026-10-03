@@ -12,10 +12,15 @@ from alembic import command
 from app.core.config import Settings
 from app.main import create_app
 from tests.database_harness import open_test_engines
+from tests.fixtures.maintenance_cases import (
+    correction_case,  # noqa: F401 -- pytest fixture registration
+    processing_case,  # noqa: F401 -- pytest fixture registration
+)
 from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "processing_runs",
     "maintenance_grant_scopes",
     "temporary_privileged_grants",
     "support_sessions",

@@ -1,3 +1,4 @@
+export type MaintenanceScope = {action_code:string;entity_type:'organization_node';entity_id:string};
 export type Grant = {
     id: string;
     context_id: string;

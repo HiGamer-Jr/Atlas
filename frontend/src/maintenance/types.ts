@@ -1,0 +1,2 @@
+export type ProcessingRun={id:string;action_code:string;status:'SUCCEEDED'|'FAILED'|'UNKNOWN'|'PENDING'|'RUNNING';result_code:string|null;message_code:string|null;request_id:string|null;created_at:string;started_at:string|null;finished_at:string|null;version:number;can_reprocess:boolean;entity_id:string|null;source_run_id:string|null};
+export type ProcessingPage={items:ProcessingRun[];total:number;limit:number;offset:number};

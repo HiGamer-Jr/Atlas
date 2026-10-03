@@ -40,6 +40,9 @@ def test_grant_incremental_upgrade_downgrade_upgrade_and_minimal_grants(
                 )
             ).scalar_one()
     finally:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.upgrade(migration_config, "head")
         migration_config.attributes.pop("connection", None)
 
 

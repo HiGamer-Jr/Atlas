@@ -130,6 +130,16 @@ class PrivilegedGrantSnapshot(BaseModel):
     scopes: list[PrivilegedScopeSnapshot] = Field(max_length=20)
 
 
+class ProcessingSnapshot(BaseModel):
+    model_config=ConfigDict(extra="forbid",frozen=True,hide_input_in_errors=True)
+    run_id:UUID
+    action_code:str=Field(pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
+    status:Literal["PENDING","RUNNING","SUCCEEDED","FAILED","UNKNOWN"]
+    result_code:Literal["NONE","COMPLETED","HANDLER_FAILED","NOT_ELIGIBLE"]
+    message_code:Literal["NONE","COMPLETED","HANDLER_FAILED","NOT_ELIGIBLE"]
+    version:int=Field(ge=1)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -145,6 +155,9 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "maintenance.correction.applied",
+        "maintenance.processing.succeeded",
+        "maintenance.processing.failed",
         "privileged_grant.started",
         "privileged_grant.ended",
         "privileged_grant.expired",
@@ -193,7 +206,8 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        PrivilegedGrantSnapshot
+        ProcessingSnapshot
+        | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
         | IdentitySnapshot
         | TenantSnapshot
@@ -208,7 +222,8 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        PrivilegedGrantSnapshot
+        ProcessingSnapshot
+        | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
         | IdentitySnapshot
         | TenantSnapshot
@@ -251,7 +266,11 @@ class AuditInput(BaseModel):
                 self.before, SupportSessionSnapshot
             ):
                 raise ValueError("Terminal support action requires before state")
+        if self.action=="maintenance.processing.failed" and (self.tenant_id is None or self.entity_type!="organization_node" or not isinstance(self.after,ProcessingSnapshot) or self.after.status!="FAILED" or self.outcome!="FAILURE"):
+            raise ValueError("Processing failure requires typed scoped state")
         registered = {
+            "maintenance.correction.applied": ("organization_node", OrganizationNodeSnapshot),
+            "maintenance.processing.succeeded": ("organization_node", OrganizationNodeSnapshot),
             "organization.node.created": (
                 "organization_node",
                 OrganizationNodeSnapshot,

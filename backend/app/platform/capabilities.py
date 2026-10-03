@@ -23,6 +23,7 @@ CATALOG = MappingProxyType(
                 )
             ],
             *[Capability(code, "privileged", True) for code in ("grants.request", "grants.read", "grants.end")],
+            Capability("jobs.read", "diagnostics", mutates_business_state=False, read_only_safe=True),
             Capability("contracts.read", "platform"),
             Capability("tenants.create", "platform", True),
             Capability("contracts.create", "platform", True),
@@ -54,7 +55,6 @@ CATALOG = MappingProxyType(
                     ("logs.technical.read", "diagnostics", True),
                     ("logs.access.read", "diagnostics", False),
                     ("audit.read", "audit", False),
-                    ("jobs.read", "maintenance", False),
                     ("errors.read", "diagnostics", False),
                     ("imports.manage", "maintenance", True),
                     ("corrections.execute", "maintenance", True),
@@ -103,10 +103,10 @@ INTERNAL_GRANTS = MappingProxyType(
         "PLATFORM_ADMIN": SUPPORT_SESSION_GRANTS
         | PHASE3_ADMIN
         | PHASE6_ACCESS
-        | frozenset({"organization.manage", "modules.read", "modules.manage", "grants.request", "grants.read", "grants.end", "maintenance.authorize"}),
+        | frozenset({"organization.manage", "modules.read", "modules.manage", "grants.request", "grants.read", "grants.end", "maintenance.authorize", "jobs.read"}),
         "PLATFORM_SUPPORT": SUPPORT_SESSION_GRANTS
         | PHASE3_SUPPORT
         | PHASE6_ACCESS
-        | frozenset({"modules.read"}),
+        | frozenset({"modules.read", "jobs.read"}),
     }
 )

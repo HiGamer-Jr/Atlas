@@ -485,7 +485,8 @@ def require_maintenance(
     # Maintenance capabilities are never injected as a blanket set into context RBAC.
     if action.capability not in INTERNAL_GRANTS.get(principal.platform_role, ()):
         raise ApiError(403, "CAPABILITY_DENIED", "Ação não permitida.")
-    require_module(db, principal, scope, action.module_code)
+    if action.module_code is not None:
+        require_module(db, principal, scope, action.module_code)
     validate_bound(db, principal, row)
     return action
 

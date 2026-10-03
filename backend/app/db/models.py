@@ -12,6 +12,7 @@ from app.identity.models import (
     SecurityToken,
     User,
 )
+from app.maintenance.models import ProcessingRun
 from app.organization.models import (
     ContractModule,
     MembershipUnitScope,
@@ -43,6 +44,7 @@ __all__ = [
     "MembershipUnitScope",
     "OrganizationNode",
     "PlatformRoleAssignment",
+    "ProcessingRun",
     "SecurityToken",
     "SupportSession",
     "TemporaryPrivilegedGrant",

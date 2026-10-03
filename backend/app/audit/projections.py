@@ -8,6 +8,7 @@ from app.audit.schemas import (
     MembershipStateSnapshot,
     MembershipUnitScopeSnapshot,
     OrganizationNodeSnapshot,
+    ProcessingSnapshot,
     TenantRoleSnapshot,
 )
 from app.identity.models import User
@@ -30,6 +31,9 @@ ACCESS_ACTIONS = frozenset(
 )
 ROLE_ACTIONS = frozenset({"tenant.role.created", "tenant.role.updated"})
 SNAPSHOTS = {
+    "maintenance.processing.failed": ProcessingSnapshot,
+    "maintenance.correction.applied": OrganizationNodeSnapshot,
+    "maintenance.processing.succeeded": OrganizationNodeSnapshot,
     "organization.node.created": OrganizationNodeSnapshot,
     "organization.node.updated": OrganizationNodeSnapshot,
     "contract.module.updated": ContractModuleSnapshot,
@@ -102,8 +106,8 @@ def project(db, row, detail=False, support=False):
     }
     if detail:
         result.update(
-            before=state_view(row.action, row.before_state),
-            after=state_view(row.action, row.after_state),
+            before=None if support and row.action.startswith("maintenance.") else state_view(row.action, row.before_state),
+            after=None if support and row.action.startswith("maintenance.") else state_view(row.action, row.after_state),
             reason=None,
         )
     return result

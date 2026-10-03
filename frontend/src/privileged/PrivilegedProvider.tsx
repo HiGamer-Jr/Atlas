@@ -5,7 +5,7 @@ import {useSupport} from '../support/state';
 import {ApiError,isAbort} from '../api/errors';
 import {readPrivileged,storePrivileged} from './storage';
 import {PrivilegedContext} from './state';
-import type {Grant} from './types';
+import type {Grant,MaintenanceScope} from './types';
 export default function PrivilegedProvider({children}:{children:ReactNode}){
  const {api,user,busy:authBusy}=useAuth();
  const {selected,invalidate,retry:refreshParent,registerPrivileged}=useAccessContext();
@@ -135,7 +135,8 @@ export default function PrivilegedProvider({children}:{children:ReactNode}){
    document.querySelector<HTMLElement>('[data-support-return]')?.focus();
   }
  },[grant,restoring,busy]);
- async function start(reason:string,reference:string|null){
+ async function createGrant(grantType:'FINANCIAL_FISCAL'|'MAINTENANCE',reason:string,reference:string|null,scopes:MaintenanceScope[]){
+  if(grantType==='MAINTENANCE'&&(!reference?.trim()||reason.trim().length<3||!scopes.length||scopes.some(scope=>scope.entity_type!=='organization_node'||!scope.entity_id)))throw new ApiError(422);
   if(locked.current||current.current||unresolved||!parent||support?.session||support?.restoring)throw new ApiError(403);
   locked.current=true;
   setBusy(true);
@@ -146,8 +147,9 @@ export default function PrivilegedProvider({children}:{children:ReactNode}){
   const abort=new AbortController();
   controller.current=abort;
   try{
-   const value=validate(await api.request<Grant>('/grants',{method:'POST',contextId:parent,signal:abort.signal,body:{grant_type:'FINANCIAL_FISCAL',reason,reference,scopes:[]}}));
+   const value=validate(await api.request<Grant>('/grants',{method:'POST',contextId:parent,signal:abort.signal,body:{grant_type:grantType,reason,reference,scopes}}));
    if(epoch!==generation.current||abort.signal.aborted)return;
+   if(value.grant_type!==grantType||value.scopes.length!==scopes.length||scopes.some(scope=>!value.scopes.some(actual=>actual.action_code===scope.action_code&&actual.entity_type===scope.entity_type&&actual.entity_id===scope.entity_id))){discard();throw new ApiError(403);}
    api.cancelContext();
    current.current=value;
    registerPrivileged?.(value.context_id);
@@ -162,6 +164,8 @@ export default function PrivilegedProvider({children}:{children:ReactNode}){
    throw e;
   }finally{locked.current=false;setBusy(false);}
  }
+ const start=(reason:string,reference:string|null)=>createGrant('FINANCIAL_FISCAL',reason,reference,[]);
+ const startMaintenance=(reason:string,reference:string,scopes:MaintenanceScope[])=>createGrant('MAINTENANCE',reason,reference,scopes);
  async function end(){
   const value=current.current;
   if(!value||locked.current)return;
@@ -193,5 +197,5 @@ export default function PrivilegedProvider({children}:{children:ReactNode}){
    throw e;
   }finally{locked.current=false;setBusy(false);}
  }
- return <PrivilegedContext.Provider value={{grant,restoring:restoring||unresolved||!!(discovered&&discovered!==endedContext&&grant?.context_id!==discovered),busy,error,start,end,retry:restore}}>{children}</PrivilegedContext.Provider>;
+ return <PrivilegedContext.Provider value={{grant,restoring:restoring||unresolved||!!(discovered&&discovered!==endedContext&&grant?.context_id!==discovered),busy,error,start,startMaintenance,end,retry:restore}}>{children}</PrivilegedContext.Provider>;
 }

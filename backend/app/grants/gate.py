@@ -75,6 +75,9 @@ def check_request(db, request):
         "end",
     }:
         return None
+    maintenance = getattr(endpoint, "maintenance_control", None)
+    if maintenance and row.grant_type == "MAINTENANCE":
+        return None  # Concrete route revalidates typed action/entity scope in its transaction.
     declaration = getattr(endpoint, "privileged_read", None)
     if request.method == "GET" and declaration and row.grant_type == "FINANCIAL_FISCAL":
         from app.platform.policy import require_capability

@@ -33,6 +33,8 @@ def create_app(settings: Settings) -> FastAPI:
     from app.grants.registry import MaintenanceActionRegistry
 
     application.state.maintenance_registry = MaintenanceActionRegistry()
+    from secrets import token_bytes
+    application.state.maintenance_receipt_key = token_bytes(32)
     application.state.settings = settings
     application.state.clock = lambda: datetime.now(UTC)
 
