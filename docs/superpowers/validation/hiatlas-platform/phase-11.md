@@ -8,7 +8,8 @@ Data da execução: 2026-10-05.
 Branch: feat/hiatlas-platform-phase-11.
 Base aprovada: 5beb8dd91abb5d8d82e3606918eb75dab933f833.
 Worktree isolada: D:/Atlas/.worktrees/hiatlas-platform-phase-1; árvore limpa e base confirmadas antes das mudanças.
-Commits de fechamento: registrados abaixo após a conclusão operacional.
+Commit de implementação e evidências: dc798360149dc7f36997f432e109832e0b52dbd2.
+Commit de consolidação deste relatório: HEAD da branch entregue, com mensagem docs: record phase 11 validation and cleanup. O hash final também é informado na entrega; consultar git log --oneline 5beb8dd..HEAD reproduz a sequência sem referência circular ao próprio commit.
 
 ## Resultado do quality gate
 

@@ -16,3 +16,5 @@ Verificação final independente PASS:
 - Código/evidências no repositório,78capturas novas e relatórios sanitizados preservados. Capturas aprovadas anteriores e perfis Chrome globais não foram alterados. `.phase11` permanece para inspeção/cleanup separado pelo coordenador.
 
 A remoção usou somente Remove-Item -LiteralPath no PowerShell, sem composição de exclusão entre shells, sem caminhos computados fora da árvore validada e sem limpeza global. Nenhum deploy, banco de produção ou commit foi realizado.
+
+Verificação complementar root: após preservar todos os resultados neste repositório, .phase11 foi removido separadamente com caminho absoluto/exato, contenção de descendentes e ausência de ReparsePoint. TEMP da infraestrutura e listeners55491/8011/5181 novamente verificados ausentes. O commit de implementação dc798360149dc7f36997f432e109832e0b52dbd2 preserva as evidências sanitizadas; nenhum segredo de teste ficou no scratch.
