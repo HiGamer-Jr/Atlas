@@ -12,6 +12,7 @@ import ContractShell from './platform/ContractShell';
 import ErrorNotice from './api/ErrorNotice';
 import './LoginScreen.css';
 import './platform/Platform.css';
+import DeploymentBanner from './deployment/DeploymentBanner';
 function Portal() {
     const { selected, loading, error, recovering, retry, clear, notice } = useAccessContext();
     if (loading || (recovering && !error && !selected))
@@ -31,7 +32,8 @@ function AuthenticatedApp() {
     }
     catch { /* Optional preference only. */ } }, [theme]);
     return <main className={`hiatlas-access real-app ${user ? 'portal' : ''}`} data-theme={theme}>
-  <header className="access-top">
+    <DeploymentBanner />
+    <header className="access-top">
    {user && <img className="portal-logo" src={theme === 'light' ? lightLogo : darkLogo} alt="HiAtlas — Supply Chain Intelligence"/>}
    <div className="theme-picker" role="group" aria-label="Aparência"><button aria-label="Tema claro" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>☼ Claro</button><button aria-label="Tema escuro" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>☾ Escuro</button></div>
    {user && <button disabled={busy} onClick={() => void logout()}>{busy ? 'Saindo…' : 'Sair'}</button>}

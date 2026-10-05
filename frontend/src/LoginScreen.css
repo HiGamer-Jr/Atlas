@@ -61,3 +61,35 @@
   .access-welcome { margin-bottom: 22px; }
   .demo-options { margin-top: 12px; }
 }
+.deployment-demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
+  margin: -24px -32px 18px;
+  padding: 9px 32px;
+  background: var(--access-field);
+  border-bottom: 1px solid var(--access-border);
+  color: var(--access-text);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.deployment-demo-banner strong {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.deployment-demo-banner span {
+  color: var(--access-muted);
+}
+
+@media (max-width: 480px) {
+  .deployment-demo-banner {
+    margin: -18px -24px 16px;
+    padding: 9px 24px;
+  }
+}
