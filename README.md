@@ -12,6 +12,17 @@ Fundação técnica consolidada:
 - Arquitetura: Monólito Modular.
 - Protótipo Cargo.Ops preservado em `legacy/cargo-ops-prototype/`.
 
+## Fundação da plataforma HiAtlas
+
+HiAtlas Platform Foundation v1: STATUS VALIDATED. A Fase 11 está concluída tecnicamente e parada para revisão. O estado funcional e as limitações da fundação estão no [documento de release](docs/releases/hiatlas-platform-foundation-v1.md); catálogo de módulos não significa módulos operacionais entregues.
+
+- [Operação segura, implantação, backup/restore e recuperação administrativa](docs/operations/hiatlas-platform-foundation.md).
+- [Sanity pós-deploy](docs/operations/hiatlas-post-deploy-sanity.md).
+- [Pré-requisitos de demo isolado](docs/operations/hiatlas-demo-readiness.md).
+- [Evidências da Fase 11](docs/superpowers/validation/hiatlas-platform/phase-11.md).
+
+Os comandos locais abaixo são exemplos de desenvolvimento. O login autenticado exige HTTPS e configuração própria conforme o runbook; o preview estático não substitui o frontend autenticado e seu backend. Nenhum deploy ou ambiente demo é iniciado por estes documentos.
+
 ## Documentos principais
 
 - Requisitos v1.0: `docs/requirements/atlas-requisitos-v1.md`.

@@ -1,11 +1,14 @@
+import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.api.router import liveness, readiness
 from app.api.router import router as api_router
 from app.core.config import Settings
 from app.core.errors import ApiError, error_response
@@ -16,15 +19,30 @@ from app.db.session import create_database_engine, validate_runtime_connection
 def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
-        yield
-        application.state.database_engine.dispose()
+        try:
+            if settings.environment == "production":
+                try:
+                    from app.api.router import validate_readiness
+
+                    validate_readiness(application.state.database_engine)
+                except (SQLAlchemyError, ValueError):
+                    raise RuntimeError(
+                        "Production database prerequisites failed"
+                    ) from None
+            yield
+        finally:
+            application.state.database_engine.dispose()
 
     from app.support.gate import observe_request
+
+    def observe_application_request(request: Request):
+        if request.scope.get("endpoint") not in (liveness, readiness):
+            observe_request(request)
 
     application = FastAPI(
         title=settings.app_name,
         lifespan=lifespan,
-        dependencies=[Depends(observe_request)],
+        dependencies=[Depends(observe_application_request)],
     )
     application.state.database_engine = create_database_engine(settings.database_url)
     from app.identity.email_transport import SMTPEmailTransport
@@ -34,6 +52,7 @@ def create_app(settings: Settings) -> FastAPI:
 
     application.state.maintenance_registry = MaintenanceActionRegistry()
     from secrets import token_bytes
+
     application.state.maintenance_receipt_key = token_bytes(32)
     application.state.settings = settings
     application.state.clock = lambda: datetime.now(UTC)
@@ -41,10 +60,30 @@ def create_app(settings: Settings) -> FastAPI:
     @application.middleware("http")
     async def request_identity(request: Request, call_next):
         request.state.request_id = uuid4()
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception:  # noqa: BLE001 -- sanitize unexpected request failures
+            logging.getLogger("app.requests").error(
+                "Request failed request_id=%s", request.state.request_id
+            )
+            response = error_response(
+                request,
+                ApiError(
+                    500, "INTERNAL_ERROR", "Não foi possível concluir a operação."
+                ),
+            )
         response.headers["X-Request-ID"] = str(request.state.request_id)
         response.headers["Cache-Control"] = "no-store"
         response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        )
+        if settings.environment == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000"
         return response
 
     @application.exception_handler(ApiError)

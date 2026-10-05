@@ -49,7 +49,9 @@ class SMTPEmailTransport:
 
     @property
     def available(self):
-        return bool(self.settings.smtp_host and self.settings.smtp_sender)
+        return self.settings.email_delivery_enabled is not False and bool(
+            self.settings.smtp_host and self.settings.smtp_sender
+        )
 
     def send(self, message):
         if not self.available:

@@ -154,3 +154,10 @@ memory/test_credentials.md
 .worktrees/
 
 .ruff_cache/
+
+# Local foundation validation scratch and protected artifacts
+.phase11/
+*.dump
+*.backup
+*.pfx
+*.key

@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
-from tests.helpers import CONTEXT_HEADER, select_context
+from tests.helpers import CONTEXT_HEADER, assert_internal_failure, select_context
 from tests.test_grants import start
 
 
@@ -74,8 +74,8 @@ def test_audit_failure_rolls_back_domain_change(
         raise RuntimeError("audit unavailable")
 
     monkeypatch.setattr(corrections, "append_event", fail)
-    with pytest.raises(RuntimeError, match="audit unavailable"):
-        apply(admin, case, result.json()["preview_receipt"])
+    response = apply(admin, case, result.json()["preview_receipt"])
+    assert_internal_failure(response, "audit unavailable")
     assert name(db_runtime, case) == before
 
 

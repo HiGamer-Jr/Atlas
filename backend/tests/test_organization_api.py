@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import text
 
-from tests.helpers import select_context
+from tests.helpers import assert_internal_failure, select_context
 
 
 def create_node(client, headers, code="UNIT_A", kind="UNIT", **kwargs):
@@ -254,8 +254,8 @@ def test_organization_audit_is_atomic_and_typed(
     monkeypatch.setattr(service, "append_event", fail)
     # tenancy.services owns imported append_event
     monkeypatch.setattr("app.tenancy.services.append_event", fail)
-    with pytest.raises(RuntimeError, match="Audit unavailable"):
-        create_node(admin, scope)
+    response = create_node(admin, scope)
+    assert_internal_failure(response, "Audit unavailable")
     with db_runtime.connect() as db:
         assert (
             db.execute(text("SELECT count(*) FROM organization_nodes")).scalar_one()

@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from sqlalchemy import text
 
 from app.audit.schemas import AuditInput, IdentitySnapshot
-from tests.helpers import select_context
+from tests.helpers import assert_internal_failure, select_context
 from tests.test_organization_api import create_node
 
 
@@ -104,24 +104,24 @@ def test_module_and_scope_audit_failure_rolls_back(
         raise RuntimeError("Audit unavailable")
 
     monkeypatch.setattr("app.tenancy.services.append_event", fail)
-    with pytest.raises(RuntimeError, match="Audit unavailable"):
-        if operation == "module":
-            admin.patch(
-                "/api/contract/modules/COMEX",
-                headers=scope,
-                json={
-                    "contracted": True,
-                    "active": True,
-                    "module_id": None,
-                    "expected_version": 0,
-                },
-            )
-        else:
-            admin.put(
-                "/api/memberships/" + str(scope_ids["member_a"]) + "/unit-scope",
-                headers=scope,
-                json={"node_ids": [node["id"]], "expected_version": 1},
-            )
+    if operation == "module":
+        response = admin.patch(
+            "/api/contract/modules/COMEX",
+            headers=scope,
+            json={
+                "contracted": True,
+                "active": True,
+                "module_id": None,
+                "expected_version": 0,
+            },
+        )
+    else:
+        response = admin.put(
+            "/api/memberships/" + str(scope_ids["member_a"]) + "/unit-scope",
+            headers=scope,
+            json={"node_ids": [node["id"]], "expected_version": 1},
+        )
+    assert_internal_failure(response, "Audit unavailable")
     with db_runtime.connect() as db:
         assert (
             db.execute(text("SELECT count(*) FROM contract_modules")).scalar_one() == 0

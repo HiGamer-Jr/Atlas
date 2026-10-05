@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from tests.helpers import CONTEXT_HEADER, select_context
+from tests.helpers import CONTEXT_HEADER, assert_internal_failure, select_context
 from tests.identity_helpers import SESSION_COOKIE, login
 
 
@@ -539,10 +539,10 @@ def test_end_audit_failure_rolls_back_status_context_and_version(
         raise RuntimeError("Controlled audit failure")
 
     monkeypatch.setattr(services, "append_event", broken)
-    with pytest.raises(RuntimeError, match="Controlled audit failure"):
-        admin.post(
-            f"/api/grants/{row['id']}/end", headers=parent, json={"expected_version": 1}
-        )
+    response = admin.post(
+        f"/api/grants/{row['id']}/end", headers=parent, json={"expected_version": 1}
+    )
+    assert_internal_failure(response, "Controlled audit failure")
     with db_runtime.connect() as conn:
         assert conn.execute(
             text("SELECT status,version FROM temporary_privileged_grants WHERE id=:id"),

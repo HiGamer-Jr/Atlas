@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import text
 
+from tests.helpers import assert_internal_failure
 from tests.test_correction_handlers import name
 
 
@@ -91,8 +92,8 @@ def test_reprocess_audit_failure_rolls_back_domain_and_reservation(
         raise RuntimeError("audit unavailable")
 
     monkeypatch.setattr(processing, "append_event", fail)
-    with pytest.raises(RuntimeError, match="audit unavailable"):
-        retry(admin, processing_case)
+    response = retry(admin, processing_case)
+    assert_internal_failure(response, "audit unavailable")
     assert name(db_runtime, processing_case).version == 1
     with db_runtime.connect() as db:
         assert (
@@ -248,8 +249,8 @@ def test_failure_audit_error_rolls_back_failed_run_and_domain(
         raise RuntimeError("audit unavailable")
 
     monkeypatch.setattr(processing, "append_event", audit_failed)
-    with pytest.raises(RuntimeError, match="audit unavailable"):
-        retry(admin, processing_case)
+    response = retry(admin, processing_case)
+    assert_internal_failure(response, "audit unavailable")
     assert name(db_runtime, processing_case) == ("Original", 1)
     with db_runtime.connect() as db:
         assert (

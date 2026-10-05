@@ -17,6 +17,14 @@ class IdentitySnapshot(BaseModel):
     platform_role: PlatformRole | None = None
 
 
+class RecoverySnapshot(IdentitySnapshot):
+    technical_operator: str = Field(min_length=3, max_length=200)
+    database_role: str = Field(min_length=1, max_length=200)
+    incident_evidence: str = Field(min_length=10, max_length=1000)
+    credential_loss_attested: bool = False
+    normal_recovery_unavailable: bool = False
+
+
 class TenantSnapshot(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
     name: str = Field(min_length=1, max_length=200)
@@ -131,13 +139,13 @@ class PrivilegedGrantSnapshot(BaseModel):
 
 
 class ProcessingSnapshot(BaseModel):
-    model_config=ConfigDict(extra="forbid",frozen=True,hide_input_in_errors=True)
-    run_id:UUID
-    action_code:str=Field(pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
-    status:Literal["PENDING","RUNNING","SUCCEEDED","FAILED","UNKNOWN"]
-    result_code:Literal["NONE","COMPLETED","HANDLER_FAILED","NOT_ELIGIBLE"]
-    message_code:Literal["NONE","COMPLETED","HANDLER_FAILED","NOT_ELIGIBLE"]
-    version:int=Field(ge=1)
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+    run_id: UUID
+    action_code: str = Field(pattern=r"^[A-Z][A-Z0-9_]{0,63}$")
+    status: Literal["PENDING", "RUNNING", "SUCCEEDED", "FAILED", "UNKNOWN"]
+    result_code: Literal["NONE", "COMPLETED", "HANDLER_FAILED", "NOT_ELIGIBLE"]
+    message_code: Literal["NONE", "COMPLETED", "HANDLER_FAILED", "NOT_ELIGIBLE"]
+    version: int = Field(ge=1)
 
 
 class AuditInput(BaseModel):
@@ -246,11 +254,19 @@ class AuditInput(BaseModel):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
         if self.action.startswith("privileged_grant."):
-            if (self.tenant_id is None or self.entity_type != "privileged_grant"
+            if (
+                self.tenant_id is None
+                or self.entity_type != "privileged_grant"
                 or not isinstance(self.after, PrivilegedGrantSnapshot)
-                or self.after.operator_id != self.actor_id or self.after.operator_role != self.actor_role):
-                raise ValueError("Privileged action requires typed real operator provenance")
-            if self.action != "privileged_grant.started" and not isinstance(self.before, PrivilegedGrantSnapshot):
+                or self.after.operator_id != self.actor_id
+                or self.after.operator_role != self.actor_role
+            ):
+                raise ValueError(
+                    "Privileged action requires typed real operator provenance"
+                )
+            if self.action != "privileged_grant.started" and not isinstance(
+                self.before, PrivilegedGrantSnapshot
+            ):
                 raise ValueError("Terminal grant action requires before state")
         if self.action.startswith("support.session."):
             if (
@@ -266,11 +282,23 @@ class AuditInput(BaseModel):
                 self.before, SupportSessionSnapshot
             ):
                 raise ValueError("Terminal support action requires before state")
-        if self.action=="maintenance.processing.failed" and (self.tenant_id is None or self.entity_type!="organization_node" or not isinstance(self.after,ProcessingSnapshot) or self.after.status!="FAILED" or self.outcome!="FAILURE"):
+        if self.action == "maintenance.processing.failed" and (
+            self.tenant_id is None
+            or self.entity_type != "organization_node"
+            or not isinstance(self.after, ProcessingSnapshot)
+            or self.after.status != "FAILED"
+            or self.outcome != "FAILURE"
+        ):
             raise ValueError("Processing failure requires typed scoped state")
         registered = {
-            "maintenance.correction.applied": ("organization_node", OrganizationNodeSnapshot),
-            "maintenance.processing.succeeded": ("organization_node", OrganizationNodeSnapshot),
+            "maintenance.correction.applied": (
+                "organization_node",
+                OrganizationNodeSnapshot,
+            ),
+            "maintenance.processing.succeeded": (
+                "organization_node",
+                OrganizationNodeSnapshot,
+            ),
             "organization.node.created": (
                 "organization_node",
                 OrganizationNodeSnapshot,
@@ -307,3 +335,38 @@ class SystemCancellationAuditInput(AuditInput):
     actor_role: None = None
     action: Literal["access.invite.invalidated"] = "access.invite.invalidated"
     reason: Literal["POLICY_REVALIDATION"] = "POLICY_REVALIDATION"
+
+
+class RecoveryAuditInput(AuditInput):
+    """Offline infrastructure actor; never impersonate the recovered human."""
+
+    actor_id: None = None
+    actor_role: None = None
+    action: Literal["identity.admin.recovered"] = "identity.admin.recovered"
+    entity_type: Literal["user"] = "user"
+    environment: Literal["TEST", "STAGING", "PRODUCTION"]
+    before: IdentitySnapshot
+    after: RecoverySnapshot
+    reason: str = Field(min_length=3, max_length=1000)
+    reference: str = Field(min_length=1, max_length=200)
+
+    @model_validator(mode="after")
+    def verified_recovery(self):
+        if (
+            self.tenant_id is not None
+            or self.support_session_id is not None
+            or self.before.user_id != self.entity_id
+            or self.after.user_id != self.entity_id
+            or self.after.platform_role != "PLATFORM_ADMIN"
+            or not self.after.active
+            or self.after.blocked
+            or self.outcome != "SUCCESS"
+            or (
+                self.after.credential_loss_attested
+                and not self.after.normal_recovery_unavailable
+            )
+        ):
+            raise ValueError(
+                "Recovery requires its real target and technical provenance"
+            )
+        return self

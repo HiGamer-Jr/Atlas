@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.identity.models import EmailOutbox, SecurityToken, User
 from app.tenancy.models import Membership
-from tests.helpers import select_context
+from tests.helpers import assert_internal_failure, select_context
 from tests.identity_helpers import csrf, login
 from tests.test_access_tokens import NEW_PASSWORD, issue
 
@@ -66,11 +66,11 @@ def test_audit_failure_rolls_back_reset(
         raise RuntimeError("controlled audit failure")
 
     monkeypatch.setattr("app.identity.tokens.append_event", fail)
-    with pytest.raises(RuntimeError, match="controlled"):
-        client.post(
-            "/api/auth/reset-password",
-            json={"token": raw, "new_password": NEW_PASSWORD},
-        )
+    response = client.post(
+        "/api/auth/reset-password",
+        json={"token": raw, "new_password": NEW_PASSWORD},
+    )
+    assert_internal_failure(response, "controlled")
     with Session(db_runtime) as db:
         assert db.scalar(select(SecurityToken)).consumed_at is None
     login(client, "member@example.test")
@@ -354,8 +354,17 @@ def test_business_failure_rolls_back_all_lifecycle_mutations(
     if operation == "outbox":
         sa_event.listen(EmailOutbox, "before_insert", fail)
         try:
-            with pytest.raises(RuntimeError, match="controlled"):
-                invite(support, scope_ids)
+            scope = select_context(support, scope_ids["contract_a"])
+            response = support.post(
+                "/api/memberships",
+                headers=scope,
+                json={
+                    "email": "new@example.test",
+                    "display_name": "Invited",
+                    "role_id": str(scope_ids["role_basic"]),
+                },
+            )
+            assert_internal_failure(response, "controlled failure")
         finally:
             sa_event.remove(EmailOutbox, "before_insert", fail)
         with Session(db_runtime) as db:
@@ -379,11 +388,11 @@ def test_business_failure_rolls_back_all_lifecycle_mutations(
         raw = token_from(mail[0])
         csrf(client)
         monkeypatch.setattr("app.identity.tokens.append_event", fail)
-        with pytest.raises(RuntimeError, match="controlled"):
-            client.post(
-                "/api/auth/accept-invite",
-                json={"token": raw, "new_password": NEW_PASSWORD},
-            )
+        response = client.post(
+            "/api/auth/accept-invite",
+            json={"token": raw, "new_password": NEW_PASSWORD},
+        )
+        assert_internal_failure(response, "controlled")
         with Session(db_runtime) as db:
             token = db.scalar(select(SecurityToken))
             assert token.consumed_at is None
@@ -392,12 +401,12 @@ def test_business_failure_rolls_back_all_lifecycle_mutations(
     else:
         scope = select_context(support, scope_ids["contract_a"])
         monkeypatch.setattr("app.identity.tokens.append_event", fail)
-        with pytest.raises(RuntimeError, match="controlled"):
-            support.patch(
-                f"/api/memberships/{scope_ids['member_a']}/status",
-                headers=scope,
-                json={"blocked": True, "expected_version": 1},
-            )
+        response = support.patch(
+            f"/api/memberships/{scope_ids['member_a']}/status",
+            headers=scope,
+            json={"blocked": True, "expected_version": 1},
+        )
+        assert_internal_failure(response, "controlled")
         with Session(db_runtime) as db:
             row = db.get(Membership, scope_ids["member_a"])
             assert not row.blocked and row.version == 1
@@ -552,13 +561,14 @@ def test_cancellation_audit_failure_rolls_back(
         raise failure_type("controlled cancellation audit failure")
 
     monkeypatch.setattr("app.identity.tokens.append_event", fail)
-    with pytest.raises(failure_type, match="controlled"):
-        if path == "worker":
+    if path == "worker":
+        with pytest.raises(failure_type, match="controlled"):
             mail[1].deliver_batch(10)
-        else:
-            client.post(
-                "/api/auth/token/validate", json={"token": raw, "purpose": "INVITE"}
-            )
+    else:
+        response = client.post(
+            "/api/auth/token/validate", json={"token": raw, "purpose": "INVITE"}
+        )
+        assert_internal_failure(response, "controlled cancellation audit failure", raw)
     with Session(db_runtime) as db:
         token = db.scalar(select(SecurityToken))
         assert token.invalidated_at is None

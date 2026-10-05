@@ -5,7 +5,7 @@
 **Spec:** [Especificação aprovada](../../specs/2026-09-22-hiatlas-platform-access-foundation-design.md).
 **Global Constraints:** Aplicam-se integralmente as restrições, interfaces, fixtures e protocolo TDD do [plano principal](README.md). support_assignable começa false; perfis sensíveis são inelegíveis. OrganizationNode usa WORKSITE, não Project. Financeiro exige concessão temporária auditada. Correções só por handlers tipados. Flags/parâmetros/integrações não recebem CRUD genérico.
 **Tech Stack:** FastAPI, SQLAlchemy, Alembic, PostgreSQL, pytest/Ruff; React, TypeScript, Vite, Vitest e Testing Library.
-**Status:** não executado. Não marcar checkbox por existir apenas o código de exemplo neste plano.
+**Status:** executado e validado tecnicamente na Fase 11; encerrado para revisão, sem deploy. [Evidências finais](../../validation/hiatlas-platform/phase-11.md). Os exemplos originais abaixo permanecem como referência de planejamento; a execução real e equivalências estão registradas no fechamento.
 
 **Goal:** Consolidar evidências e tornar a fundação instalável sem confundir infraestrutura com domínios ainda ausentes.
 **Architecture:** Regressão por API/DB/UI, documentação reproduzível e configuração que falha fechada em produção.
@@ -161,3 +161,16 @@ protegido ao host/credencial de manutenção, e validação externa da identidad
 - [ ] Commit: `feat: add audited offline administrator recovery procedure`.
 
 Este é um requisito da Fase 11 aprovada, não trabalho autorizado para a Fase 1.
+
+## Fechamento executado — 2026-10-05
+
+- [x] Regressão integrada:767 testes backend e282 frontend, zero skips obrigatórios.
+- [x] Migrações full-chain/incremental/down-up, comparação real de schema/ACLs e grants PostgreSQL.
+- [x] Backup/restore em banco novo, invalidação técnica auditada e login posterior.
+- [x] Configuração production fail-safe, health/schema/headers/logging sanitizado e recuperação offline com33 testes focados.
+- [x] Browser real:8 rodadas Admin/Support/READ_ONLY/grants/manutenção controlada/reprocess/build,78 capturas, A/A2/B, temas/mobile/teclado.
+- [x] Reviews independentes backend/frontend, achados corrigidos e confirmados; Ruff/oxlint/TypeScript/Vite/diff gates.
+- [x] Runbook, sanity, demo readiness apenas documental, release Foundation v1 e21 critérios rastreados nas evidências.
+- [x] Serviços/banco/dumps/segredos temporários removidos; branch/worktree preservadas para revisão; sem push/merge/tag/release/deploy.
+
+A cadeia de migrações foi comprovada pelo script operacional com PostgreSQL, em vez de duplicar um test_migration_chain.py. A cobertura frontend existente permaneceu funcional: nenhuma alteração de comportamento React exigiu novo PlatformAcceptance.test.tsx. O wrapper de checks existente foi preservado; seus comandos foram executados com os scripts adicionais de operação/browser. RED só foi registrado para falhas/lacunas efetivamente reproduzidas. As extensões do escopo vieram dos requisitos aprovados da Fase11, sem novo domínio operacional.

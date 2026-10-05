@@ -9,8 +9,8 @@ from app.tenancy.models import Contract
 
 
 def append_event(db: Session, event: AuditInput) -> UUID:
-    values = event.model_dump(exclude={"before", "after"})
-    environment = None
+    values = event.model_dump(exclude={"before", "after", "environment"})
+    environment = getattr(event, "environment", None)
     if event.contract_id is not None:
         environment = db.scalar(
             select(Contract.environment).where(

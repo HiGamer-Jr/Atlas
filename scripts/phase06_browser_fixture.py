@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from phase05_browser_fixture import create_browser_app as _create_browser_app
 from phase05_browser_fixture import main as phase05_main
 from sqlalchemy import inspect, text
+
 from tests.conftest import TABLES
 from tests.database_harness import open_test_engines
 from tests.helpers import seed_scope
@@ -73,6 +74,9 @@ def seed():
                         "role": identifiers["role_basic"],
                     },
                 )
+        from phase11_browser_fixture import set_fixture_password
+
+        set_fixture_password(runtime)
         print(json.dumps({key: str(value) for key, value in identifiers.items()}))
     finally:
         owner.dispose()

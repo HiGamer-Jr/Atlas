@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.identity.models import AuthSession, EmailOutbox, SecurityToken
 from app.tenancy.models import AccessContext
-from tests.helpers import select_context
+from tests.helpers import assert_internal_failure, select_context
 from tests.identity_helpers import csrf, login
 
 NEW_PASSWORD = "new-secure-test-password-2026"
@@ -203,8 +203,8 @@ def test_issue_failure_rolls_back_token_and_outbox(
 
     monkeypatch.setattr("app.identity.tokens.append_event", fail)
     csrf(client)
-    with pytest.raises(RuntimeError, match="controlled"):
-        client.post("/api/auth/recovery", json={"email": "member@example.test"})
+    response = client.post("/api/auth/recovery", json={"email": "member@example.test"})
+    assert_internal_failure(response, "controlled")
     with Session(db_runtime) as db:
         assert db.scalar(select(SecurityToken)) is None
         assert db.scalar(select(EmailOutbox)) is None

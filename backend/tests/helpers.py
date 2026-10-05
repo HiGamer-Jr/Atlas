@@ -170,3 +170,18 @@ def seed_scope(engine, users):
                 },
             )
     return {**users, **ids, "other_user": other_user}
+
+
+def assert_internal_failure(response, *private_details):
+    """Assert the public failure contract without exposing diagnostics in failures."""
+    from uuid import UUID
+
+    assert response.status_code == 500
+    body = response.json()
+    assert set(body) == {"code", "message", "request_id"}
+    assert body["code"] == "INTERNAL_ERROR"
+    assert body["message"] == "Não foi possível concluir a operação."
+    assert str(UUID(body["request_id"])) == body["request_id"]
+    assert response.headers["X-Request-ID"] == body["request_id"]
+    assert response.headers["Cache-Control"] == "no-store"
+    assert all(detail not in response.text for detail in private_details)

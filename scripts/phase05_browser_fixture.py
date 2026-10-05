@@ -12,9 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
+from sqlalchemy import text
+
 from app.core.config import Settings
 from app.identity.email_transport import FakeEmailTransport
-from sqlalchemy import text
 from tests.database_harness import open_test_engines
 from tests.helpers import seed_scope
 from tests.identity_helpers import seed_user
@@ -77,6 +78,9 @@ def main():
                 "member_user": seed_user(runtime, "member@example.test"),
             }
             identifiers = seed_scope(runtime, users)
+            from phase11_browser_fixture import set_fixture_password
+
+            set_fixture_password(runtime)
             print(json.dumps({key: str(value) for key, value in identifiers.items()}))
         elif args.action == "deliver":
             from app.identity.delivery import DeliveryWorker
