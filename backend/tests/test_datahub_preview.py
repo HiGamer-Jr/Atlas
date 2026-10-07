@@ -598,3 +598,66 @@ def test_unassigned_unit_text_never_binds_an_id(preview_case, db_runtime):
         )
         assert row.unit_id is None
         assert row.unit_version is None
+
+
+@pytest.mark.parametrize("case", ["close", "nested"])
+def test_receipt_transaction_boundary_never_leaves_orphan(
+    preview_case, db_runtime, case
+):
+    from app.core.errors import ApiError
+    from app.datahub.connectors.excel import ExcelConnector
+    from app.datahub.raw_store import RawStore
+    from app.datahub.services import receive_preview
+
+    selection = invoke(db_runtime, preview_case[1], "COMPRADOR_NACIONAL")
+    excel = ExcelConnector(
+        Path(__file__).resolve().parents[2] / "frontend/src/assets/hiatlas-light.png"
+    )
+    content = excel.generate(
+        selection,
+        WorkbookContext(
+            "Empresa sintética",
+            "SYN-001",
+            "Perfil sintético",
+            "DH-UNIT",
+            datetime.now(UTC),
+        ),
+        (product(),),
+    )
+    settings = Settings(
+        datahub_enabled=True,
+        datahub_raw_root=preview_case[2] / "raw",
+        datahub_raw_key=Fernet.generate_key().decode(),
+    )
+    store = RawStore(settings)
+    request = Request(
+        {
+            "type": "http",
+            "headers": [],
+            "state": {"request_id": uuid4()},
+            "app": SimpleNamespace(
+                state=SimpleNamespace(settings=settings, datahub_raw_store=store)
+            ),
+        }
+    )
+    parsed = excel.parse(content, settings.datahub_limits)
+    db = Session(db_runtime)
+    db.begin()
+    db.info.update(settings=settings, clock=lambda: datetime.now(UTC))
+    principal, scope = context_values(db, preview_case[1])
+    try:
+        if case == "nested":
+            nested = db.begin_nested()
+            with pytest.raises(ApiError):
+                receive_preview(
+                    db, request, principal, scope, "synthetic.xlsx", content, parsed
+                )
+            nested.rollback()
+            db.commit()
+        else:
+            receive_preview(
+                db, request, principal, scope, "synthetic.xlsx", content, parsed
+            )
+    finally:
+        db.close()
+    assert not list((preview_case[2] / "raw").glob("*.enc"))

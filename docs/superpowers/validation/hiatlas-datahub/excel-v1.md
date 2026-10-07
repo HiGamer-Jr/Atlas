@@ -60,6 +60,16 @@ Schemas fechados em duas passagens; referências adiante resolvidas, referência
 
 RED adicional:expiração durante validação produzia READY e falha técnica tinha outcome SUCCESS. Corrigidos; estado EXPIRED e outcome FAILURE comprovados. GREEN integrado focado T1–T4/config/audit:177 testes, zero skips; rodada final de preview/storage/isolation:20 testes, zero skips. Ruff backend completo PASS, git diff --check PASS. Nenhuma nova migration na T4 (0011/0012 já cobrem persistência). Nenhum endpoint/frontend concluído nesta tarefa.
 
+## T5 — Confirmação atômica e idempotência
+
+RED inicial válido:13 cenários após corrigir registro de fixtures transitivas. GREEN inicial13; ampliado19. Cobertos cinco datasets não financeiros, referências tipadas, proveniência, duplicata idêntica sem inserção, conflito após preview sem sobrescrita, replay condicionado à chave/versão/contexto/sessão e permissões atuais, escopo/versionamento de unidade e módulo revogado.
+
+Concorrência real em PostgreSQL:duas confirmações da mesma importação produzem um commit/evento; imports distintos com chave de negócio conflitante produzem um commit e409; expiração e revogação de sessão/contexto/contrato/membership/permissão/módulo durante espera de lock são revalidadas. Erro de fixture SQL corrigido (TenantRolePermission tem PK composta, sem coluna id); rodada intermediária25 PASS/1 FAIL não foi gate aprovado.
+
+Revisão independente /root/review_datahub_t5 apontou órfão de bruto ao fechar sessão/nested transaction, confirmação com feature desligada, conflito físico com unidade fora do escopo e ausência de FAILED técnico pós-rollback. Todos reproduzidos RED e corrigidos:receipt exige transação raiz explícita; cleanup em rollback/close sem apagar arquivo commitado; feature desabilitada503; colisão UNIQUE409 neutro; ConfirmationOrchestrator possui transação independente para FAILED quando auditoria disponível, preservando READY se auditoria indisponível. Nenhum serviço faz commit internamente. Follow-up independente sem novos achados relevantes; testes reais executados pelo implementador.
+
+GREEN final executado:64 testes, zero skips,124.78 segundos. Comando:uv run --frozen python -m pytest tests/test_datahub_confirmation.py tests/test_datahub_races.py tests/test_datahub_preview.py tests/test_audit_integrity.py -q. Ruff focado e git diff --check executados e aprovados. Nenhuma migration adicional. Uma depreciação herdada Starlette/httpx.
+
 ## Ainda não executado/concluído
 
-T5–T9; preview/commit, histórico/exportação, retenção, frontend, E2E, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.
+T6–T9:histórico/exportação, retenção, APIs/frontend, E2E, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.

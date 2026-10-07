@@ -429,3 +429,12 @@ class ImportSummary(ClosedPayload):
     skipped_count: int = Field(ge=0)
     preview_expires_at: datetime
     result_code: str
+
+
+class ConfirmationInput(ClosedPayload):
+    expected_version: int = Field(ge=1, strict=True)
+    idempotency_key: UUID
+
+
+class ConfirmationResult(ImportSummary):
+    status: Literal["COMMITTED"]
