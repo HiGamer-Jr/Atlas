@@ -96,7 +96,7 @@ def detail(db, row):
         select(DataHubImportFile).where(DataHubImportFile.import_id == row.id)
     )
     return ImportDetail(
-        **summary(row).model_dump(),
+        **summary(row, db).model_dump(),
         filename=file.name,
         created_at=row.created_at,
         committed_at=row.committed_at,
@@ -226,6 +226,11 @@ def export_workbook(db, principal, scope, command: ExportInput) -> WorkbookDownl
         )
         if code in UNIT_DATASETS:
             query = query.where(model.unit_id.in_(units))
+        from app.datahub.catalog import TEMPLATES
+
+        modality = TEMPLATES[selected.template_id].modality
+        if code == DatasetCode.DEMANDS and modality is not None:
+            query = query.where(DataHubDemand.modalidade == modality)
         remaining = budget - len(normalized)
         records = list(db.scalars(query.limit(remaining + 1)))
         if len(records) > remaining:

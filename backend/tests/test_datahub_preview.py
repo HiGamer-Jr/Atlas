@@ -216,11 +216,11 @@ def test_existing_changed_key_is_error(preview_case, db_runtime):
     assert "DUPLICATE_CONFLICT" in codes(db_runtime, result.id)
 
 
-def test_intra_file_identical_is_warning(preview_case, db_runtime):
+def test_intra_file_identical_is_error(preview_case, db_runtime):
     result = upload(db_runtime, preview_case, (product(), product()))
-    assert result.status == "READY_FOR_CONFIRMATION"
-    assert result.warning_count == 1
-    assert "DUPLICATE_IDENTICAL" in codes(db_runtime, result.id)
+    assert result.status == "REJECTED"
+    assert result.error_count >= 1
+    assert "DUPLICATE_FILE" in codes(db_runtime, result.id)
 
 
 def test_intra_file_changed_key_rejected(preview_case, db_runtime):
@@ -661,3 +661,9 @@ def test_receipt_transaction_boundary_never_leaves_orphan(
     finally:
         db.close()
     assert not list((preview_case[2] / "raw").glob("*.enc"))
+
+
+def test_identical_duplicate_inside_file_is_error(preview_case, db_runtime):
+    preview = upload(db_runtime, preview_case, (product(), product()))
+    assert preview.status == "REJECTED"
+    assert preview.error_count >= 1

@@ -38,10 +38,30 @@ def sanitized_filename(value: str) -> str:
     return name[:195].removesuffix(".xlsx") + ".xlsx" if len(name) > 200 else name
 
 
-def summary(row: DataHubImport) -> ImportSummary:
-    return ImportSummary.model_validate(
-        {k: getattr(row, k) for k in ImportSummary.model_fields}
+def summary(row: DataHubImport, db: Session | None = None) -> ImportSummary:
+    values = {
+        k: getattr(row, k) for k in ImportSummary.model_fields if k != "unit_scope"
+    }
+    # Complete original validated scope, independent from preview pagination.
+    values["unit_scope"] = (
+        sorted(
+            {
+                r.normalized_payload["unidade_codigo"]
+                for r in db.scalars(
+                    select(DataHubImportRow).where(
+                        DataHubImportRow.import_id == row.id,
+                        DataHubImportRow.tenant_id == row.tenant_id,
+                        DataHubImportRow.contract_id == row.contract_id,
+                        DataHubImportRow.unit_id.is_not(None),
+                    )
+                )
+                if "unidade_codigo" in r.normalized_payload
+            }
+        )
+        if db is not None
+        else []
     )
+    return ImportSummary.model_validate(values)
 
 
 def snapshot(row: DataHubImport) -> DataHubImportSnapshot:
@@ -251,7 +271,7 @@ def create_preview(
         )
         row.version += 1
         audit(db, request, fresh, scope, row, "datahub.import.expired", before)
-        return summary(row)
+        return summary(row, db)
     db.info.update(datahub_scope=scope, datahub_principal=principal)
     result = validate_rows(db, selection, parsed)
     source_file = db.scalar(
@@ -329,7 +349,7 @@ def create_preview(
         "datahub.import.expired" if expired else "datahub.import.validated",
         before,
     )
-    return summary(row)
+    return summary(row, db)
 
 
 def confirm_import(
@@ -419,7 +439,7 @@ def confirm_import(
                 "CONFIRMATION_CONFLICT",
                 "A confirmação não corresponde ao resultado existente.",
             )
-        return ConfirmationResult.model_validate(summary(row).model_dump())
+        return ConfirmationResult.model_validate(summary(row, db).model_dump())
     if now(db) >= row.preview_expires_at:
         raise ApiError(
             409, "PREVIEW_EXPIRED", "O preview expirou. Gere uma nova importação."
@@ -631,7 +651,7 @@ def confirm_import(
     row.version += 1
     db.flush()
     audit(db, request, fresh, scope, row, "datahub.import.committed", before)
-    return ConfirmationResult.model_validate(summary(row).model_dump())
+    return ConfirmationResult.model_validate(summary(row, db).model_dump())
 
 
 def flush_records(db):

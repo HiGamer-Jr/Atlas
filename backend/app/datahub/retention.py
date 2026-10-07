@@ -85,11 +85,7 @@ def cleanup_raw(db, store, limit: int) -> RetentionSummary:
     db.flush()
     grace = db.info["settings"].datahub_limits.orphan_grace_seconds
     # Only canonical UUID.enc regular files in the configured private directory.
-    examined = 0
-    for path in store.root.iterdir():
-        if examined >= limit:
-            break
-        examined += 1
+    for path in scan_batch(store, limit):
         if (
             path.suffix != ".enc"
             or path.is_symlink()
@@ -116,3 +112,53 @@ def cleanup_raw(db, store, limit: int) -> RetentionSummary:
     return RetentionSummary(
         deleted=deleted, failed=failed, orphans_deleted=orphans, expired=expired
     )
+
+
+def scan_batch(store, limit):
+    """Rotate bounded metadata/deletion work; directory names are enumerated."""
+    import os
+
+    cursor = store.root / ".retention-cursor"
+    if cursor.is_symlink() or cursor.is_junction():
+        raise ApiError(503, "DATAHUB_UNAVAILABLE", "Data Hub indisponível.")
+    after = ""
+    if cursor.exists():
+        try:
+            descriptor = os.open(
+                cursor,
+                os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0),
+            )
+            with os.fdopen(descriptor, "rb") as stream:
+                raw = stream.read(64).decode("ascii")
+            if raw.endswith(".enc") and str(UUID(raw[:-4])) + ".enc" == raw:
+                after = raw
+        except (OSError, ValueError, UnicodeError):
+            after = ""
+    names = []
+    for path in store.root.iterdir():
+        try:
+            if path.suffix == ".enc" and str(UUID(path.stem)) == path.stem:
+                names.append(path.name)
+        except ValueError:
+            continue
+    names.sort()
+    selected = [name for name in names if name > after][:limit]
+    if not selected:
+        selected = names[:limit]
+    if selected:
+        temporary = store.root / (str(uuid4()) + ".cursor-tmp")
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0),
+            0o600,
+        )
+        try:
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(selected[-1].encode("ascii"))
+                stream.flush()
+                os.fsync(stream.fileno())
+            store.check_root()
+            temporary.replace(cursor)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return [store.root / name for name in selected]

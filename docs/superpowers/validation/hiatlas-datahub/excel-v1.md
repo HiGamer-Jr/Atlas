@@ -1,6 +1,6 @@
 # HiAtlas Data Hub — Excel v1: evidência de execução
 
-STATUS: EM IMPLEMENTAÇÃO; não é encerramento nem aprovação operacional.
+STATUS: VALIDATED — gate local Excel v1 concluído; sem implantação ou promoção da Demo.
 
 Branch: feat/hiatlas-datahub-excel-v1. Base aprovada Foundation v1: 641e57502644935ff1c4ca9e06f54b009bb7adc4. HEAD documental anterior à execução: 180989d53b1f1bdcea8f12047e96ba9290a8c112.
 
@@ -56,7 +56,7 @@ RawStore usa chave Fernet dedicada, referências UUID e criação exclusiva; sem
 
 PreviewOrchestrator possui fases técnicas explícitas; serviços não fazem commit. Parsing limitado após autorização inicial e fora de locks; receipt/VALIDATING auditado e commitado antes da validação final. Outra conexão comprovou esse estado persistente. Resultado só retorna após commit da unidade de trabalho. Processo interrompido conserva VALIDATING sem poder confirmar; expiração/limpeza técnica é integrada na T6. Se validação falhar, rollback das linhas; FAILED em transação separada quando auditoria funciona, último VALIDATING quando auditoria continua indisponível; nunca falso sucesso.
 
-Schemas fechados em duas passagens; referências adiante resolvidas, referências de outro contrato e unidades não atribuídas rejeitadas sem revelar IDs. Unit id/version congelados no preview; chave de estoque produto/unidade resolvida/data, sem código artificial. Duplicatas idênticas são SKIPPED com warning, conteúdo divergente rejeita todo o preview; nenhum Record/detail é criado. Fórmulas não persistem como payload/issue bruto. Bruto cifrado expira independentemente do preview; normalizados/proveniência preservados.
+Schemas fechados em duas passagens; referências adiante resolvidas, referências de outro contrato e unidades não atribuídas rejeitadas sem revelar IDs. Unit id/version congelados no preview; chave de estoque produto/unidade resolvida/data, sem código artificial. Contra registros já persistidos, duplicatas idênticas são SKIPPED com warning e conteúdo divergente rejeita todo o preview; duplicidade dentro do mesmo arquivo foi corrigida na T9 para ERROR em todos os casos; nenhum Record/detail é criado. Fórmulas não persistem como payload/issue bruto. Bruto cifrado expira independentemente do preview; normalizados/proveniência preservados.
 
 RED adicional:expiração durante validação produzia READY e falha técnica tinha outcome SUCCESS. Corrigidos; estado EXPIRED e outcome FAILURE comprovados. GREEN integrado focado T1–T4/config/audit:177 testes, zero skips; rodada final de preview/storage/isolation:20 testes, zero skips. Ruff backend completo PASS, git diff --check PASS. Nenhuma nova migration na T4 (0011/0012 já cobrem persistência). Nenhum endpoint/frontend concluído nesta tarefa.
 
@@ -96,6 +96,179 @@ Falha intermediária de matcher textual corrigida no teste. Teste herdado de val
 
 Oxlint sem warnings, TypeScript/Vite build e git diff --check executados/aprovados. Inspeção Chrome/light/dark/mobile/teclado e gate completo ainda são T9, não declarados PASS nesta tarefa.
 
-## Ainda não executado/concluído
+## T9 — Revisão independente e regressão final
 
-T9:E2E, revisão final, gate completo e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.
+Base T9:2c1b805. Revisões independentes backend e frontend realizadas por agentes somente leitura, sem dividir a implementação. Cinco achados P2 reproduzidos RED pelo implementador e corrigidos antes do gate:
+
+| Achado | Correção | GREEN executado |
+|---|---|---|
+| Duplicata idêntica dentro do arquivo recebia SKIP, contrariando spec§12 | Toda business key repetida no mesmo arquivo gera ERROR; SKIP continua somente contra registro já persistido idêntico | test_identical_duplicate_inside_file_is_error |
+| Prefixo permanente de arquivos vivos podia impedir reconciliação de órfãos posteriores | Cursor privado rotativo, nomes UUID.enc, gravação atômica e links recusados | test_cleanup_cursor_cannot_starve_later_orphan, PostgreSQL real/lote1 repetido |
+| Exportação de comprador podia incluir demandas da outra modalidade e produzir planilha incompatível com seu template | Filtro de modalidade no SELECT antes do limite, sem mudar autorização | test_export_template_filters_modality_before_limit |
+| Confirmação não mostrava escopo completo de todas as linhas | unit_scope calculado pelo servidor sobre todas as linhas autorizadas; DTO e diálogo explícitos | confirmação com duas unidades fora de qualquer inferência por paginação |
+| Foco podia cair no BODY depois da confirmação | Heading do preview recebe foco após COMMITTED; diálogo Foundation preservado | commit returns keyboard focus to preview heading |
+
+Uma edição parcial de correção produziu rodada intermediária53 PASS/3 FAIL: NÃO é gate. Correções completadas e regressão final focada56 backend PASS, zero skips,155.75s (queries/retention/preview/confirmation). Frontend focado30 PASS, zero skips; suíte completa301 PASS em18 arquivos, zero skips,20.72s. Oxlint sem warnings e TypeScript/Vite build executados PASS depois das correções.
+
+E2E real executado com PostgreSQL18.6 descartável, FastAPI real, Vite/React real, Chrome headless e HTTPS local. Factory isolada scripts/datahub_browser_fixture.py exige configuração explícita, endpoint/database/marcador descartáveis e owner/runtime distintos; não importada pela aplicação normal, sem endpoint secreto. FakeEmailTransport; nenhum e-mail real. Somente dados sintéticos Aurora/Beta/UNIT-SYN e identidades example.test.
+
+Fluxos executados: Admin com membership/capabilities tenant explícitos baixa modelo oficial Coordenação; cinco datasets preenchidos; preview mostra cinco linhas sem Records; confirmação grava cinco Records e um AuditEvent; foco retorna ao heading; replay mesma chave mantém um efeito; outra chave409; exportação real; arquivo idêntico inteiro gera cinco SKIP sem duplicar Records; conteúdo alterado e fórmula rejeitados; membership comum usa somente workspace autorizado; Support sem menu e API403; imports de A ocultos por IDs válidos em A2/B; duas abas com contextos independentes; revogação de permissão entre preview/confirmação nega e descarta dados; módulo revogado403; reload, logout e storage limitado a preferência de tema/id opaco do AccessContext.
+
+Primeiro E2E RED por seletor ambíguo que correspondia ao resumo e à paginação, sem defeito de produto. Diagnóstico privado sanitizado; seletor restringido ao resumo; reexecução completa GREEN. Screenshots desktop claro/escuro, mobile390×844, preview, fórmula rejeitada, Support e permissão revogada inspecionados. Sem overflow externo no mobile; navegação Tab e header contextual sticky comprovados. Chrome somente: não alegar multibrowser nem conformidade WCAG completa.
+
+Inspeção separada dos XLSX realmente baixado/exportado PASS: cinco datasets; imagens embutidas byte a byte iguais à logo oficial; LEIA-ME visível; _HIATLAS_META oculto; freezeA13; tabelas; ausência de células fórmula; exportação preserva código000123. T3 já inspecionou os oito modelos sintéticos/35 abas visíveis com as limitações de renderer documentadas acima. Captura preservada em visual/templates-synthetic-inspection.png; Financeiro nela é somente fixture de formatação isolada, indisponível pela API.
+
+Primeira rodada backend completa:971 PASS/1 ERROR, zero skips,1055.39s; NÃO é PASS. Erro de setup UniqueViolation de admin@example.test em test_reset_valid_revokes_sessions_and_contexts: o E2E deixou fixtures sintéticas e o harness pytest limpa somente no teardown. Corrigido apenas teardown do harness E2E para limpar o banco próprio após encerrar API/Vite; sem alteração da Foundation ou dos asserts. Uma tentativa de iniciar pytest no mesmo processo que carregou/zerou o ambiente privado foi recusada antes de coletar testes: PUBLIC_ORIGIN ficou vazio após SetEnvironmentVariable(null). Não é PASS. Teardown corrigido para remover variáveis pelo provider Env do PowerShell; sintaxe e remoção verificadas. Reexecução em processo limpo e banco vazio:972 testes PASS, zero skips, uma depreciação herdada,1052.16s. Comando final:uv run --frozen python -m pytest -q --tb=short --basetemp=<raiz própria descartável>/pytest-final; owner/runtime/recovery separados. Inclui migrations full-chain/incremental, downgrade/upgrade, grants físicos, isolamento e concorrência.
+
+Inspeção final encontrou lacuna adicional de UX: preview mostrava apenas versão sem identificar nominalmente o template real do upload. Caso em que modelo selecionado para download difere do template recebido foi reproduzido RED1/13 PASS; correção mínima usa label do catálogo server-side correspondente ao template_id do preview, independentemente do seletor. Preview e confirmação agora exibem o modelo identificado; política de duplicidade no texto também distingue arquivo de registros existentes. Sem mudança de backend ou autorização.
+
+GREEN final frontend:302 testes em18 arquivos, zero skips,18.21s; npm.cmd test. Oxlint sem warnings; TypeScript/Vite build PASS na árvore final. Ruff completo app/tests/alembic/factory E2E PASS. E2E completo reexecutado na interface final PASS, incluindo identificação efetiva de Coordenação, Financeiro indisponível e confirmação contextual. Harness encerra apenas API/Vite próprios e limpa todas as fixtures do banco atestado; verificação independente final comprovou users/imports/records/audit zerados, PostgreSQL18.6 e auditoria runtime imutável.
+
+Capturas finais revisadas em visual/:desktop-light-preview, desktop-dark, mobile-light, mobile-dark, confirm-contextual, invalid-formula, permission-revoked, support-denied e templates-synthetic-inspection. Sem arquivo de banco, credencial, token ou chave nesses artefatos.
+
+Cleanup executado e verificado: PostgreSQL próprio parado; raiz descartável removida com clusters/banco/brutos/TLS/chaves/credenciais/basetemp final. Artefatos pytest próprios53–56 removidos após checagem de caminho/nome/data; links removidos isoladamente. Portas temporárias API/Vite/PostgreSQL sem listener. Workspace técnico deste plano é descartado após o commit local, preservando capturas/decisões neste relatório e o target Node compartilhado. SHA final e árvore limpa informados na entrega. Sem push/merge/deploy e Demo intocada.
+
+## Arquitetura e schema entregues
+
+Connector → parsing/validação → preview persistente → confirmação explícita → registros próprios tipados/proveniência/auditoria. Adaptadores de domínio são futura fronteira; não há gravação em módulos operacionais inexistentes. Import, arquivo recebido, Row, Issue e Record são entidades distintas. Detalhes relacionais têm FKs compostas tenant/contract; payload de preview é normalizado por schema fechado, não instrução livre.
+
+Lifecycle: RECEIVED/VALIDATING/READY_FOR_CONFIRMATION; REJECTED para erro de dados; EXPIRED para prazo; FAILED para falha técnica; COMMITTED somente após commit real. Services não fazem commit; orchestrators controlam unidades de trabalho. UNIQUE físico e locks na ordem Foundation protegem confirmação/replay. Auditoria falhando impede a mutação.
+
+Todos os datasets abaixo são versão1. Campos obrigatórios salvo categoria de Produtos. Códigos textuais normalizados ASCII maiúsculo, até64 caracteres, zeros iniciais preservados. Datas ISO; decimais finitos com até quatro casas e magnitude menor que10^15, persistidos em NUMERIC(20,4), sem arredondamento silencioso; booleanos SIM/NAO. Nome/descrição até200; categoria até120.
+
+| Dataset / aba | Campos | Business key no contrato |
+|---|---|---|
+| PRODUCTS / Produtos | codigo, descricao, unidade_medida, categoria opcional, ativo | codigo |
+| PARTNERS / Parceiros | codigo, nome, tipo, pais_iso, ativo | codigo |
+| DEMANDS / Demandas | codigo, produto_codigo, unidade_codigo, quantidade positiva, data_necessidade, modalidade, prioridade | codigo |
+| STOCK_POSITIONS / Estoque | produto_codigo, unidade_codigo, quantidade_disponivel não negativa, data_referencia | produto e unidade resolvidos + data_referencia |
+| COMEX_REFERENCES / COMEX | codigo, parceiro_codigo, moeda, incoterm, data_prevista, status | codigo |
+| FINANCIAL_FORECASTS / Financeiro | schema fechado reservado; NÃO exposto/importável/exportável na V1 | bloqueado |
+
+Enums: unidade_medida UN/KG/TON/L/M/M2/M3/CX/PAL; parceiro FORNECEDOR/CLIENTE/TRANSPORTADOR e país ISO fechado; modalidade NACIONAL/INTERNACIONAL; prioridade BAIXA/NORMAL/ALTA/URGENTE; moeda BRL/USD/EUR/GBP/CNY; Incoterms EXW/FCA/CPT/CIP/DAP/DPU/DDP/FAS/FOB/CFR/CIF; referência COMEX PLANEJADO/EM_ANDAMENTO/CONCLUIDO/CANCELADO. Referências COMEX são informacionais, não Processo/Proforma/Container/Booking/Embarque operacionais.
+
+| Template versionado v1 | Composição padrão, filtrada pelas permissões/módulos/unidades atuais |
+|---|---|
+| Coordenação | Produtos, Parceiros, Demandas, Estoque, COMEX |
+| Supervisão | Produtos, Demandas, Estoque |
+| Comprador Nacional | Produtos, Parceiros, Demandas NACIONAL |
+| Comprador Internacional | Produtos, Parceiros, Demandas INTERNACIONAL, COMEX |
+| Financeiro | indisponível nesta V1 |
+| Diretoria | cinco datasets não financeiros, download/exportação; não importável |
+| Loja | Produtos, Demandas, Estoque |
+| Centro de Distribuição | Produtos, Estoque |
+
+Template≠Dataset≠Perfil. Esses oito templates nunca são TenantRoles nem concedem capability. Geral read/import/export/download e capabilities por dataset vêm do backend/membership vigente. PLATFORM_ADMIN sozinho não recebe direitos de cliente; PLATFORM_SUPPORT e contextos derivados não utilizam o conector. Exportação do template de comprador filtra modalidade; isso não amplia nem substitui RBAC.
+
+Planilhas: logo oficial existente, título/slogan, empresa/contrato/perfil/unidade/data/versão; header12/dados13/freezeA13; tabela/filtro; validação de enums; números/data consistentes; LEIA-ME; _HIATLAS_META. Sem macro, segredo ou avaliação de fórmula. Arquivo bruto cifrado temporário; normalizados/digest/proveniência persistentes. Proveniência relaciona import, arquivo sanitizado, aba/linha, template/schema, ator e UTC.
+
+## Commits e arquivos
+
+Foundation aprovada:641e57502644935ff1c4ca9e06f54b009bb7adc4. Spec/plano:180989d. T1:e51e6d5; T2:afb681a; T3:0ff6f3e; T4:0eb95c4; T5:5b9cd2d; T6:e12f300; T7:063bd80; T8:2c1b805. T9 é o commit que contém este relatório final, identificável por git log deste arquivo; SHA final informado na entrega, evitando hash autorreferencial.
+
+Arquivos em relação à Foundation (mais harness e capturas T9):
+
+- backend/alembic/versions/0011_datahub_excel.py
+- backend/alembic/versions/0012_datahub_scope.py
+- backend/app/api/router.py
+- backend/app/audit/schemas.py
+- backend/app/core/config.py
+- backend/app/datahub/__init__.py
+- backend/app/datahub/catalog.py
+- backend/app/datahub/cleanup.py
+- backend/app/datahub/confirmation.py
+- backend/app/datahub/connectors/__init__.py
+- backend/app/datahub/connectors/base.py
+- backend/app/datahub/connectors/excel.py
+- backend/app/datahub/dependencies.py
+- backend/app/datahub/duplicates.py
+- backend/app/datahub/models.py
+- backend/app/datahub/normalization.py
+- backend/app/datahub/policy.py
+- backend/app/datahub/preview.py
+- backend/app/datahub/queries.py
+- backend/app/datahub/raw_store.py
+- backend/app/datahub/repositories.py
+- backend/app/datahub/retention.py
+- backend/app/datahub/routes.py
+- backend/app/datahub/schemas.py
+- backend/app/datahub/services.py
+- backend/app/datahub/types.py
+- backend/app/datahub/validation.py
+- backend/app/db/models.py
+- backend/app/main.py
+- backend/app/organization/modules.py
+- backend/app/platform/capabilities.py
+- backend/app/platform/policy.py
+- backend/app/tenancy/models.py
+- backend/pyproject.toml
+- backend/tests/conftest.py
+- backend/tests/test_contract_modules.py
+- backend/tests/test_datahub_api.py
+- backend/tests/test_datahub_catalog.py
+- backend/tests/test_datahub_confirmation.py
+- backend/tests/test_datahub_excel.py
+- backend/tests/test_datahub_policy.py
+- backend/tests/test_datahub_preview.py
+- backend/tests/test_datahub_queries.py
+- backend/tests/test_datahub_races.py
+- backend/tests/test_datahub_retention.py
+- backend/tests/test_datahub_schema.py
+- backend/tests/test_support_sessions.py
+- backend/uv.lock
+- docs/operations/hiatlas-datahub-excel-v1.md
+- docs/superpowers/plans/2026-10-06-hiatlas-datahub-excel-v1.md
+- docs/superpowers/specs/2026-10-06-hiatlas-datahub-excel-v1-design.md
+- docs/superpowers/validation/hiatlas-datahub/excel-v1.md
+- frontend/src/App.tsx
+- frontend/src/api/client.test.ts
+- frontend/src/api/client.ts
+- frontend/src/datahub/ConfirmImportDialog.tsx
+- frontend/src/datahub/DataHub.css
+- frontend/src/datahub/DataHub.test.tsx
+- frontend/src/datahub/ExcelPage.test.tsx
+- frontend/src/datahub/ExcelPage.tsx
+- frontend/src/datahub/ExportDialog.tsx
+- frontend/src/datahub/ImportHistory.tsx
+- frontend/src/datahub/ImportPreview.tsx
+- frontend/src/datahub/TemplatePicker.tsx
+- frontend/src/datahub/TenantWorkspace.tsx
+- frontend/src/datahub/UploadForm.tsx
+- frontend/src/datahub/api.ts
+- frontend/src/datahub/labels.ts
+- frontend/src/datahub/types.ts
+- frontend/src/datahub/useDataHub.ts
+- frontend/src/platform/ContractShell.tsx
+- frontend/src/support/Workspace.tsx
+- scripts/datahub_browser_fixture.py
+- scripts/datahub_browser_checks.ps1
+- frontend/e2e/datahub.mjs
+- docs/superpowers/validation/hiatlas-datahub/visual/*.png
+
+## Limitações e decisões operacionais
+
+Financeiro bloqueado; outros módulos operacionais não simulados. CSV/ERP/API/mapeamento externo/adaptadores de domínio posteriores. Importação integral limitada e síncrona; excesso rejeitado sem truncamento. Nenhum overwrite/atualização de registros existentes nesta V1. Histórico misto fica integralmente oculto quando qualquer dataset/unidade perde autorização.
+
+Reutilização do lifecycle lock global da Foundation serializa confirmações; adequado ao volume inicial, limita throughput. Retenção limita trabalho de stat/consulta/remoção por categoria, mas enumera nomes do diretório para avançar o cursor; acompanhar diretórios grandes. Bruto requer diretório privado/ACL Windows e chave operacional protegida, feature desabilitada por padrão. Não demonstrada durabilidade produção pelo cluster otimizado de testes. Deprecated Starlette/httpx herdado; nenhuma atualização automática de dependências.
+
+Sem deploy/push/merge ou operação na Demo. Nenhum dado real utilizado. Harness E2E atual específico desta estação Windows/D:/Atlas, com Chrome/Playwright geridos pelo runtime; adaptar caminhos e provisionar PostgreSQL descartável antes de repetir em outra máquina.
+
+## Decisões registradas durante a execução
+
+Lista integral das decisões do ledger, na ordem em que foram tomadas; nenhum achado minor foi adiado:
+
+1. PLATFORM_ADMIN não concede Data Hub por si só; exigir autorização tenant efetiva. Custo: operadores precisam vínculo/capabilities explícitos, conforme correção do usuário.
+2. Ledger/briefs nativos Python/PowerShell por ausência de Bash no ambiente. Custo: comandos operacionais específicos Windows, sem agentes implementadores.
+3. pytest via uv run --frozen python -m pytest por launcher Windows obsoleto. Custo: não usar executável pytest.exe; ambiente/versões travados preservados.
+4. Substituir somente cluster próprio descartável após interrupção; fsync/full_page_writes/synchronous_commit desligados no novo cluster sintético. Custo: testes não comprovam durabilidade de produção; cluster anterior removido no cleanup final.
+5. Decimais acima de15 dígitos significativos Excel serializados como texto explícito. Custo: exigem interpretação numérica consciente ao editar; precisão NUMERIC(20,4) preservada.
+6. defusedxml incluído junto de openpyxl/Pillow para XML não confiável. Custo: dependência adicional travada, sem mudar arquitetura.
+7. Identidade/versão da unidade congeladas nas Rows antes da ingestão. Custo: mudança/reuso do código exige novo preview; evita reatribuir proveniência.
+8. Dependências Excel resolvidas no primeiro consumidor T3. Custo: T1 não instala biblioteca sem uso; estado final contém dependências travadas.
+9. Datasets unitários omitidos sem unidades ativas atribuídas. Custo: composição de template reduzida; não existe fallback ao contrato inteiro.
+10. Migração incremental0012 amplia capability CHECK e congela escopo;0011 já commitada não foi reescrita. Custo: duas migrations testadas em vez de alterar história.
+11. Import exige read por dataset além de import. Custo: roles precisam ambas; preview/duplicidade não autorizam leitura implicitamente.
+12. Stack backend aprovada openpyxl/Pillow/defusedxml prevalece sobre autoria de artefato standalone; artifact-tool só para inspeção. Custo: limitações visuais do renderer documentadas, sem recálculo dos uploads.
+13. Comparação canônica usa unidade resolvida; exportação mostra código atual e proveniência conserva código original. Custo: divergência exige nova revisão em vez de overwrite/rebind.
+14. Preview tem UoW em fases explícitas para VALIDATING persistente, parsing fora de locks e revalidação final. Refinamento registrado: orchestrator controla transações; services nunca commitam a transação do caller. Custo: múltiplos commits técnicos de lifecycle; confirmação/dados/auditoria continuam em um único commit.
+15. Import misto integralmente oculto se qualquer dataset/unidade perder autorização. Custo: inclusive contagens/histórico deixam de aparecer; novo contexto autorizado lê histórico, mas não confirma preview vinculado a outro contexto.

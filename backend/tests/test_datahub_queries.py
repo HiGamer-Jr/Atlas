@@ -175,3 +175,67 @@ def test_history_pagination_and_sanitized_filename(preview_case, db_runtime):
         .id
         == one.id
     )
+
+
+def test_export_template_filters_modality_before_limit(preview_case, db_runtime):
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    from app.datahub.schemas import DemandPayload, ExportInput
+    from app.datahub.types import NormalizedRow
+    from tests.test_datahub_policy import invoke
+
+    demands = tuple(
+        NormalizedRow(
+            "DEMANDS",
+            1,
+            "Demandas",
+            13,
+            DemandPayload(
+                codigo="D-" + mode,
+                produto_codigo="000123",
+                unidade_codigo="DH-UNIT",
+                quantidade="1",
+                data_necessidade="2026-10-20",
+                modalidade=mode,
+                prioridade="NORMAL",
+            ),
+        )
+        for mode in ["NACIONAL", "INTERNACIONAL"]
+    )
+    with db_runtime.begin() as c:
+        c.execute(
+            text(
+                "INSERT INTO tenant_role_permissions (tenant_id,contract_id,role_id,capability) VALUES (:t,:c,:r,'datahub.demands.export')"
+            ),
+            {
+                "t": preview_case[0]["tenant_a"],
+                "c": preview_case[0]["contract_a"],
+                "r": preview_case[0]["role_basic"],
+            },
+        )
+    preview = upload(
+        db_runtime,
+        preview_case,
+        (product(), *demands),
+        selection=invoke(db_runtime, preview_case[1], "COORDENACAO"),
+    )
+    confirm(db_runtime, preview_case, preview)
+    detail = query_call(db_runtime, preview_case, "get_import", preview.id)
+    for template, mode in [
+        ("COMPRADOR_NACIONAL", "NACIONAL"),
+        ("COMPRADOR_INTERNACIONAL", "INTERNACIONAL"),
+    ]:
+        result = query_call(
+            db_runtime,
+            preview_case,
+            "export_workbook",
+            ExportInput(template_id=template),
+        )
+        workbook = load_workbook(BytesIO(result.content))
+        sheet = workbook["Demandas"]
+        assert sheet["F13"].value == mode
+        assert sheet["A14"].value is None
+
+    assert detail.unit_scope == ["DH-UNIT"]

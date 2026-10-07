@@ -15,7 +15,7 @@ policy_configured = _policy_fixture
 preview_case = _case_fixture
 
 
-def cleanup(engine, case, *, advance=0):
+def cleanup(engine, case, *, advance=0, limit=20):
     assert find_spec("app.datahub.retention"), "Retention service missing"
     from cryptography.fernet import Fernet
 
@@ -33,7 +33,7 @@ def cleanup(engine, case, *, advance=0):
             settings=settings,
             clock=lambda: datetime.now(UTC) + timedelta(seconds=advance),
         )
-        return cleanup_raw(db, store, 20)
+        return cleanup_raw(db, store, limit)
 
 
 def test_raw_expiry_preserves_normalized_preview(preview_case, db_runtime):
@@ -90,3 +90,23 @@ def test_expired_preview_terminal_and_audited(preview_case, db_runtime):
         assert db.scalar(
             select(AuditEvent.id).where(AuditEvent.action == "datahub.import.expired")
         )
+
+
+def test_cleanup_cursor_cannot_starve_later_orphan(preview_case, db_runtime):
+    upload(db_runtime, preview_case, (product(),))
+    import os
+
+    path = preview_case[2] / "raw" / "ffffffff-ffff-ffff-ffff-ffffffffffff.enc"
+    path.write_bytes(b"synthetic orphan")
+    os.utime(path, (0, 0))
+    # Deterministic ordering reproduces a persistent live prefix.
+    from pathlib import Path
+
+    original = Path.iterdir
+    from unittest.mock import patch
+
+    with patch.object(
+        Path, "iterdir", lambda self: iter(sorted(original(self), key=lambda p: p.name))
+    ):
+        result = [cleanup(db_runtime, preview_case, limit=1) for _ in range(3)]
+    assert sum(r.orphans_deleted for r in result) == 1

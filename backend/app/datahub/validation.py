@@ -57,6 +57,7 @@ def add_issue(row, code, column=None, *, warning=False):
     messages = {
         "INVALID_FIELD": "Campo inválido ou obrigatório não preenchido.",
         "REFERENCE_UNAVAILABLE": "Referência indisponível no escopo autorizado.",
+        "DUPLICATE_FILE": "Chave repetida no mesmo arquivo; remova as linhas duplicadas.",
         "DUPLICATE_CONFLICT": "Chave duplicada com conteúdo diferente; não será sobrescrita.",
         "DUPLICATE_IDENTICAL": "Linha idêntica será ignorada, preservando a origem existente.",
         "MODALITY_INCOMPATIBLE": "Modalidade incompatível com este template.",
@@ -92,13 +93,14 @@ def compare_duplicates(db, scope, selection, rows):
         for row in candidates:
             other = seen.get(row.key)
             if other is not None:
-                if other.status == "INVALID" or row.fingerprint != other.fingerprint:
-                    add_issue(row, "DUPLICATE_CONFLICT")
-                    if other.status != "INVALID":
-                        add_issue(other, "DUPLICATE_CONFLICT")
-                else:
-                    row.status, row.record_id = "SKIPPED", other.record_id
-                    add_issue(row, "DUPLICATE_IDENTICAL", warning=True)
+                code = (
+                    "DUPLICATE_FILE"
+                    if row.fingerprint == other.fingerprint
+                    else "DUPLICATE_CONFLICT"
+                )
+                add_issue(row, code)
+                if other.status != "INVALID":
+                    add_issue(other, code)
                 continue
             seen[row.key] = row
             existing = records.get(row.key)

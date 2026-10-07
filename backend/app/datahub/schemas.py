@@ -409,6 +409,7 @@ NormalizedPayload = (
 
 
 class ImportSummary(ClosedPayload):
+    unit_scope: list[str] = Field(default_factory=list)
     id: UUID
     status: Literal[
         "RECEIVED",
