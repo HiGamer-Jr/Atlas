@@ -66,3 +66,24 @@ it('cancels all pending requests on session invalidation', async () => {
     resolve(new Response('{}'));
     await assertion;
 });
+
+it('multipart uses credentials context csrf without manual boundary', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({token:'csrf'}))).mockResolvedValueOnce(new Response('{}'));
+    vi.stubGlobal('fetch',fetcher);
+    const api=new ApiClient();api.setContext('opaque');const form=new FormData();form.append('file',new File(['synthetic'],'synthetic.xlsx'));
+    await api.request('/datahub/imports',{method:'POST',body:form});
+    const options=fetcher.mock.calls[1][1];
+    expect(options.credentials).toBe('include');expect(options.headers.has('Content-Type')).toBe(false);
+    expect(options.headers.get('X-CSRF-Token')).toBe('csrf');expect(options.body).toBe(form);
+});
+it('binary response after context change is discarded', async () => {
+    let done!: (v:Response)=>void;vi.stubGlobal('fetch',vi.fn(()=>new Promise<Response>(resolve=>{done=resolve;})));
+    const api=new ApiClient();api.setContext('A');const pending=api.request('/datahub/file',{responseType:'blob'});
+    const assertion=expect(pending).rejects.toMatchObject({name:'AbortError'});api.setContext('B');done(new Response('synthetic'));await assertion;
+});
+it('binary response is a Blob after secure transport', async () => {
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('synthetic')));
+    const response=await new ApiClient().request<Blob>('/datahub/file',{responseType:'blob'});
+    expect(response.constructor.name).toBe('Blob');
+    expect(await response.text()).toBe('synthetic');
+});

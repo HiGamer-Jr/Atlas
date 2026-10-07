@@ -158,11 +158,11 @@ Serviços usam Session, Request, Principal e AccessScope existentes; não fazem 
 **Files:** routes.py, api/router.py; frontend/src/api/client.ts e datahub/api.ts/types.ts; test_datahub_api.py e frontend/src/api/client.test.ts (criar se ausente).
 **Interfaces:** rotas exatas em Decisões; FE produzir uploadExcel(file: File, signal: AbortSignal) -> Promise<ImportSummary>, confirmImport(id: string, expectedVersion: number, key: string, signal: AbortSignal) -> Promise<ConfirmationResult>, downloadTemplate/exportExcel -> Promise<Blob>; implementadas pelo ApiClient contextual, sem fetch paralelo sem segurança.
 
-- [ ] RED `test_confirm_api_rejects_client_payload`, `test_upload_csrf_and_origin`, `test_foreign_import_is_neutral`; asserts 422 para campos extras, 403 CSRF/Origin, 404 id externo. Vitest `multipart uses credentials context csrf without manual boundary`, `binary response after context change is discarded`.
-- [ ] Rodar backend `uv run --frozen python -m pytest tests/test_datahub_api.py -q`; frontend `npm.cmd test -- src/api/client.test.ts`: RED por novas rotas/transporte ausentes.
-- [ ] Implementar DTOs/response_models e chamadas de serviço sem regras no controller; binários e multipart preservam geração, abort, status sanitizado e header contextual. Download não deixa object URLs vivos após uso/context switch. Gates Support/grants negam chamadas diretas.
-- [ ] Rodar testes: GREEN, nenhum token/segredo/rawref/payload indevido em respostas, logs, erro Pydantic ou auditoria.
-- [ ] Commit `feat: expose secure Data Hub Excel APIs`.
+- [x] RED `test_confirm_api_rejects_client_payload`, `test_upload_csrf_and_origin`, `test_foreign_import_is_neutral`; asserts 422 para campos extras, 403 CSRF/Origin, 404 id externo. Vitest `multipart uses credentials context csrf without manual boundary`, `binary response after context change is discarded`.
+- [x] Rodar backend `uv run --frozen python -m pytest tests/test_datahub_api.py -q`; frontend `npm.cmd test -- src/api/client.test.ts`: RED por novas rotas/transporte ausentes.
+- [x] Implementar DTOs/response_models e chamadas de serviço sem regras no controller; binários e multipart preservam geração, abort, status sanitizado e header contextual. Download não deixa object URLs vivos após uso/context switch. Gates Support/grants negam chamadas diretas.
+- [x] Rodar testes: GREEN, nenhum token/segredo/rawref/payload indevido em respostas, logs, erro Pydantic ou auditoria.
+- [x] Commit `feat: expose secure Data Hub Excel APIs`.
 
 ## Tarefa 8 — UX autenticada Excel, preview e confirmação
 

@@ -78,6 +78,14 @@ GREEN final53 testes, zero skips,128.77 segundos:queries/retention/confirmation/
 
 Remoção de bruto cifrado independente de preview comprovada com confirmação posterior. Retry de falha/OSError e órfão UUID.enc comprovados; nenhuma evidência normalizada removida. Cleanup local runtime-only, sem scheduler/infra externos; diretórios grandes exigem acompanhamento do scan limitado. Expiração auditada e nenhum hard delete. Runbook operacional incluído. Ruff backend completo e diff-check executados, aprovados.
 
+## T7 — APIs e transporte seguro
+
+RED backend6 FAIL/2 PASS esperado por rotas ausentes; frontend2 FAIL/12 PASS por multipart/blob. GREEN inicial API8; ampliado43 testes de API/policy/query/retention, zero skips,77.19 segundos. A/A2/B com IDs estrangeiros reais, nova sessão HTTP lê histórico autorizado mas não confirma preview anterior; CSRF/Origin, DTO extra rejeitado sem eco, replay, limite upload, feature e papel interno sem bypass.
+
+GREEN frontend14 testes do cliente seguro. Uma comparação inicial Blob instanceof falhou por realms Node/jsdom; teste corrigido para identidade Blob e conteúdo real, sem alterar comportamento de produto. Transporte FormData mantém credentials/context/CSRF sem boundary manual; blob revalida geração após leitura e descarta resposta tardia. Object URLs revogados após download.
+
+ImportIdentity possui UoW curto que encerra locks antes da Preview/ConfirmationOrchestrator; gates Foundation e autenticação reutilizados. Envelope limitado antes de parsing multipart, somente um XLSX, arquivo igualmente limitado. python-multipart promovido a dependência direta; nenhum pacote existente atualizado. Controllers sem regras de negócio. Ruff completo, oxlint, TypeScript/Vite build e git diff --check executados/aprovados. Nenhum frontend workflow/E2E concluído ainda.
+
 ## Ainda não executado/concluído
 
-T7–T9:APIs/frontend, E2E, gate final e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.
+T8–T9:workflow frontend, E2E, gate final e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.

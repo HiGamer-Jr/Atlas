@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.audit.routes import router as audit_router
+from app.datahub.routes import router as datahub_router
 from app.db.base import Base
 from app.db.session import validate_runtime_connection
 from app.grants.routes import router as grant_router
@@ -17,6 +18,7 @@ from app.tenancy.memberships import router as membership_router
 from app.tenancy.routes import router as tenancy_router
 
 router = APIRouter()
+router.include_router(datahub_router)
 router.include_router(grant_router)
 router.include_router(maintenance_router)
 router.include_router(support_router)

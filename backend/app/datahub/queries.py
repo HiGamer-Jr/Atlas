@@ -297,3 +297,77 @@ def export_workbook(db, principal, scope, command: ExportInput) -> WorkbookDownl
         command.node_ids,
     )
     return WorkbookDownload(content, "HiAtlas-exportacao.xlsx")
+
+
+def template_catalog(db, principal, scope):
+    from app.datahub.catalog import TEMPLATES
+    from app.datahub.schemas import TemplateCatalog, TemplateView, UnitView
+
+    current = selection_for(db, principal, scope)
+    items = []
+    for definition in TEMPLATES.values():
+        permitted = None
+        flags = {}
+        for operation in (Operation.TEMPLATE, Operation.IMPORT, Operation.EXPORT):
+            try:
+                selected = selection_for(
+                    db, principal, scope, operation, definition.code, definition.version
+                )
+                permitted = permitted or selected
+                flags[operation] = True
+            except ApiError as exc:
+                if exc.status != 403:
+                    raise
+                flags[operation] = False
+        items.append(
+            TemplateView(
+                id=definition.code,
+                version=definition.version,
+                label=definition.label,
+                available=permitted is not None,
+                can_download=flags[Operation.TEMPLATE],
+                can_import=flags[Operation.IMPORT],
+                can_export=flags[Operation.EXPORT],
+                datasets=[str(d) for d in permitted.datasets] if permitted else [],
+            )
+        )
+    return TemplateCatalog(
+        items=items,
+        profile=current.role_name,
+        units=[UnitView(id=u.id, code=u.code, name=u.name) for u in current.units],
+    )
+
+
+def download_template(db, principal, scope, template_id, command):
+    selected = selection_for(
+        db,
+        principal,
+        scope,
+        Operation.TEMPLATE,
+        template_id,
+        command.template_version,
+        command.node_ids,
+    )
+    settings = db.info["settings"]
+    logo = (
+        settings.datahub_logo_path
+        or Path(__file__).resolve().parents[3] / "frontend/src/assets/hiatlas-light.png"
+    )
+    context = WorkbookContext(
+        selected.tenant_name,
+        selected.contract_code,
+        selected.role_name,
+        ", ".join(u.code for u in selected.units) or "Contrato",
+        now(db),
+    )
+    content = ExcelConnector(logo).generate(selected, context, ())
+    selection_for(
+        db,
+        principal,
+        scope,
+        Operation.TEMPLATE,
+        template_id,
+        command.template_version,
+        command.node_ids,
+    )
+    return WorkbookDownload(content, "HiAtlas-modelo.xlsx")

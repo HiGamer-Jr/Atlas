@@ -502,3 +502,31 @@ class RetentionSummary(ClosedPayload):
     failed: int = 0
     orphans_deleted: int = 0
     expired: int = 0
+
+
+class TemplateInput(ClosedPayload):
+    template_version: int = Field(default=1, ge=1, strict=True)
+    node_ids: tuple[UUID, ...] = ()
+
+
+class TemplateView(ClosedPayload):
+    id: str
+    version: int
+    label: str
+    available: bool
+    can_download: bool
+    can_import: bool
+    can_export: bool
+    datasets: list[str]
+
+
+class UnitView(ClosedPayload):
+    id: UUID
+    code: str
+    name: str
+
+
+class TemplateCatalog(ClosedPayload):
+    items: list[TemplateView]
+    profile: str
+    units: list[UnitView]

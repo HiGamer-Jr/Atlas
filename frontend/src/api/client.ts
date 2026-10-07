@@ -4,6 +4,7 @@ type Options = {
     body?: unknown;
     contextId?: string | null;
     signal?: AbortSignal;
+    responseType?: 'json' | 'blob';
 };
 /** One instance per mounted app/tab. No authentication credentials are persisted. */
 export class ApiClient {
@@ -55,7 +56,7 @@ export class ApiClient {
             const headers = new Headers({ Accept: 'application/json' });
             if (context)
                 headers.set('X-HiAtlas-Context', context);
-            if (options.body !== undefined)
+            if (options.body !== undefined && !(options.body instanceof FormData))
                 headers.set('Content-Type', 'application/json');
             if (method !== 'GET') {
                 // Refresh on every mutation: login rotates CSRF and other tabs share the cookie.
@@ -65,8 +66,11 @@ export class ApiClient {
                 assertCurrent();
                 headers.set('X-CSRF-Token', csrf.token);
             }
-            const response = await fetch(`/api${path}`, { method, credentials: 'include', cache: 'no-store', headers, signal: controller.signal, body: options.body === undefined ? undefined : JSON.stringify(options.body) });
+            const response = await fetch(`/api${path}`, { method, credentials: 'include', cache: 'no-store', headers, signal: controller.signal, body: options.body === undefined ? undefined : options.body instanceof FormData ? options.body : JSON.stringify(options.body) });
             assertCurrent();
+            if(response.ok && options.responseType === 'blob') {
+                const blob = await response.blob(); assertCurrent(); return blob as T;
+            }
             const payload = response.status === 204 ? undefined : await response.json().catch(() => ({}));
             assertCurrent();
             if (!response.ok) {
