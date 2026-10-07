@@ -20,6 +20,17 @@ from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "datahub_financial_forecasts",
+    "datahub_comex_references",
+    "datahub_stock_positions",
+    "datahub_demands",
+    "datahub_partners",
+    "datahub_products",
+    "datahub_records",
+    "datahub_import_issues",
+    "datahub_import_rows",
+    "datahub_import_files",
+    "datahub_imports",
     "processing_runs",
     "maintenance_grant_scopes",
     "temporary_privileged_grants",

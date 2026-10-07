@@ -1,6 +1,19 @@
 """Import models once to register metadata for Alembic and application services."""
 
 from app.audit.models import AccessEvent, AuditEvent
+from app.datahub.models import (
+    DataHubComexReference,
+    DataHubDemand,
+    DataHubFinancialForecast,
+    DataHubImport,
+    DataHubImportFile,
+    DataHubImportIssue,
+    DataHubImportRow,
+    DataHubPartner,
+    DataHubProduct,
+    DataHubRecord,
+    DataHubStockPosition,
+)
 from app.db.base import Base
 from app.grants.models import MaintenanceGrantScope, TemporaryPrivilegedGrant
 from app.identity.models import (
@@ -38,6 +51,17 @@ __all__ = [
     "Base",
     "Contract",
     "ContractModule",
+    "DataHubComexReference",
+    "DataHubDemand",
+    "DataHubFinancialForecast",
+    "DataHubImport",
+    "DataHubImportFile",
+    "DataHubImportIssue",
+    "DataHubImportRow",
+    "DataHubPartner",
+    "DataHubProduct",
+    "DataHubRecord",
+    "DataHubStockPosition",
     "EmailOutbox",
     "MaintenanceGrantScope",
     "Membership",
