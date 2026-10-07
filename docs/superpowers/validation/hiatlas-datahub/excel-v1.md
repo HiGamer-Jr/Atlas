@@ -70,6 +70,14 @@ Revisão independente /root/review_datahub_t5 apontou órfão de bruto ao fechar
 
 GREEN final executado:64 testes, zero skips,124.78 segundos. Comando:uv run --frozen python -m pytest tests/test_datahub_confirmation.py tests/test_datahub_races.py tests/test_datahub_preview.py tests/test_audit_integrity.py -q. Ruff focado e git diff --check executados e aprovados. Nenhuma migration adicional. Uma depreciação herdada Starlette/httpx.
 
+## T6 — Histórico, exportação e retenção
+
+RED8 observado por interfaces ausentes. Primeira implementação7 GREEN/1 RED: expiração técnica requer actor_id na auditoria Foundation; corrigida preservando ator do lifecycle original e motivo explícito de expiração automática, sem alegar comando humano. Autofix Ruff removeu imports usados como fixtures; corrigido para aliases explícitos, não é falha de produto nem PASS.
+
+GREEN final53 testes, zero skips,128.77 segundos:queries/retention/confirmation/preview. Histórico paginado oculta import misto integralmente se houver dataset/unidade fora das permissões atuais, incluindo contagens/rows/issues. Exportação usa detalhes relacionais tipados e código atual da unidade; excesso413, sem truncamento. Strings literais, logo oficial e LEIA-ME preservados.
+
+Remoção de bruto cifrado independente de preview comprovada com confirmação posterior. Retry de falha/OSError e órfão UUID.enc comprovados; nenhuma evidência normalizada removida. Cleanup local runtime-only, sem scheduler/infra externos; diretórios grandes exigem acompanhamento do scan limitado. Expiração auditada e nenhum hard delete. Runbook operacional incluído. Ruff backend completo e diff-check executados, aprovados.
+
 ## Ainda não executado/concluído
 
-T6–T9:histórico/exportação, retenção, APIs/frontend, E2E, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.
+T7–T9:APIs/frontend, E2E, gate final e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.

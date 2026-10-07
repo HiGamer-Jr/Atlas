@@ -147,11 +147,11 @@ Serviços usam Session, Request, Principal e AccessScope existentes; não fazem 
 **Files:** queries.py, retention.py; services.py; tests/test_datahub_queries.py e test_datahub_retention.py; operations runbook.
 **Interfaces:** produzir list_imports(db: Session, principal: Principal, scope: AccessScope, query: ImportQuery) -> ImportPage; get_import(db: Session, principal: Principal, scope: AccessScope, import_id: UUID) -> ImportDetail; list_rows/list_issues com os mesmos primeiros argumentos e import_id/pagination, retornando PagedRows/PagedIssues; export_workbook(db: Session, principal: Principal, scope: AccessScope, command: ExportInput) -> WorkbookDownload; cleanup_raw(db: Session, store: RawStore, limit: int) -> RetentionSummary.
 
-- [ ] RED `test_history_rechecks_current_unit_scope`, `test_raw_expiry_preserves_normalized_preview`, `test_cleanup_retry_and_orphans`, `test_export_limit_never_silently_truncates`; asserts registros não autorizados omitidos/ocultos; bruto removido mas Row/Record/provenance persistem e preview vigente confirma; retry não apaga histórico; excesso explícito. Cobrir A/A2/B, export cells, redução de capability e filename sanitizado.
-- [ ] `uv run --frozen python -m pytest tests/test_datahub_queries.py tests/test_datahub_retention.py -q`: RED pelos contratos ausentes.
-- [ ] Implementar consultas paginadas/projeções e export somente dados autorizados; nunca bruto. Cleanup local limitado/idempotente, DB lifecycle sem DELETE; reconciliar órfãos após margem de segurança configurável e proteger contra paths externos/symlink. Documentar execução operacional da limpeza, chave/retention/backup sem segredos.
-- [ ] Rodar testes: GREEN inclusive arquivo bruto expirado independentemente do preview.
-- [ ] Commit `feat: add Data Hub history export and raw retention`.
+- [x] RED `test_history_rechecks_current_unit_scope`, `test_raw_expiry_preserves_normalized_preview`, `test_cleanup_retry_and_orphans`, `test_export_limit_never_silently_truncates`; asserts registros não autorizados omitidos/ocultos; bruto removido mas Row/Record/provenance persistem e preview vigente confirma; retry não apaga histórico; excesso explícito. Cobrir A/A2/B, export cells, redução de capability e filename sanitizado.
+- [x] `uv run --frozen python -m pytest tests/test_datahub_queries.py tests/test_datahub_retention.py -q`: RED pelos contratos ausentes.
+- [x] Implementar consultas paginadas/projeções e export somente dados autorizados; nunca bruto. Cleanup local limitado/idempotente, DB lifecycle sem DELETE; reconciliar órfãos após margem de segurança configurável e proteger contra paths externos/symlink. Documentar execução operacional da limpeza, chave/retention/backup sem segredos.
+- [x] Rodar testes: GREEN inclusive arquivo bruto expirado independentemente do preview.
+- [x] Commit `feat: add Data Hub history export and raw retention`.
 
 ## Tarefa 7 — APIs finas e transporte frontend seguro
 

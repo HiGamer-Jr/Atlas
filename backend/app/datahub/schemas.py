@@ -438,3 +438,67 @@ class ConfirmationInput(ClosedPayload):
 
 class ConfirmationResult(ImportSummary):
     status: Literal["COMMITTED"]
+
+
+class ImportQuery(ClosedPayload):
+    page: int = Field(default=1, ge=1, le=100000, strict=True)
+    page_size: int = Field(default=50, ge=1, le=100, strict=True)
+
+
+class ImportDetail(ImportSummary):
+    filename: str
+    created_at: datetime
+    committed_at: datetime | None
+    actor_user_id: UUID
+
+
+class ImportPage(ClosedPayload):
+    items: list[ImportDetail]
+    total: int
+    page: int
+    page_size: int
+
+
+class ImportRowView(ClosedPayload):
+    id: UUID
+    dataset: str
+    sheet: str
+    source_row: int
+    validation_status: str
+    payload: dict[str, str | bool | int | None]
+
+
+class ImportIssueView(ClosedPayload):
+    sheet: str | None
+    source_row: int | None
+    column: str | None
+    severity: Literal["ERROR", "WARNING"]
+    code: str
+    message: str
+
+
+class PagedRows(ClosedPayload):
+    items: list[ImportRowView]
+    total: int
+    page: int
+    page_size: int
+
+
+class PagedIssues(ClosedPayload):
+    items: list[ImportIssueView]
+    total: int
+    page: int
+    page_size: int
+
+
+class ExportInput(ClosedPayload):
+    template_id: str = Field(min_length=1, max_length=32)
+    template_version: int = Field(default=1, ge=1, strict=True)
+    node_ids: tuple[UUID, ...] = ()
+
+
+class RetentionSummary(ClosedPayload):
+    deleted: int = 0
+    failed: int = 0
+    orphans_deleted: int = 0
+    expired: int = 0

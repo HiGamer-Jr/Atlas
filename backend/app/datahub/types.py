@@ -149,3 +149,12 @@ class ParsedWorkbook:
     issues: tuple[WorkbookIssue, ...]
     sheet_count: int
     entry_count: int
+
+
+@dataclass(frozen=True)
+class WorkbookDownload:
+    content: bytes
+    filename: str
+    media_type: str = (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
