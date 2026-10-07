@@ -6,9 +6,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
+from app.datahub.types import WorkbookLimits
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(hide_input_in_errors=True)
+    model_config = SettingsConfigDict(
+        hide_input_in_errors=True, env_nested_delimiter="__"
+    )
+    datahub_limits: WorkbookLimits = Field(default_factory=WorkbookLimits)
     app_name: str = "Atlas API"
     api_prefix: str = "/api"
     environment: Literal["development", "test", "production"] = "development"

@@ -114,11 +114,11 @@ Serviços usam Session, Request, Principal e AccessScope existentes; não fazem 
 **Files:** connectors/base.py, connectors/excel.py; config.py, pyproject/lock; tests/test_datahub_excel.py.
 **Interfaces:** consumir catálogos e Connector Protocol; produzir ExcelConnector.parse e generate com assinaturas compartilhadas. Gerador recebe somente AuthorizedSelection servidor; não decide autorização por perfil.
 
-- [ ] RED `test_official_layout_and_readme`, `test_codes_preserve_leading_zeroes`, `test_formula_cache_is_not_a_value`, `test_export_literal_prefixes_and_negative_decimal`; asserts header=12/freeze=A13/logo/LEIA-ME/meta hidden, '000123' intacto, célula fórmula rejeitada, string com espaços/tab/= nunca data_type=f e Decimal negativo numérico. Incluir oito templates, enums/datas/números, células numéricas de código rejeitadas, ZIP bomb/path traversal/macros/external links/manifest alterado/colunas duplicadas/abas desconhecidas.
-- [ ] `uv run --frozen python -m pytest tests/test_datahub_excel.py -q`: esperar RED por conector ausente.
-- [ ] Implementar leitura sem cálculo, pacote ZIP inspecionado antes de openpyxl; rejeitar executáveis externos, fórmulas e schemas incompatíveis; escrita textual explícita sem hyperlinks herdados. Gerar só abas autorizadas e instruções correspondentes.
-- [ ] Rodar testes: GREEN; abrir/renderizar workbook sintético para inspeção visual, registrar ferramenta e limitações sem recalcular arquivos recebidos.
-- [ ] Commit `feat: add secure branded Excel connector`.
+- [x] RED `test_official_layout_and_readme`, `test_codes_preserve_leading_zeroes`, `test_formula_cache_is_not_a_value`, `test_export_literal_prefixes_and_negative_decimal`; asserts header=12/freeze=A13/logo/LEIA-ME/meta hidden, '000123' intacto, célula fórmula rejeitada, string com espaços/tab/= nunca data_type=f e Decimal negativo numérico. Incluir oito templates, enums/datas/números, células numéricas de código rejeitadas, ZIP bomb/path traversal/macros/external links/manifest alterado/colunas duplicadas/abas desconhecidas.
+- [x] `uv run --frozen python -m pytest tests/test_datahub_excel.py -q`: esperar RED por conector ausente.
+- [x] Implementar leitura sem cálculo, pacote ZIP inspecionado antes de openpyxl; rejeitar executáveis externos, fórmulas e schemas incompatíveis; escrita textual explícita sem hyperlinks herdados. Gerar só abas autorizadas e instruções correspondentes.
+- [x] Rodar testes: GREEN; abrir/renderizar workbook sintético para inspeção visual, registrar ferramenta e limitações sem recalcular arquivos recebidos.
+- [x] Commit `feat: add secure branded Excel connector`.
 
 ## Tarefa 4 — Upload privado, análise e preview persistente
 
