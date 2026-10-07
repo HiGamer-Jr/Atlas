@@ -125,11 +125,11 @@ Serviços usam Session, Request, Principal e AccessScope existentes; não fazem 
 **Files:** raw_store.py, validation.py, duplicates.py, repositories.py, services.py; config.py/main.py; test_datahub_preview.py; fixtures/datahub_cases.py.
 **Interfaces:** consumir ExcelConnector/authorize_selection; produzir create_preview(db: Session, request: Request, principal: Principal, scope: AccessScope, filename: str, content: bytes) -> ImportSummary. RawStore.put(import_id: UUID, content: bytes) -> RawFileReference; remove(reference: RawFileReference) -> None. validate_rows(db: Session, selection: AuthorizedSelection, parsed: ParsedWorkbook) -> ValidationResult.
 
-- [ ] RED `test_preview_writes_no_records`, `test_empty_import_rejected`, `test_forward_reference_resolves`, `test_existing_changed_key_is_error`, `test_raw_not_public_and_key_missing_fails_closed`; asserts Record count=0, EMPTY_IMPORT, referência adiante válida, conflito não sobrescrito, nenhum fallback plaintext. Validar referências externas/unidades/duplicata intra-arquivo e mensagens sem valores brutos.
-- [ ] `uv run --frozen python -m pytest tests/test_datahub_preview.py -q`: RED pelas interfaces ausentes.
-- [ ] Implementar armazenamento privado cifrado e parsing limitado fora de locks longos; persistir RECEIVED/VALIDATING antes de finalizar READY/REJECTED/FAILED. Parsing síncrono controlado nesta V1, sem queue; recuperação de análise interrompida expira/falha, nunca confirma dados incompletos. Validar em duas passagens e gravar Rows/Issues sem Records, prazo min(settings/sessão/contexto).
-- [ ] Rodar testes preview/config/key/storage: GREEN; provar rollback e limpeza de arquivo órfão se TX de recebimento falhar.
-- [ ] Commit `feat: persist validated Excel import previews`.
+- [x] RED `test_preview_writes_no_records`, `test_empty_import_rejected`, `test_forward_reference_resolves`, `test_existing_changed_key_is_error`, `test_raw_not_public_and_key_missing_fails_closed`; asserts Record count=0, EMPTY_IMPORT, referência adiante válida, conflito não sobrescrito, nenhum fallback plaintext. Validar referências externas/unidades/duplicata intra-arquivo e mensagens sem valores brutos.
+- [x] `uv run --frozen python -m pytest tests/test_datahub_preview.py -q`: RED pelas interfaces ausentes.
+- [x] Implementar armazenamento privado cifrado e parsing limitado fora de locks longos; persistir RECEIVED/VALIDATING antes de finalizar READY/REJECTED/FAILED. Parsing síncrono controlado nesta V1, sem queue; recuperação de análise interrompida expira/falha, nunca confirma dados incompletos. Validar em duas passagens e gravar Rows/Issues sem Records, prazo min(settings/sessão/contexto).
+- [x] Rodar testes preview/config/key/storage: GREEN; provar rollback e limpeza de arquivo órfão se TX de recebimento falhar.
+- [x] Commit `feat: persist validated Excel import previews`.
 
 ## Tarefa 5 — Confirmação, duplicidade e auditoria atômica
 

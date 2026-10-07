@@ -148,6 +148,29 @@ class ProcessingSnapshot(BaseModel):
     version: int = Field(ge=1)
 
 
+class DataHubImportSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+    id: UUID
+    status: Literal[
+        "RECEIVED",
+        "VALIDATING",
+        "READY_FOR_CONFIRMATION",
+        "REJECTED",
+        "EXPIRED",
+        "COMMITTED",
+        "FAILED",
+    ]
+    version: int = Field(ge=1)
+    template_id: str = Field(max_length=32)
+    template_version: int = Field(ge=1)
+    source_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    row_count: int = Field(ge=0)
+    error_count: int = Field(ge=0)
+    warning_count: int = Field(ge=0)
+    inserted_count: int = Field(ge=0)
+    skipped_count: int = Field(ge=0)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -163,6 +186,11 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "datahub.import.received",
+        "datahub.import.validated",
+        "datahub.import.failed",
+        "datahub.import.committed",
+        "datahub.import.expired",
         "maintenance.correction.applied",
         "maintenance.processing.succeeded",
         "maintenance.processing.failed",
@@ -200,6 +228,7 @@ class AuditInput(BaseModel):
     ]
     outcome: Literal["SUCCESS", "DENIED", "FAILURE"] = "SUCCESS"
     entity_type: Literal[
+        "datahub_import",
         "user",
         "platform_role",
         "privileged_grant",
@@ -214,7 +243,8 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        ProcessingSnapshot
+        DataHubImportSnapshot
+        | ProcessingSnapshot
         | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
         | IdentitySnapshot
@@ -230,7 +260,8 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        ProcessingSnapshot
+        DataHubImportSnapshot
+        | ProcessingSnapshot
         | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
         | IdentitySnapshot
@@ -253,6 +284,19 @@ class AuditInput(BaseModel):
     def validate_scope(self):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
+        if self.action.startswith("datahub.import."):
+            if (
+                self.tenant_id is None
+                or self.entity_type != "datahub_import"
+                or not isinstance(self.after, DataHubImportSnapshot)
+                or self.after.id != self.entity_id
+            ):
+                raise ValueError("Data Hub action requires scoped typed provenance")
+            if self.action != "datahub.import.received" and (
+                not isinstance(self.before, DataHubImportSnapshot)
+                or self.before.id != self.entity_id
+            ):
+                raise ValueError("Data Hub transition requires its previous state")
         if self.action.startswith("privileged_grant."):
             if (
                 self.tenant_id is None

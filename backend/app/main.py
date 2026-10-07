@@ -55,6 +55,25 @@ def create_app(settings: Settings) -> FastAPI:
 
     application.state.maintenance_receipt_key = token_bytes(32)
     application.state.settings = settings
+    application.state.datahub_connector = None
+    application.state.datahub_raw_store = None
+    if settings.datahub_enabled:
+        from pathlib import Path
+
+        from app.datahub.connectors.excel import ExcelConnector
+        from app.datahub.raw_store import RawStore
+
+        logo = (
+            settings.datahub_logo_path
+            or Path(__file__).resolve().parents[2]
+            / "frontend/src/assets/hiatlas-light.png"
+        )
+        if not logo.is_file():
+            raise ValueError("Enabled Data Hub requires its official logo asset")
+        application.state.datahub_connector = ExcelConnector(
+            logo, limits=settings.datahub_limits
+        )
+        application.state.datahub_raw_store = RawStore(settings)
     application.state.clock = lambda: datetime.now(UTC)
 
     @application.middleware("http")

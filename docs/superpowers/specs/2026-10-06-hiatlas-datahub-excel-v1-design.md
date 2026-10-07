@@ -1,6 +1,6 @@
 # HiAtlas Data Hub — Excel v1: proposta de desenho revisada
 
-STATUS: SPEC E PLANO APROVADOS PELO USUÁRIO EM 2026-10-06. Execução nativa sequencial autorizada; T1–T3 validadas; execução das próximas tarefas em andamento. Sem autorização implícita de Data Hub pelo papel PLATFORM_ADMIN.
+STATUS: SPEC E PLANO APROVADOS PELO USUÁRIO EM 2026-10-06. Execução nativa sequencial autorizada; T1–T4 validadas; execução das próximas tarefas em andamento. Sem autorização implícita de Data Hub pelo papel PLATFORM_ADMIN.
 
 ## 1. Base e isolamento aprovados
 

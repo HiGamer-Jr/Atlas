@@ -1,3 +1,5 @@
+from uuid import UUID
+
 """Closed input schemas shared by connectors; validation never echoes rejected inputs."""
 
 import re
@@ -404,3 +406,26 @@ NormalizedPayload = (
     | ComexPayload
     | FinancialPayload
 )
+
+
+class ImportSummary(ClosedPayload):
+    id: UUID
+    status: Literal[
+        "RECEIVED",
+        "VALIDATING",
+        "READY_FOR_CONFIRMATION",
+        "REJECTED",
+        "EXPIRED",
+        "COMMITTED",
+        "FAILED",
+    ]
+    version: int = Field(ge=1)
+    template_id: str
+    template_version: int
+    row_count: int = Field(ge=0)
+    error_count: int = Field(ge=0)
+    warning_count: int = Field(ge=0)
+    inserted_count: int = Field(ge=0)
+    skipped_count: int = Field(ge=0)
+    preview_expires_at: datetime
+    result_code: str

@@ -46,6 +46,20 @@ Artifact-tool do runtime Node foi usado exclusivamente para inspeção/renderiza
 
 Revisão independente /root/review_datahub_t3 encontrou P2: CellCoordinatesException e zlib.error escapavam da rejeição sanitizada. Reprodução RED: três coordenadas malformadas falharam, seguida de DEFLATE corrompido falhando. Corrigidos para PACKAGE_INVALID sem payload; GREEN ampliado82 testes, gate focado final44 testes do conector. Ruff completo PASS e git diff --check PASS. Regressão integrada adicional começou antes da correção e continua em execução; não representa gate final da branch. Nenhum frontend/E2E aprovado ainda.
 
+Regressão integrada adicional executada na T3:890 testes, zero skips, uma depreciação herdada,663.64 segundos. Iniciada antes do achado da revisão; os cinco novos casos de sanitização foram verificados separadamente em GREEN. Não representa gate final das tarefas posteriores.
+
+## T4 — Recebimento privado e preview persistente
+
+RED real em PostgreSQL:seis cenários pela ausência do serviço. Armazenamento recebeu RED2, GREEN2; colisão de criação recebeu RED1 antes de correção. Primeiro GREEN de preview/storage:9 testes. Rollback posterior de sessão removendo arquivo já commitado recebeu RED e foi corrigido; falha na auditoria reverte receipt/linhas e remove seu bruto não commitado.
+
+RawStore usa chave Fernet dedicada, referências UUID e criação exclusiva; sem plaintext fallback nem download público. Settings:feature desligada por padrão, ativação exige chave válida e diretório absoluto fora de assets/static/public/dist e sem links; chave separada da outbox. Logo oficial resolvida por configuração operacional ou asset existente do projeto. Chave e caminhos privados não entram no DTO/auditoria.
+
+PreviewOrchestrator possui fases técnicas explícitas; serviços não fazem commit. Parsing limitado após autorização inicial e fora de locks; receipt/VALIDATING auditado e commitado antes da validação final. Outra conexão comprovou esse estado persistente. Resultado só retorna após commit da unidade de trabalho. Processo interrompido conserva VALIDATING sem poder confirmar; expiração/limpeza técnica é integrada na T6. Se validação falhar, rollback das linhas; FAILED em transação separada quando auditoria funciona, último VALIDATING quando auditoria continua indisponível; nunca falso sucesso.
+
+Schemas fechados em duas passagens; referências adiante resolvidas, referências de outro contrato e unidades não atribuídas rejeitadas sem revelar IDs. Unit id/version congelados no preview; chave de estoque produto/unidade resolvida/data, sem código artificial. Duplicatas idênticas são SKIPPED com warning, conteúdo divergente rejeita todo o preview; nenhum Record/detail é criado. Fórmulas não persistem como payload/issue bruto. Bruto cifrado expira independentemente do preview; normalizados/proveniência preservados.
+
+RED adicional:expiração durante validação produzia READY e falha técnica tinha outcome SUCCESS. Corrigidos; estado EXPIRED e outcome FAILURE comprovados. GREEN integrado focado T1–T4/config/audit:177 testes, zero skips; rodada final de preview/storage/isolation:20 testes, zero skips. Ruff backend completo PASS, git diff --check PASS. Nenhuma nova migration na T4 (0011/0012 já cobrem persistência). Nenhum endpoint/frontend concluído nesta tarefa.
+
 ## Ainda não executado/concluído
 
-T4–T9; preview/commit, histórico/exportação, retenção, frontend, E2E, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.
+T5–T9; preview/commit, histórico/exportação, retenção, frontend, E2E, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.

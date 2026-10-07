@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -14,6 +15,10 @@ class Settings(BaseSettings):
         hide_input_in_errors=True, env_nested_delimiter="__"
     )
     datahub_limits: WorkbookLimits = Field(default_factory=WorkbookLimits)
+    datahub_enabled: bool = False
+    datahub_raw_root: Path | None = Field(default=None, repr=False)
+    datahub_raw_key: SecretStr | None = Field(default=None, repr=False)
+    datahub_logo_path: Path | None = Field(default=None, repr=False)
     app_name: str = "Atlas API"
     api_prefix: str = "/api"
     environment: Literal["development", "test", "production"] = "development"
@@ -58,6 +63,35 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security(self):
+        if self.datahub_raw_key:
+            from cryptography.fernet import Fernet
+
+            try:
+                Fernet(self.datahub_raw_key.get_secret_value().encode())
+            except (ValueError, TypeError):
+                raise ValueError(
+                    "DATAHUB_RAW_KEY must be a valid encryption key"
+                ) from None
+            if self.outbox_key and self.datahub_raw_key == self.outbox_key:
+                raise ValueError("Data Hub requires a dedicated encryption key")
+        if self.datahub_enabled:
+            if not self.datahub_raw_key or not self.datahub_raw_root:
+                raise ValueError(
+                    "Enabled Data Hub requires private storage and encryption"
+                )
+            path = self.datahub_raw_root
+            if not path.is_absolute() or any(
+                part.lower() in {"public", "static", "assets", "dist"}
+                for part in path.parts
+            ):
+                raise ValueError(
+                    "Data Hub storage must be absolute and outside public assets"
+                )
+            if any(
+                part.is_symlink() or part.is_junction()
+                for part in (path, *path.parents)
+            ):
+                raise ValueError("Data Hub storage cannot traverse links")
         if self.password_max_length < self.password_min_length:
             raise ValueError("Password length configuration is invalid")
         if self.outbox_key:
