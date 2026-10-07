@@ -1,6 +1,6 @@
 from app.core.errors import ApiError
 from app.platform.capabilities import CATALOG, INTERNAL_GRANTS
-from app.tenancy.contexts import permissions, revalidate
+from app.tenancy.contexts import membership_role, permissions, revalidate
 
 
 def role_sensitive(role, granted):
@@ -21,7 +21,12 @@ def effective_capabilities(db, principal, scope):
     from app.grants.models import TemporaryPrivilegedGrant
     from app.grants.services import effective_access as grant_access
     from app.support.services import effective_access, support_for_context
-    grant = db.scalar(select(TemporaryPrivilegedGrant).where(TemporaryPrivilegedGrant.context_id == scope.id))
+
+    grant = db.scalar(
+        select(TemporaryPrivilegedGrant).where(
+            TemporaryPrivilegedGrant.context_id == scope.id
+        )
+    )
     if grant is not None:
         return grant_access(db, principal, grant)
     support = support_for_context(db, scope.id)
@@ -31,12 +36,31 @@ def effective_capabilities(db, principal, scope):
         return set()
     fresh, _, _, _, role = revalidate(db, principal, scope)
     if fresh.platform_role in INTERNAL_GRANTS:
-        return set(INTERNAL_GRANTS[fresh.platform_role])
-    return {
+        internal = set(INTERNAL_GRANTS[fresh.platform_role])
+        # Internal administration never grants tenant operational data rights.
+        if fresh.platform_role == "PLATFORM_ADMIN":
+            _, tenant_role = membership_role(
+                db, fresh.user_id, scope.tenant_id, scope.contract_id
+            )
+            if tenant_role is not None:
+                internal |= {
+                    code
+                    for code in permissions(db, tenant_role)
+                    if code in CATALOG
+                    and CATALOG[code].domain == "datahub"
+                    and CATALOG[code].tenant_enabled
+                }
+            revalidate(db, principal, scope)
+        return internal
+    granted = {
         code
         for code in permissions(db, role)
         if code in CATALOG and CATALOG[code].tenant_enabled
     }
+    revalidate(
+        db, principal, scope
+    )  # Permission locks may outlive session/context validity.
+    return granted
 
 
 def require_capability(
@@ -168,3 +192,28 @@ def safe_role_predicate():
         & TenantRole.sensitivity_locked.is_(False)
         & ~unsafe
     )
+
+
+def require_contracted_module(db, principal, scope, module_code):
+    """Informational datasets need a contracted module, not a fictitious domain."""
+    from sqlalchemy import select
+
+    from app.organization.models import ContractModule
+    from app.organization.modules import CONTRACT_MODULE_CATALOG
+
+    revalidate(db, principal, scope)
+    if module_code not in CONTRACT_MODULE_CATALOG:
+        raise ApiError(403, "MODULE_UNAVAILABLE", "Módulo indisponível neste contexto.")
+    row = db.scalar(
+        select(ContractModule)
+        .where(
+            ContractModule.tenant_id == scope.tenant_id,
+            ContractModule.contract_id == scope.contract_id,
+            ContractModule.code == module_code,
+        )
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    revalidate(db, principal, scope)
+    if row is None or not row.contracted or not row.active:
+        raise ApiError(403, "MODULE_UNAVAILABLE", "Módulo indisponível neste contexto.")

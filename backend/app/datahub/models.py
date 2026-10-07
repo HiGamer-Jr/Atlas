@@ -171,6 +171,20 @@ class DataHubImportFile(Scoped, Timestamps, Base):
 class DataHubImportRow(Scoped, Timestamps, Base):
     __tablename__ = "datahub_import_rows"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["tenant_id", "contract_id", "unit_id"],
+            [
+                "organization_nodes.tenant_id",
+                "organization_nodes.contract_id",
+                "organization_nodes.id",
+            ],
+            ondelete="RESTRICT",
+            name="fk_dh_row_unit",
+        ),
+        CheckConstraint(
+            "(unit_id IS NULL)=(unit_version IS NULL) AND (unit_version IS NULL OR unit_version>0)",
+            name="ck_dh_row_unit_version",
+        ),
         UniqueConstraint(
             "tenant_id",
             "contract_id",
@@ -242,6 +256,8 @@ class DataHubImportRow(Scoped, Timestamps, Base):
     normalized_payload: Mapped[dict] = mapped_column(JSONB)
     validation_status: Mapped[str] = mapped_column(String(16))
     fingerprint: Mapped[str | None] = mapped_column(String(64))
+    unit_id: Mapped[UUID | None]
+    unit_version: Mapped[int | None]
     record_id: Mapped[UUID | None]
 
 

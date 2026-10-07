@@ -6,6 +6,8 @@ Branch: feat/hiatlas-datahub-excel-v1. Base aprovada Foundation v1: 641e57502644
 
 Execução nativa T1 → T9, sem agentes implementadores. Demo intocada; sem deploy/push/merge. Somente fixtures sintéticas. Correção do usuário incorporada: papel PLATFORM_ADMIN não concede capabilities/escopo de dados Data Hub por si só; PLATFORM_SUPPORT sem importação e Financeiro bloqueado.
 
+Commit T1: e51e6d5b48ddc50f642127747f112327302af445.
+
 ## T1 — Catálogo, schemas e persistência
 
 RED observado: nove falhas do catálogo ausente; dezessete falhas de tabelas/grants/constraints ausentes em PostgreSQL. Primeiro GREEN focado:49 testes. Números extremos receberam RED de dois casos InvalidOperation; corrigido para validação tipada sem truncamento.
@@ -22,6 +24,18 @@ Uma rodada completa inicial foi interrompida por falta da identidade recovery ex
 
 Warning herdado Starlette/httpx: depreciação conhecida, sem supressão nem atualização de arquitetura. Launcher Windows pytest.exe apresentou trampoline obsoleto; execução via uv run --frozen python -m pytest usa o mesmo ambiente travado Python3.13.15.
 
+## T2 — Autorização contextual validada
+
+RED executado:10 testes falharam pela ausência de política/catalog capabilities. Primeiro GREEN:10. Rodada ampliada inicialmente revelou erro de fixture (cliente sem membership em B); corrigida para identidade com membership válido em B e sem capabilities Data Hub nesse contrato. GREEN focado final:55 testes, zero skips, uma depreciação herdada.
+
+Capabilities gerais e por dataset fechadas; nenhuma adicionada a INTERNAL_GRANTS. Admin necessita membership ativo, role vigente, permissões tenant e escopo explícito; Support sem acesso de conector; contextos derivados de SupportSession/grants não autorizam Data Hub. Financeiro permanece bloqueado. Importação exige read e import do dataset porque o preview/duplicidade pode apresentar dados existentes; nenhum direito é inferido pelo nome do perfil/template.
+
+Somente DATAHUB integra disponibilidade operacional do catálogo; disponibilidade informacional de Demandas/Estoque/COMEX exige módulos contratados/ativos sem habilitar seus domínios operacionais. Sem escopo de unidades, datasets unitários são omitidos; IDs de unidades estrangeiras/inativas/não atribuídas recebem404. Permissões/módulos são revalidados após waits. Casos concorrentes: módulo desativado e contexto expirado durante lock; ambos negados.
+
+Migração incremental0012_datahub_scope: CHECK fechado de capabilities tenant; unit_id/unit_version no preview com FK composta OrganizationNode e CHECK de pareamento/version. Finalidade: congelar identidade da unidade resolvida, sem reatribuição silenciosa quando um código organizacional for reutilizado. Roundtrip0012→0011→0012 executado no banco descartável.
+
+Regressão completa inicial NÃO foi PASS (834 passaram/17 falharam): migrations full-chain da rodada focada foram executadas sem RECOVERY_DATABASE_ROLE, removendo grants da identidade recovery no banco descartável. Diagnóstico somente leitura confirmou ausência dos três grants necessários. Banco descartável verificado vazio/com marcador próprio; full-chain base→0012 reexecutada com owner/runtime/recovery configurados. GREEN focado de recovery/suporte/policy/schema:159 testes. Regressão final completa executada:851 passaram, zero skips, uma depreciação herdada, 720.95 segundos. Um teste antigo de Support workspace foi ajustado para reconhecer somente DATAHUB como entregue, mantendo effective_access vazio e os outros domínios operacionais indisponíveis; nenhum bypass ou alteração do código break-glass foi feito. Ruff completo e git diff --check executados antes do commit.
+
 ## Ainda não executado/concluído
 
-T2–T9; geração XLSX, preview/commit, histórico/exportação, retenção, frontend, E2E, inspeção de planilhas, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.
+T3–T9; geração XLSX, preview/commit, histórico/exportação, retenção, frontend, E2E, inspeção de planilhas, gate final e cleanup final. Nenhum destes marcado PASS. Financeiro não será operacional nesta V1; adaptadores CSV/API/ERP/domínio permanecem futuros.

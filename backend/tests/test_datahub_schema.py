@@ -370,3 +370,25 @@ def test_incremental_datahub_migration_rejects_unsafe_runtime(
     finally:
         migration_config.attributes.pop("connection", None)
         migration_config.attributes["runtime_role"] = good
+
+
+@pytest.mark.parametrize("case", ["foreign_unit", "missing_version", "invalid_version"])
+def test_preview_unit_binding_is_physically_scoped(db_runtime, physical_case, case):
+    p = physical_case
+    record = p["records"]["a"]
+    with pytest.raises(DBAPIError) as error, db_runtime.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE datahub_import_rows SET unit_id=:unit, unit_version=:version WHERE id=:row"
+            ),
+            {
+                "unit": p["foreign_unit"] if case == "foreign_unit" else p["unit"],
+                "version": None
+                if case == "missing_version"
+                else 0
+                if case == "invalid_version"
+                else 1,
+                "row": record["row"],
+            },
+        )
+    assert error.value.orig.sqlstate == ("23503" if case == "foreign_unit" else "23514")

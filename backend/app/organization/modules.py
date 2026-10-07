@@ -21,8 +21,8 @@ CONTRACT_MODULE_CATALOG = MappingProxyType(
         "DATAHUB": "DataHub",
     }
 )
-# No business domain has been delivered in the platform foundation.
-OPERATIONAL_MODULES = frozenset()
+# Data Hub persists informational records; other operational domains remain unavailable.
+OPERATIONAL_MODULES = frozenset({"DATAHUB"})
 
 
 def snapshot(code, row):

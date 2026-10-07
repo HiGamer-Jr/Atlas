@@ -184,7 +184,8 @@ def test_workspace_has_no_management_finance_or_fictitious_business_grants(
         "DATAHUB",
     }
     assert all(
-        row["operational_available"] is False for row in workspace.json()["modules"]
+        row["operational_available"] == (row["code"] == "DATAHUB")
+        for row in workspace.json()["modules"]
     )
     assert (
         next(row for row in workspace.json()["modules"] if row["code"] == "COMEX")[

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -54,3 +55,23 @@ class TemplateDefinition:
     datasets: tuple[DatasetCode, ...]
     importable: bool = True
     modality: str | None = None
+
+
+@dataclass(frozen=True)
+class AuthorizedUnit:
+    id: UUID
+    code: str
+    name: str
+    version: int
+
+
+@dataclass(frozen=True)
+class AuthorizedSelection:
+    template_id: str
+    template_version: int
+    datasets: tuple[DatasetCode, ...]
+    role_name: str
+    units: tuple[AuthorizedUnit, ...]
+    tenant_name: str
+    contract_code: str
+    environment: str

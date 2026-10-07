@@ -108,7 +108,7 @@ class TenantRolePermission(Base):
             ondelete="RESTRICT",
         ),
         CheckConstraint(
-            "capability IN ('memberships.read','roles.read','roles.manage','finance.read','fiscal.read')",
+            "capability IN ('memberships.read','roles.read','roles.manage','finance.read','fiscal.read','datahub.read','datahub.template.download','datahub.import','datahub.export','datahub.products.read','datahub.products.import','datahub.products.export','datahub.partners.read','datahub.partners.import','datahub.partners.export','datahub.demands.read','datahub.demands.import','datahub.demands.export','datahub.stock_positions.read','datahub.stock_positions.import','datahub.stock_positions.export','datahub.comex_references.read','datahub.comex_references.import','datahub.comex_references.export','datahub.financial_forecasts.read','datahub.financial_forecasts.import','datahub.financial_forecasts.export')",
             name="ck_tenant_capability",
         ),
     )

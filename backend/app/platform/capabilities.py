@@ -22,8 +22,54 @@ CATALOG = MappingProxyType(
                     "support.history.read",
                 )
             ],
-            *[Capability(code, "privileged", True) for code in ("grants.request", "grants.read", "grants.end")],
-            Capability("jobs.read", "diagnostics", mutates_business_state=False, read_only_safe=True),
+            *[
+                Capability(code, "privileged", True)
+                for code in ("grants.request", "grants.read", "grants.end")
+            ],
+            Capability(
+                "jobs.read",
+                "diagnostics",
+                mutates_business_state=False,
+                read_only_safe=True,
+            ),
+            *[
+                Capability(
+                    code,
+                    "datahub",
+                    sensitive=sensitive,
+                    tenant_role=True,
+                    tenant_enabled=not sensitive,
+                    mutates_business_state=code.endswith(".import"),
+                    read_only_safe=not code.endswith(".import"),
+                    module_code="DATAHUB",
+                )
+                for code, sensitive in (
+                    *(
+                        (f"datahub.{operation}", False)
+                        for operation in (
+                            "read",
+                            "template.download",
+                            "import",
+                            "export",
+                        )
+                    ),
+                    *(
+                        (
+                            f"datahub.{dataset}.{operation}",
+                            dataset == "financial_forecasts",
+                        )
+                        for dataset in (
+                            "products",
+                            "partners",
+                            "demands",
+                            "stock_positions",
+                            "comex_references",
+                            "financial_forecasts",
+                        )
+                        for operation in ("read", "import", "export")
+                    ),
+                )
+            ],
             Capability("contracts.read", "platform"),
             Capability("tenants.create", "platform", True),
             Capability("contracts.create", "platform", True),
@@ -103,7 +149,18 @@ INTERNAL_GRANTS = MappingProxyType(
         "PLATFORM_ADMIN": SUPPORT_SESSION_GRANTS
         | PHASE3_ADMIN
         | PHASE6_ACCESS
-        | frozenset({"organization.manage", "modules.read", "modules.manage", "grants.request", "grants.read", "grants.end", "maintenance.authorize", "jobs.read"}),
+        | frozenset(
+            {
+                "organization.manage",
+                "modules.read",
+                "modules.manage",
+                "grants.request",
+                "grants.read",
+                "grants.end",
+                "maintenance.authorize",
+                "jobs.read",
+            }
+        ),
         "PLATFORM_SUPPORT": SUPPORT_SESSION_GRANTS
         | PHASE3_SUPPORT
         | PHASE6_ACCESS
