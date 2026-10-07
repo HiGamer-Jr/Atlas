@@ -86,6 +86,16 @@ GREEN frontend14 testes do cliente seguro. Uma comparação inicial Blob instanc
 
 ImportIdentity possui UoW curto que encerra locks antes da Preview/ConfirmationOrchestrator; gates Foundation e autenticação reutilizados. Envelope limitado antes de parsing multipart, somente um XLSX, arquivo igualmente limitado. python-multipart promovido a dependência direta; nenhum pacote existente atualizado. Controllers sem regras de negócio. Ruff completo, oxlint, TypeScript/Vite build e git diff --check executados/aprovados. Nenhum frontend workflow/E2E concluído ainda.
 
+## T8 — Workflow autenticado e portal membership
+
+RED real:workflow ausente e dois fluxos Admin/member sem menu; Support já sem menu. Implementação modular frontend/src/datahub com hook, template/upload, preview, Issues por linha/campo, paginação, confirmação, histórico e exportação. Portal membership limitado ao Data Hub autorizado pelo servidor; sem ferramentas de operadores internos ou selector de perfis demo. Cabeçalho contratual sticky preservado.
+
+GREEN focado48 testes frontend, zero skips:ExcelPage/DataHub/AuthenticatedApp/ApiClient. Cobertos confirmação com payload fechado, sucesso somente COMMITTED, warnings/SKIP, erro por campo,403/409/503, preview expirado, exportação com confirmação, object URL liberado, dados/requests descartados no unmount, permissões atuais e navegação por papel. Nenhum storage Data Hub; somente id opaco contextual/preferência de tema existentes.
+
+Falha intermediária de matcher textual corrigida no teste. Teste herdado de validação tardia de contexto falhou em rodada paralela; isolado passou (diagnóstico com testes filtrados não é gate), depois suíte relevante inteira48 passou sem mudança na Foundation. Registrar intermitência e acompanhar gate final. Dados de preview removidos após negação401/403/404; conflito409 exige novo preview, sem retry automático.
+
+Oxlint sem warnings, TypeScript/Vite build e git diff --check executados/aprovados. Inspeção Chrome/light/dark/mobile/teclado e gate completo ainda são T9, não declarados PASS nesta tarefa.
+
 ## Ainda não executado/concluído
 
-T8–T9:workflow frontend, E2E, gate final e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.
+T9:E2E, revisão final, gate completo e cleanup final. Financeiro indisponível; nenhum módulo operacional simulado.

@@ -1,0 +1,5 @@
+import {useAuth} from '../auth/state';
+import {useAccessContext} from '../platform/state';
+import {environmentLabel} from '../platform/labels';
+import ExcelPage from './ExcelPage';
+export default function TenantWorkspace(){const {selected,clear,busy}=useAccessContext();const {busy:authBusy}=useAuth();if(!selected)return null;return <><header className="context-header" data-testid="contract-context"><dl><div><dt>Empresa</dt><dd>{selected.tenant_name}</dd></div><div><dt>Contrato</dt><dd>{selected.contract_code}</dd></div><div><dt>Ambiente</dt><dd>{environmentLabel(selected.environment)}</dd></div></dl><button disabled={busy||authBusy} onClick={()=>void clear()}>Trocar empresa/contrato</button></header><section className="portal-content"><h1>Ambiente do contrato</h1>{selected.capabilities?.includes('datahub.read')?<><nav className="access-nav" aria-label="Ferramentas do contexto"><button aria-current="page">Data Hub &gt; Excel</button></nav><ExcelPage key={selected.id}/></>:<p>Nenhuma ferramenta disponível para suas permissões neste contexto.</p>}</section></>;}

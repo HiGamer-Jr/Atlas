@@ -37,7 +37,7 @@ function AuthenticatedApp() {
    {user && <button disabled={busy} onClick={() => void logout()}>{busy ? 'Saindo…' : 'Sair'}</button>}
   </header>
   <ErrorNotice error={error}/>{!!error && <button onClick={retry}>Tentar novamente</button>}
-  {loading ? <p role="status">Verificando sessão…</p> : user ? (user.platform_role === 'PLATFORM_ADMIN' || user.platform_role === 'PLATFORM_SUPPORT' ? <ContextProvider key={user.user_id}><Portal /></ContextProvider> : <section className="portal-content"><h1>Acesso indisponível</h1><p>Este portal está disponível para operadores internos autorizados.</p></section>) : <section className="access-content">
+  {loading ? <p role="status">Verificando sessão…</p> : user ? <ContextProvider key={user.user_id}><Portal /></ContextProvider> : <section className="access-content">
    <img className="hiatlas-logo" src={theme === 'light' ? lightLogo : darkLogo} alt="HiAtlas — Supply Chain Intelligence" width="1254" height="1254"/>
    <div className="access-welcome"><h1>Bem-vindo à HiAtlas</h1><p>Um novo horizonte para o seu negócio</p></div>
    <LoginForm onLogin={login}/><a className="forgot-password" href="/password/forgot">Esqueci minha senha</a>

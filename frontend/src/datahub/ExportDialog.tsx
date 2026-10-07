@@ -1,0 +1,3 @@
+import AccessDialog from '../platform/access/AccessDialog';
+import type {Template} from './types';
+export default function ExportDialog({template,busy,onClose,onExport}:{template:Template;busy:boolean;onClose:()=>void;onExport:()=>void}){return <AccessDialog title="Exportar dados do Data Hub" busy={busy} onClose={onClose}><p>Modelo: {template.label} · versão {template.version}.</p><p>Somente registros e unidades autorizados pelo servidor serão incluídos. Financeiro está indisponível. A planilha não concede novas permissões.</p><button disabled={busy} onClick={onExport}>Confirmar exportação</button></AccessDialog>;}

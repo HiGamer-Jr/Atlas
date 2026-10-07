@@ -169,11 +169,11 @@ Serviços usam Session, Request, Principal e AccessScope existentes; não fazem 
 **Files:** datahub componentes/hook/CSS/tests; App.tsx, ContractShell.tsx, support/Workspace.tsx e testes de integração existentes.
 **Interfaces:** produzir ExcelPage() componente contextual; useDataHub() fornece catálogo/preview/estado/actions via api.ts, com AbortController e generation. Consumir tipos públicos da Tarefa 7; não inferir elegibilidade por nome de perfil.
 
-- [ ] RED Vitest `download official template`, `preview errors block confirmation`, `warnings show skipped count`, `confirm only shows committed success`, `financial unavailable`, `logout discards delayed preview`, `membership portal uses server capabilities`; asserts menu capability, contrato visível, row/field issues, diálogo explícito, sem toast sucesso antecipado, sem storage DataHub. Incluir 403/409/expiry/loading/error/retry/empty/history/export/teclado e duas abas independentes.
-- [ ] `npm.cmd test -- src/datahub/ExcelPage.test.tsx src/datahub/DataHub.test.tsx`: RED por UX ausente.
-- [ ] Implementar navegação Data Hub > Excel e portal mínimo para membership real autorizado, preservando demais ferramentas internas; sem workspace demo/perfilselector. Separar estados terminais e reason técnico sanitizado. Arquivo/input e dados são descartados ao trocar contexto/logout; confirmação usa somente id/version/key, novo preview após 409; Financeiro explica indisponibilidade.
-- [ ] Rodar testes FE existentes afetados + novos: GREEN; tema, 390×844, labels, foco dos diálogos, Escape, status textual.
-- [ ] Commit `feat: add authenticated Data Hub Excel workflow`.
+- [x] RED Vitest `download official template`, `preview errors block confirmation`, `warnings show skipped count`, `confirm only shows committed success`, `financial unavailable`, `logout discards delayed preview`, `membership portal uses server capabilities`; asserts menu capability, contrato visível, row/field issues, diálogo explícito, sem toast sucesso antecipado, sem storage DataHub. Incluir 403/409/expiry/loading/error/retry/empty/history/export/teclado e duas abas independentes.
+- [x] `npm.cmd test -- src/datahub/ExcelPage.test.tsx src/datahub/DataHub.test.tsx`: RED por UX ausente.
+- [x] Implementar navegação Data Hub > Excel e portal mínimo para membership real autorizado, preservando demais ferramentas internas; sem workspace demo/perfilselector. Separar estados terminais e reason técnico sanitizado. Arquivo/input e dados são descartados ao trocar contexto/logout; confirmação usa somente id/version/key, novo preview após 409; Financeiro explica indisponibilidade.
+- [x] Rodar testes FE existentes afetados + novos: GREEN; tema, 390×844, labels, foco dos diálogos, Escape, status textual.
+- [x] Commit `feat: add authenticated Data Hub Excel workflow`.
 
 ## Tarefa 9 — E2E, revisão e gate final
 
