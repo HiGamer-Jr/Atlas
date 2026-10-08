@@ -11,10 +11,16 @@ function Invoke-FoundationCheck {
 }
 
 try {
+    # When started by the local helper, attest its exact cluster and environment first.
+    $modulePath = Join-Path $PSScriptRoot 'testdb.psm1'
+    $localDb = Get-Module | Where-Object { $_.Path -eq $modulePath }
+    if ($localDb) { & $localDb { Assert-HiAtlasTestDb } }
     Push-Location (Join-Path $projectRoot 'backend')
     try {
         Invoke-FoundationCheck 'Backend tests (PostgreSQL required)' { uv run --frozen pytest }
         Invoke-FoundationCheck 'Backend lint' { uv run --frozen ruff check app tests alembic }
+        Invoke-FoundationCheck 'Windows local database safety tests' { uv run --frozen pytest ../scripts/tests/test_local_testdb_scripts.py }
+        Invoke-FoundationCheck 'Windows local database test lint' { uv run --frozen ruff check ../scripts/tests/test_local_testdb_scripts.py }
     } finally { Pop-Location }
     Push-Location (Join-Path $projectRoot 'frontend')
     try {

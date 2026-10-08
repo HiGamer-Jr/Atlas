@@ -135,3 +135,147 @@ A migração 0003 adiciona tenant_roles, tenant_role_permissions e memberships c
 dados de negócio (SELECT/INSERT/UPDATE), e access_contexts como tabela técnica
 (SELECT/INSERT/UPDATE/DELETE, sem TRUNCATE). FKs compostas preservam vínculo ao
 contrato e à sessão/ator. Permissões de perfil são inativadas, não removidas.
+
+## Gate local oficial no Windows (PostgreSQL portátil descartável)
+
+O fluxo recomendado usa Windows PowerShell 5.1 ou PowerShell 7, sem Docker e sem
+instalar/registrar serviço Windows. Não usa a instância da aplicação ou Demo,
+não procura clusters existentes e não baixa PostgreSQL automaticamente.
+
+Pré-requisitos: Git, uv/Python conforme o lockfile, Node/npm conforme o projeto
+e **distribuição Windows completa do PostgreSQL 18.6** já extraída. Prepare as
+dependências na worktree de desenvolvimento antes do gate:
+
+```powershell
+Push-Location backend
+uv sync --frozen
+Pop-Location
+Push-Location frontend
+npm.cmd ci
+Pop-Location
+```
+
+Na raiz dessa mesma worktree, informe a raiz da distribuição (que contém `bin`
+e `share`). O caminho abaixo é apenas exemplo, não um requisito:
+
+```powershell
+.\scripts\check-local.ps1 -PostgresRoot 'D:\Ferramentas\pgsql18'
+```
+
+Ou configure **somente o processo atual** e execute:
+
+```powershell
+$env:HIATLAS_TEST_POSTGRES_ROOT = 'D:\Ferramentas\pgsql18'
+.\scripts\check-local.ps1
+```
+
+Sem distribuição válida o comando recusa a execução com instrução explícita.
+Exige `bin\postgres.exe`, `initdb.exe`, `pg_ctl.exe`, `pg_isready.exe`, `psql.exe`
+e `share\postgres.bki`; confere também a versão 18.6. A presença desses arquivos
+não substitui extração completa (DLLs, bibliotecas e demais arquivos); falhas de
+executáveis abortam sem fallback, download, SQLite ou acesso a outro servidor.
+
+O agregador:
+
+1. Cria um novo `%TEMP%\hiatlas-testdb-<id aleatório>`, com ACL privada para o
+   usuário Windows atual e selo de ownership vinculado ao estado em memória.
+2. Inicializa um cluster exclusivo, SCRAM-SHA-256, bind **127.0.0.1** e porta
+   disponível escolhida dinamicamente; não instala serviço. Se a porta for
+   tomada entre seleção e bind, aborta em vez de usar o servidor dessa porta.
+3. Cria somente `hiatlas_foundation_test`, com comentário obrigatório
+   `hiatlas-disposable-test-db`, e os logins `hiatlas_test_owner` e
+   `hiatlas_test_runtime`: NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOINHERIT,
+   NOBYPASSRLS, sem associações a outras roles. Owner possui o banco; runtime
+   não possui objetos e recebe os grants mínimos definidos nas migrations.
+4. Provisiona também `hiatlas_test_recovery`, igualmente restrita e separada,
+   porque a suíte canônica da Fase 11 exige testes de recuperação offline.
+   A migration existente 0010 concede somente seus privilégios específicos.
+   O login técnico de bootstrap é administrativo apenas dentro desse novo
+   cluster; não é owner/runtime/recovery nem credencial de aplicação/testes.
+5. Gera senhas criptograficamente aleatórias por execução. Segredos ficam em
+   memória/ambiente do processo; o arquivo privado exigido por `initdb` é
+   removido imediatamente após sua execução. Não imprime senhas, SQL de
+   provisionamento ou URLs completas. O cluster armazena seus hashes SCRAM
+   normalmente e é removido no cleanup. Diagnósticos nativos são retidos para
+   evitar vazamento; não publique seu conteúdo bruto.
+6. Verifica PID, executável, horário de início, diretório, endpoint,
+   `pg_isready`, conexões autenticadas reais e marcador/flags de cada role.
+   Desconsidera `PG*` herdadas e `.psqlrc` nos subprocessos PostgreSQL para
+   impedir redirecionamento por service/options/configuração de outro banco.
+7. Define apenas no processo `TEST_DATABASE_OWNER_URL`,
+   `TEST_DATABASE_RUNTIME_URL`, `HIATLAS_TEST_DATABASE_RESET=1` e as variáveis
+   de teste `HIATLAS_TEST_RECOVERY_DATABASE_URL`/`RECOVERY_DATABASE_ROLE`.
+   Os valores anteriores são restaurados ao encerrar. Não grava `.env` e não
+   altera `DATABASE_URL`, `MIGRATION_DATABASE_URL` ou configurações da aplicação.
+8. Revalida o cluster/ambiente antes de chamar
+   `scripts/check-platform-foundation.ps1`, que continua executando
+   `uv run --frozen pytest`, Ruff, `npm.cmd test`, lint, build e checks de diff
+   tanto da árvore quanto do índice. O mesmo gate executa os testes/lint Windows
+   de `scripts/tests`, sem inseri-los na coleta backend multiplataforma. O harness permanece autoridade adicional
+   antes de DDL/cleanup dos testes; nenhuma proteção existente foi removida.
+9. Em `finally`, revalida ownership, caminhos sem junction/symlink, processo,
+   conexões e marcador; para **apenas esse cluster** e remove **apenas seu
+   diretório temporário exato**. Falha do gate retorna código não zero mesmo
+   com cleanup concluído; falha de cleanup também impede PASS.
+
+Para execução focada, mantenha tudo **na mesma janela/processo PowerShell**:
+
+```powershell
+.\scripts\testdb-start.ps1 -PostgresRoot 'D:\Ferramentas\pgsql18'
+try {
+    .\scripts\check-platform-foundation.ps1
+    # Alternativa: Push-Location backend; uv run --frozen pytest <teste>; Pop-Location
+} finally {
+    .\scripts\testdb-stop.ps1
+}
+```
+
+Não execute o start em `powershell.exe -File` separado esperando que suas
+credenciais/ownership apareçam no shell pai. Não use `Import-Module -Force`
+nem descarregue o módulo enquanto o cluster estiver ativo: perderia o estado
+privado que autoriza o cleanup. Stop sem estado próprio é no-op; nunca tenta
+localizar ou parar clusters de outra execução. Start duplicado é recusado e o
+agregador não encerra um workflow manual anterior.
+
+### Recusas, interrupções e verificações
+
+Marcador ausente/adulterado, identidade divergente, processo já parado ou
+junction/symlink impedem cleanup de um banco provisionado. O helper preserva
+seu estado para investigação e restaura as variáveis anteriores; não tenta
+reiniciar, resetar, dropar ou encontrar outro banco para contornar a recusa.
+Após tentativa de inicialização/startup, PID ausente não prova que o processo
+encerrou: a recusa de cleanup prevalece. Uma falha anterior ao startup pode
+limpar somente os artefatos novos
+comprovadamente próprios. Se a criação/marcação do banco não puder ser provada,
+a recusa prevalece.
+
+Fechar/terminar à força o PowerShell ou desligar o computador pode impedir
+`finally`. O diretório exato é informado no início para investigação manual;
+não há varredura automática de `%TEMP%`, cleanup por wildcard, serviço ou daemon
+persistente de supervisão. Não remova diretórios nem pare processos por nome
+para contornar uma recusa. Verifique o cluster específico criado na execução.
+
+Testes de funções/recusas e do agregador usam processos Windows controlados e
+não exigem instalação permanente de PostgreSQL:
+
+```powershell
+Push-Location backend
+uv run --frozen pytest ../scripts/tests/test_local_testdb_scripts.py tests/test_quality_gate.py -q
+Pop-Location
+```
+
+O gate completo exige PostgreSQL real descartável, sem skips novos. O fluxo
+manual anterior com `database/test-bootstrap.sql` permanece disponível apenas
+para instância de teste autorizada; suas proteções e o harness não foram
+relaxados. Nunca execute aquele bootstrap contra a aplicação, Demo ou banco real.
+
+Teste adicional opcional do ciclo **real**, com outra base nova descartável:
+
+```powershell
+.\scripts\tests\testdb-lifecycle.ps1 -PostgresRoot 'D:\Ferramentas\pgsql18'
+```
+
+Ele prova start/stop, ausência do arquivo temporário de senha após `initdb`,
+recusa de variáveis adulteradas/start duplicado, recusa de testes e cleanup
+sem marcador, restauração controlada do marcador do próprio banco e remoção
+final com restauração do ambiente. Não usa nem altera banco existente.
