@@ -168,7 +168,7 @@ function AuthenticatedApp() {
             />
             <div className="access-welcome">
                 <h1>Bem-vindo à HiAtlas</h1>
-                <p>Um novo horizonte para o seu neg?cio</p>
+                <p>Um novo horizonte para o seu negócio</p>
             </div>
             <LoginForm onLogin={login}/>
             <a className="forgot-password" href="/password/forgot">Esqueci minha senha</a>

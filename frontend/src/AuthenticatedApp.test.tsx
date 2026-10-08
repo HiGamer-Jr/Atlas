@@ -90,7 +90,7 @@ it('invalid credentials have a neutral error without raw server details', async 
     expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha inválidos.');
     expect(screen.getByRole('alert')).not.toHaveTextContent('SECRET');
 });
-it.each(['PLATFORM_ADMIN', 'PLATFORM_SUPPORT'])('restores %s session into picker then corresponding portal', async (value) => {
+it.each(['PLATFORM_ADMIN', 'PLATFORM_SUPPORT'] as const)('restores %s session into picker then corresponding portal', async (value) => {
     logged = true;
     role = value;
     render(<App />);
