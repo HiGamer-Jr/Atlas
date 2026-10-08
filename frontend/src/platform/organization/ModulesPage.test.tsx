@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { calls, modules, open, setup, state } from './test-support';
 setup();
 async function configure(label: string) { fireEvent.click(await screen.findByRole('button',{name:'Configurar '+label})); await waitFor(()=>expect(screen.getByRole('button',{name:'Revisar módulo'})).toBeEnabled()); }
@@ -27,9 +27,9 @@ it('absent module starts version zero and cannot activate without contracting', 
 it('failed module conflict refresh blocks stale confirmation until successful data is reviewed again', async () => {
  await open('Módulos'); await configure('Compras'); fireEvent.click(screen.getByRole('button',{name:'Revisar módulo'}));
  state.mutationStatus=409; state.modulesStatus=503; fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'})); await within(screen.getByRole('dialog')).findByText(/Os dados foram alterados/);
- fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Atualizar dados'})); await waitFor(()=>expect(calls.filter(c=>c.path==='/contract/modules'&&c.init.method==='GET').length).toBeGreaterThanOrEqual(2)); expect(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'})).toBeDisabled();
+ await waitFor(()=>expect(within(screen.getByRole('dialog')).getByRole('button',{name:'Atualizar dados'})).toBeEnabled()); const readsBefore=calls.filter(c=>c.path==='/contract/modules'&&c.init.method==='GET').length; fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Atualizar dados'})); await waitFor(()=>expect(calls.filter(c=>c.path==='/contract/modules'&&c.init.method==='GET').length).toBeGreaterThan(readsBefore)); await waitFor(()=>expect(within(screen.getByRole('dialog')).getByRole('button',{name:'Atualizar dados'})).toBeEnabled()); expect(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'})).toBeDisabled();
  state.modulesStatus=200; state.mutationStatus=200; state.modules=modules.map(m=>({...m,version:m.code==='PROCUREMENT'?3:m.version})); fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Atualizar dados'}));
- await screen.findByRole('button',{name:'Revisar módulo'}); fireEvent.click(screen.getByRole('button',{name:'Revisar módulo'})); fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'})); await screen.findByText('Módulo salvo.'); expect(JSON.parse(String(calls.filter(c=>c.init.method==='PATCH').at(-1)?.init.body)).expected_version).toBe(3);
+ await waitFor(()=>expect(screen.getByRole('button',{name:'Revisar módulo'})).toBeEnabled()); fireEvent.click(screen.getByRole('button',{name:'Revisar módulo'})); fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'})); await screen.findByText('Módulo salvo.'); expect(JSON.parse(String(calls.filter(c=>c.init.method==='PATCH').at(-1)?.init.body)).expected_version).toBe(3);
 });
 it('module error retries into empty server state', async () => {
  state.modulesStatus=503; await open('Módulos'); expect(screen.getByText('Carregando módulos…')).toBeVisible(); await screen.findByRole('alert'); state.modulesStatus=200; state.modules=[];
@@ -47,4 +47,24 @@ it('forbidden module mutation discards cached metadata even when refresh fails t
  state.mutationStatus=403; state.modulesStatus=503; fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));
  await screen.findByText('Serviço temporariamente indisponível. Tente novamente mais tarde.');
  expect(screen.queryByRole('heading',{name:'Compras'})).not.toBeInTheDocument(); expect(screen.queryByRole('button',{name:'Configurar Compras'})).not.toBeInTheDocument();
+});
+
+it('fresh scoped editor fields are applied before accepting user edits', async () => {
+ await open('Módulos');
+ const original=fetch;
+ let release:((value:Response)=>void)|undefined;
+ vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>url==='/api/contract/modules' && (!init?.method || init.method==='GET')
+  ? new Promise<Response>(resolve=>{release=resolve;}) : original(url,init)));
+ fireEvent.click(await screen.findByRole('button',{name:'Configurar Compras'}));
+ expect(screen.getByLabelText('Módulo ativo')).toBeDisabled();
+ expect(screen.getByRole('button',{name:'Revisar módulo'})).toBeDisabled();
+ await waitFor(()=>expect(release).toBeDefined());
+ release!(new Response(JSON.stringify({items:modules.map(m=>({...m,version:m.code==='PROCUREMENT'?3:m.version,active:m.code==='PROCUREMENT'}))})));
+ await waitFor(()=>expect(screen.getByRole('button',{name:'Revisar módulo'})).toBeEnabled());
+ expect(screen.getByLabelText('Módulo ativo')).toBeChecked();
+ fireEvent.click(screen.getByLabelText('Módulo ativo'));
+ fireEvent.click(screen.getByRole('button',{name:'Revisar módulo'}));
+ fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));
+ await screen.findByText('Módulo salvo.');
+ expect(JSON.parse(String(calls.find(c=>c.init.method==='PATCH')?.init.body))).toEqual({contracted:true,active:false,expected_version:3,module_id:'module-a'});
 });

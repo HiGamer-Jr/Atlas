@@ -2,7 +2,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from './App';
 const key = 'hiatlas.access-context.v1';
-let logged = false, role = 'PLATFORM_ADMIN', invalid = false;
+let logged = false, role: string | null = 'PLATFORM_ADMIN', invalid = false;
+let tenantRoleCode: string | null = null;
+let tenantRoleName: string | null = null;
 const calls: {
     path: string;
     init: RequestInit;
@@ -13,6 +15,8 @@ beforeEach(() => {
     logged = false;
     role = 'PLATFORM_ADMIN';
     invalid = false;
+    tenantRoleCode = null;
+    tenantRoleName = null;
     calls.length = 0;
     sessionStorage.clear();
     localStorage.clear();
@@ -40,7 +44,7 @@ beforeEach(() => {
         if (path.startsWith('/contexts/'))
             return new Response(null, { status: 204 });
         if (path === '/context')
-            return invalid ? response({ code: 'CONTEXT_INVALID' }, 403) : response({ id: 'opaque-a', tenant_name: 'GDSUL', contract_id: 'contract-a', contract_code: 'CTR-2026-001', environment: 'PRODUCTION', expires_at: '2099-01-01T00:00:00Z' });
+            return invalid ? response({ code: 'CONTEXT_INVALID' }, 403) : response({ id: 'opaque-a', tenant_name: 'GDSUL', contract_id: 'contract-a', contract_code: 'CTR-2026-001', environment: 'PRODUCTION', expires_at: '2099-01-01T00:00:00Z', capabilities: [], tenant_role_code: tenantRoleCode, tenant_role_name: tenantRoleName });
         return response({}, 404);
     }));
 });
@@ -278,3 +282,67 @@ function installPhase6Endpoints(failureStatus:number,failureCode:string){const o
 }));}
 it('Phase6 mutation 401 removes dialog and contextual records through the session handler',async()=>{logged=true;installPhase6Endpoints(401,'SESSION_INVALID');render(<App/>);await screen.findByRole('heading',{name:'Selecionar ambiente'});await select();fireEvent.click(await screen.findByRole('button',{name:'Detalhes de Cliente real'}));fireEvent.click(await screen.findByRole('button',{name:'Bloquear acesso'}));fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));await screen.findByLabelText('E-mail');expect(screen.queryByRole('dialog')).not.toBeInTheDocument();expect(screen.queryByText('Cliente real')).not.toBeInTheDocument();expect(sessionStorage.getItem(key)).toBeNull();});
 it('Phase6 mutation context revocation returns to picker and clears contextual dialogs',async()=>{logged=true;installPhase6Endpoints(403,'CONTEXT_INVALID');render(<App/>);await screen.findByRole('heading',{name:'Selecionar ambiente'});await select();fireEvent.click(await screen.findByRole('button',{name:'Detalhes de Cliente real'}));fireEvent.click(await screen.findByRole('button',{name:'Bloquear acesso'}));fireEvent.click(within(screen.getByRole('dialog')).getByRole('button',{name:'Confirmar'}));await screen.findByRole('heading',{name:'Selecionar ambiente'});expect(screen.queryByRole('dialog')).not.toBeInTheDocument();expect(screen.queryByText('Cliente real')).not.toBeInTheDocument();expect(sessionStorage.getItem(key)).toBeNull();});
+
+it('customer logs in and selects a real contract using the backend profile', async () => {
+    role = null;
+    tenantRoleCode = 'COMPRADOR_INTERNACIONAL';
+    tenantRoleName = 'Perfil do contrato';
+    render(<App />);
+    await login();
+    await select();
+    expect(await screen.findByText('Perfil do contrato')).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Ambiente do contrato'})).toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: 'Suporte HiAtlas'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', {name: 'Módulos HiAtlas'})).not.toBeInTheDocument();
+    expect(screen.getByText('Nenhuma ferramenta disponível para suas permissões neste contexto.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Trocar empresa/contrato'}));
+    await screen.findByRole('heading', {name: 'Selecionar ambiente'});
+});
+it.each([null, 'PERFIL_DESCONHECIDO', 'toString'])('unknown customer profile %s fails closed', async code => {
+    logged = true;
+    role = null;
+    tenantRoleCode = code;
+    render(<App />);
+    await screen.findByRole('heading', {name: 'Selecionar ambiente'});
+    fireEvent.click(await screen.findByRole('button', {name: 'Acessar contrato CTR-2026-001'}));
+    expect(await screen.findByRole('heading', {name: 'Perfil indisponível'})).toBeInTheDocument();
+    expect(screen.queryByTestId('contract-context')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', {name: 'Suporte HiAtlas'})).not.toBeInTheDocument();
+});
+it('unknown profile reports a failed context close and retains the reference', async () => {
+    logged = true;
+    role = null;
+    tenantRoleCode = 'UNKNOWN';
+    const original = fetch;
+    vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) =>
+        url.includes('/contexts/') ? Promise.resolve(response({}, 503)) : original(url, init)));
+    render(<App />);
+    await screen.findByRole('heading', {name: 'Selecionar ambiente'});
+    fireEvent.click(await screen.findByRole('button', {name: 'Acessar contrato CTR-2026-001'}));
+    await screen.findByRole('heading', {name: 'Perfil indisponível'});
+    fireEvent.click(screen.getByRole('button', {name: 'Trocar empresa/contrato'}));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Serviço temporariamente indisponível');
+    expect(sessionStorage.getItem(key)).toBe('opaque-a');
+});
+it('restored customer context uses backend capabilities and fails closed after a role change', async () => {
+    logged = true;
+    role = null;
+    tenantRoleCode = 'COMPRADOR_NACIONAL';
+    sessionStorage.setItem(key, 'opaque-a');
+    const original = fetch;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+        const result = await original(url, init);
+        if (url === '/api/context') {
+            const payload = await result.json();
+            return response({...payload, capabilities: ['datahub.read']});
+        }
+        return result;
+    }));
+    render(<App />);
+    await screen.findByRole('button', {name: 'Data Hub > Excel'});
+    expect(screen.getByText('Comprador nacional')).toBeInTheDocument();
+    tenantRoleCode = 'UNKNOWN';
+    fireEvent(window, new Event('focus'));
+    await screen.findByRole('heading', {name: 'Perfil indisponível'});
+    expect(screen.queryByRole('button', {name: 'Data Hub > Excel'})).not.toBeInTheDocument();
+});
