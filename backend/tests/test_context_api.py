@@ -161,6 +161,27 @@ def test_context_payload_cannot_override_owner_or_tenant(admin, payload):
     assert admin.post("/api/contexts", json=payload).status_code == 422
 
 
+
+def test_client_context_exposes_current_tenant_role(member, scope_ids):
+    headers = select_context(member, scope_ids["contract_a"])
+
+    response = member.get("/api/context", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["tenant_role_code"] == "ROLE_BASIC"
+    assert response.json()["tenant_role_name"] == "role_basic"
+
+
+def test_internal_context_does_not_expose_tenant_role(admin, scope_ids):
+    headers = select_context(admin, scope_ids["contract_a"])
+
+    response = admin.get("/api/context", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["tenant_role_code"] is None
+    assert response.json()["tenant_role_name"] is None
+
+
 def test_context_creation_returns_only_opaque_identifier(admin, scope_ids):
     response = admin.post(
         "/api/contexts", json={"contract_id": str(scope_ids["contract_a"])}

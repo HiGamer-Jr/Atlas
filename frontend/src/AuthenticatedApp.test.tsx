@@ -2,7 +2,11 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from './App';
 const key = 'hiatlas.access-context.v1';
-let logged = false, role = 'PLATFORM_ADMIN', invalid = false;
+let logged = false;
+let role: 'PLATFORM_ADMIN' | 'PLATFORM_SUPPORT' | null = 'PLATFORM_ADMIN';
+let invalid = false;
+let tenantRoleCode: string | null = null;
+let tenantRoleName: string | null = null;
 const calls: {
     path: string;
     init: RequestInit;
@@ -13,6 +17,8 @@ beforeEach(() => {
     logged = false;
     role = 'PLATFORM_ADMIN';
     invalid = false;
+    tenantRoleCode = null;
+    tenantRoleName = null;
     calls.length = 0;
     sessionStorage.clear();
     localStorage.clear();
@@ -40,11 +46,23 @@ beforeEach(() => {
         if (path.startsWith('/contexts/'))
             return new Response(null, { status: 204 });
         if (path === '/context')
-            return invalid ? response({ code: 'CONTEXT_INVALID' }, 403) : response({ id: 'opaque-a', tenant_name: 'GDSUL', contract_id: 'contract-a', contract_code: 'CTR-2026-001', environment: 'PRODUCTION', expires_at: '2099-01-01T00:00:00Z' });
+            return invalid
+                ? response({ code: 'CONTEXT_INVALID' }, 403)
+                : response({
+                    id: 'opaque-a',
+                    tenant_name: 'GDSUL',
+                    contract_id: 'contract-a',
+                    contract_code: 'CTR-2026-001',
+                    environment: 'PRODUCTION',
+                    expires_at: '2099-01-01T00:00:00Z',
+                    capabilities: [],
+                    tenant_role_code: tenantRoleCode,
+                    tenant_role_name: tenantRoleName,
+                });
         return response({}, 404);
     }));
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 async function login() {
     await screen.findByLabelText('E-mail');
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'internal@example.test' } });
@@ -87,6 +105,78 @@ it.each(['PLATFORM_ADMIN', 'PLATFORM_SUPPORT'])('restores %s session into picker
     expect(sessionStorage.getItem(key)).toBe('opaque-a');
     expect(localStorage.getItem(key)).toBeNull();
 });
+
+it('customer membership enters workspace using the server tenant role', async () => {
+    logged = true;
+    role = null;
+    tenantRoleCode = 'COMPRADOR_INTERNACIONAL';
+    tenantRoleName = 'Comprador Internacional';
+    vi.stubEnv('VITE_DEPLOYMENT_VARIANT', 'demo');
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: 'Selecionar ambiente' });
+
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Acessar contrato CTR-2026-001' }),
+    );
+
+    await screen.findByRole('navigation', { name: 'Módulos HiAtlas' });
+
+    const demoBanner = screen.getByRole('status', {
+        name: 'Ambiente de demonstração',
+    });
+
+    expect(demoBanner).toHaveTextContent('AMBIENTE DE DEMONSTRAÇÃO');
+    expect(demoBanner).toHaveTextContent(
+        'Todos os dados apresentados são fictícios.',
+    );
+
+    expect(
+        screen.getAllByText('Comprador Internacional').length,
+    ).toBeGreaterThan(0);
+    expect(
+        screen.getByRole('button', { name: 'Importação / COMEX' }),
+    ).toBeInTheDocument();
+
+    expect(
+        screen.queryByRole('heading', { name: 'Acesso indispon?vel' }),
+    ).not.toBeInTheDocument();
+
+    expect(
+        screen.queryByRole('heading', { name: 'Administração HiAtlas' }),
+    ).not.toBeInTheDocument();
+});
+
+
+it('unknown customer tenant role fails closed without opening a workspace', async () => {
+    logged = true;
+    role = null;
+    tenantRoleCode = 'PERFIL_DESCONHECIDO';
+    tenantRoleName = 'Perfil desconhecido';
+
+    render(<App />);
+
+    await screen.findByRole('heading', { name: 'Selecionar ambiente' });
+
+    fireEvent.click(
+        await screen.findByRole('button', { name: 'Acessar contrato CTR-2026-001' }),
+    );
+
+    expect(
+        await screen.findByRole('heading', { name: 'Perfil indisponível' }),
+    ).toBeInTheDocument();
+
+    expect(
+        screen.queryByRole('navigation', { name: 'Módulos HiAtlas' }),
+    ).not.toBeInTheDocument();
+
+    expect(
+        screen.queryByRole('heading', { name: 'Administração HiAtlas' }),
+    ).not.toBeInTheDocument();
+});
+
+
 it('revalidates persisted context before rendering on reload', async () => {
     logged = true;
     sessionStorage.setItem(key, 'opaque-a');

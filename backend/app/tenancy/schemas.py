@@ -68,6 +68,8 @@ class ContextView(BaseModel):
     environment: str
     expires_at: datetime
     capabilities: list[str]
+    tenant_role_code: str | None = None
+    tenant_role_name: str | None = None
 
 
 class MembershipView(BaseModel):

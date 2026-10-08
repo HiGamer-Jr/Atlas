@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { modules, records, type DemoRecord, type ModuleKey } from './catalog'
 import lightLogo from '../assets/hiatlas-light.png'
 import darkLogo from '../assets/hiatlas-dark.png'
+import DeploymentBanner from '../deployment/DeploymentBanner'
 import './Workspace.css'
 
 type Profile = { id:string; name:string; code:string; modules:ModuleKey[] }
@@ -40,6 +41,7 @@ export default function Workspace({profile,onLogout}:{profile:Profile;onLogout:(
  return <main className="ws" data-theme={theme}>
   <WorkspaceSidebar theme={theme} menuOpen={menu} active={active} section={section} modules={allowed} profile={profile} onNavigate={navigate} onLogout={onLogout}/>
   <div className="ws-main">
+   <DeploymentBanner />
    <header className="ws-header"><img className="ws-mobile-logo" src={theme==='light'?lightLogo:darkLogo} alt="HiAtlas"/><button className="ws-menu" aria-label="Alternar menu" aria-expanded={menu} onClick={()=>setMenu(!menu)}>☰</button><div className="ws-context"><label>Empresa<select aria-label="Empresa" value={company} onChange={e=>{setCompany(e.target.value);setUnit(profileUnits[0]);setDetail(null)}}><option>Aurora Distribuição</option><option>Horizonte Industrial</option></select></label><label>Unidade<select aria-label="Unidade" value={unit} onChange={e=>{setUnit(e.target.value);setDetail(null)}}>{profileUnits.map(u=><option key={u}>{u}</option>)}</select></label></div>
     {!executiveView && !(active==='dashboard' && (profile.id==='comprador-nacional'||profile.id==='comprador-internacional')) && <div className="ws-rates" aria-label="Câmbio demonstrativo"><div><small>USD/BRL</small><strong>R$ 5,45</strong></div><div><small>EUR/BRL</small><strong>R$ 5,91</strong></div><span>Valores de exemplo<br/>Sem cotação ao vivo</span></div>}
     <div className="ws-themes" role="group" aria-label="Aparência"><button aria-label="Tema claro" aria-pressed={theme==='light'} onClick={()=>setTheme('light')}>☼</button><button aria-label="Tema escuro" aria-pressed={theme==='dark'} onClick={()=>setTheme('dark')}>☾</button></div>

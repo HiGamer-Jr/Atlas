@@ -217,7 +217,7 @@ def select_context(db, request, principal, contract_id):
 
 
 def context_view(db, principal, scope):
-    _, context, tenant, contract, _ = revalidate(db, principal, scope)
+    _, context, tenant, contract, role = revalidate(db, principal, scope)
     from app.support.services import support_for_context
 
     support = support_for_context(db, scope.id, active_only=True)
@@ -235,6 +235,8 @@ def context_view(db, principal, scope):
         environment=contract.environment,
         expires_at=context.expires_at,
         capabilities=sorted(effective_capabilities(db, principal, scope)),
+        tenant_role_code=role.code if role else None,
+        tenant_role_name=role.name if role else None,
     )
 
 

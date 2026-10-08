@@ -7,6 +7,8 @@ export type AccessContext = {
     environment: string;
     expires_at: string;
     capabilities: string[];
+    tenant_role_code?: string | null;
+    tenant_role_name?: string | null;
     support_session_id?: string | null;
     privileged_context_id?: string | null;
 };

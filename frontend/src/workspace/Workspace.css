@@ -25,3 +25,34 @@
 .ws-sidebar.is-compact .ws-profile>div{display:none}
 .ws-sidebar.is-compact .ws-profile{padding-inline:12px}
 .ws-header>.ws-themes{margin-left:auto}
+
+
+/* authenticated demo deployment banner */
+.ws .deployment-demo-banner{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ flex-wrap:wrap;
+ gap:6px 12px;
+ width:100%;
+ box-sizing:border-box;
+ margin:0;
+ padding:8px 24px;
+ background:var(--panel);
+ border:0;
+ border-bottom:1px solid var(--line);
+ color:var(--text);
+ font-size:10px;
+ line-height:1.4;
+ text-align:center;
+ position:sticky;
+ top:0;
+ z-index:30;
+}
+.ws .deployment-demo-banner strong{
+ font-size:10px;
+ letter-spacing:.08em;
+}
+.ws .deployment-demo-banner span{
+ color:var(--muted);
+}
