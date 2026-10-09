@@ -10,7 +10,7 @@ import { useAccessContext } from './platform/state';
 import ContractPicker from './platform/ContractPicker';
 import ContractShell from './platform/ContractShell';
 import ErrorNotice from './api/ErrorNotice';
-import { profileForTenantRole } from './workspace/customerProfile';
+import {OperationalScopeProvider} from './operational/OperationalScopeProvider';
 import './LoginScreen.css';
 import './platform/Platform.css';
 
@@ -79,20 +79,11 @@ function AuthenticatedPortal({theme, setTheme}: {
     theme: Theme;
     setTheme: (theme: Theme) => void;
 }) {
-    const {user, error, retry} = useAuth();
-    const {selected, clear, busy, error: contextError} = useAccessContext();
-    const unknownProfile = selected && user?.platform_role === null
-        && !profileForTenantRole(selected.tenant_role_code);
+    const {error, retry} = useAuth();
     return <AccessShell theme={theme} setTheme={setTheme}>
         <ErrorNotice error={error}/>
         {!!error && <button onClick={retry}>Tentar novamente</button>}
-        {unknownProfile ? <section className="portal-content"><ErrorNotice error={contextError}/>
-            <h1>Perfil indisponível</h1>
-            <p>O perfil associado a este contrato ainda não possui um workspace configurado.</p>
-            <button disabled={busy} onClick={() => void clear()}>
-                {busy ? 'Encerrando contexto…' : 'Trocar empresa/contrato'}
-            </button>
-        </section> : <Portal />}
+        <Portal />
     </AccessShell>;
 }
 function AuthenticatedApp() {
@@ -124,7 +115,7 @@ function AuthenticatedApp() {
 
     if (user) {
         return <ContextProvider key={user.user_id}>
-            <AuthenticatedPortal theme={theme} setTheme={setTheme}/>
+            <OperationalScopeProvider><AuthenticatedPortal theme={theme} setTheme={setTheme}/></OperationalScopeProvider>
         </ContextProvider>;
     }
 

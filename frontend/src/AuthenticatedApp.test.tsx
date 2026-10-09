@@ -43,6 +43,8 @@ beforeEach(() => {
             return response({ id: 'opaque-a' }, 201);
         if (path.startsWith('/contexts/'))
             return new Response(null, { status: 204 });
+        if (path === '/context/operational-scope')
+            return !tenantRoleCode || tenantRoleCode === 'UNKNOWN' ? response({code:'OPERATIONAL_SCOPE_INVALID'},409) : response({schema_version:1,actor_kind:'TENANT',context_id:'opaque-a',tenant:{id:'tenant-a',name:'GDSUL'},contract:{id:'contract-a',code:'CTR-2026-001',name:'Principal',environment:'PRODUCTION'},customer_scope:{role:{id:'role',code:tenantRoleCode,name:tenantRoleName || 'Comprador nacional'},unit_scope:{mode:'RESTRICTED'},organization_nodes:[],modules:[],capabilities:[]}});
         if (path === '/context')
             return invalid ? response({ code: 'CONTEXT_INVALID' }, 403) : response({ id: 'opaque-a', tenant_name: 'GDSUL', contract_id: 'contract-a', contract_code: 'CTR-2026-001', environment: 'PRODUCTION', expires_at: '2099-01-01T00:00:00Z', capabilities: [], tenant_role_code: tenantRoleCode, tenant_role_name: tenantRoleName });
         return response({}, 404);
@@ -298,18 +300,18 @@ it('customer logs in and selects a real contract using the backend profile', asy
     fireEvent.click(screen.getByRole('button', {name: 'Trocar empresa/contrato'}));
     await screen.findByRole('heading', {name: 'Selecionar ambiente'});
 });
-it.each([null, 'PERFIL_DESCONHECIDO', 'toString'])('unknown customer profile %s fails closed', async code => {
+it.each([null, 'UNKNOWN'])('invalid operational scope %s fails closed', async code => {
     logged = true;
     role = null;
     tenantRoleCode = code;
     render(<App />);
     await screen.findByRole('heading', {name: 'Selecionar ambiente'});
     fireEvent.click(await screen.findByRole('button', {name: 'Acessar contrato CTR-2026-001'}));
-    expect(await screen.findByRole('heading', {name: 'Perfil indisponível'})).toBeInTheDocument();
+    expect(await screen.findByRole('heading', {name: 'Escopo operacional indisponível'})).toBeInTheDocument();
     expect(screen.queryByTestId('contract-context')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', {name: 'Suporte HiAtlas'})).not.toBeInTheDocument();
 });
-it('unknown profile reports a failed context close and retains the reference', async () => {
+it('invalid scope reports a failed context close and retains the reference', async () => {
     logged = true;
     role = null;
     tenantRoleCode = 'UNKNOWN';
@@ -319,7 +321,7 @@ it('unknown profile reports a failed context close and retains the reference', a
     render(<App />);
     await screen.findByRole('heading', {name: 'Selecionar ambiente'});
     fireEvent.click(await screen.findByRole('button', {name: 'Acessar contrato CTR-2026-001'}));
-    await screen.findByRole('heading', {name: 'Perfil indisponível'});
+    await screen.findByRole('heading', {name: 'Escopo operacional indisponível'});
     fireEvent.click(screen.getByRole('button', {name: 'Trocar empresa/contrato'}));
     expect(await screen.findByRole('alert')).toHaveTextContent('Serviço temporariamente indisponível');
     expect(sessionStorage.getItem(key)).toBe('opaque-a');
@@ -332,9 +334,9 @@ it('restored customer context uses backend capabilities and fails closed after a
     const original = fetch;
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
         const result = await original(url, init);
-        if (url === '/api/context') {
+        if (url === '/api/context/operational-scope' && result.ok) {
             const payload = await result.json();
-            return response({...payload, capabilities: ['datahub.read']});
+            return response({...payload, customer_scope:{...payload.customer_scope, modules:[{code:'DATAHUB',label:'Data Hub',contracted:true,active:true,operational_available:true}],capabilities:['datahub.read']}});
         }
         return result;
     }));
@@ -343,6 +345,7 @@ it('restored customer context uses backend capabilities and fails closed after a
     expect(screen.getByText('Comprador nacional')).toBeInTheDocument();
     tenantRoleCode = 'UNKNOWN';
     fireEvent(window, new Event('focus'));
-    await screen.findByRole('heading', {name: 'Perfil indisponível'});
+    await screen.findByRole('heading', {name: 'Escopo operacional indisponível'});
     expect(screen.queryByRole('button', {name: 'Data Hub > Excel'})).not.toBeInTheDocument();
 });
+it.each(['PERFIL_DESCONHECIDO','toString'])('server-valid custom role %s does not depend on local catalogue',async code=>{logged=true;role=null;tenantRoleCode=code;tenantRoleName='Perfil real customizado';render(<App/>);await screen.findByRole('heading',{name:'Selecionar ambiente'});await select();expect(await screen.findByText('Perfil real customizado')).toBeInTheDocument();});

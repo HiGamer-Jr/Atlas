@@ -439,3 +439,77 @@ def test_scope_migration_roundtrip_and_unit_foreign_key(
             )
     finally:
         migration_config.attributes.pop("connection", None)
+
+
+def test_explicit_all_policy_without_grants_uses_real_nodes(
+    member, configured, db_runtime
+):
+    grant_caps(db_runtime, configured)
+    with db_runtime.begin() as conn:
+        conn.execute(
+            text("UPDATE memberships SET unit_scope_mode='ALL' WHERE id=:m"),
+            {"m": configured["member_a"]},
+        )
+        conn.execute(
+            text(
+                "UPDATE membership_unit_scopes SET active=false WHERE membership_id=:m"
+            ),
+            {"m": configured["member_a"]},
+        )
+    headers = select_context(member, configured["contract_a"])
+    result = invoke(db_runtime, headers, "COMPRADOR_NACIONAL")
+    assert {unit.id for unit in result.units} == {configured["datahub_unit"]}
+    with db_runtime.begin() as conn:
+        conn.execute(
+            text("UPDATE memberships SET unit_scope_mode='RESTRICTED' WHERE id=:m"),
+            {"m": configured["member_a"]},
+        )
+    with pytest.raises(ApiError) as error:
+        invoke(
+            db_runtime,
+            headers,
+            "COMPRADOR_NACIONAL",
+            nodes=(configured["datahub_unit"],),
+        )
+    assert error.value.status == 404
+
+
+def test_stale_capability_summary_cannot_enable_uncontracted_module(
+    member, configured, db_runtime
+):
+    grant_caps(db_runtime, configured)
+    headers = select_context(member, configured["contract_a"])
+    assert (
+        member.get("/api/context/operational-scope", headers=headers).status_code == 200
+    )
+    with db_runtime.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE contract_modules SET active=false,contracted=false WHERE code='DATAHUB' AND contract_id=:c"
+            ),
+            {"c": configured["contract_a"]},
+        )
+    with pytest.raises(ApiError) as error:
+        invoke(db_runtime, headers, "COMPRADOR_NACIONAL")
+    assert error.value.code == "MODULE_UNAVAILABLE"
+
+
+def test_explicit_node_operation_does_not_depend_on_discovery_graph_limit(
+    member, configured, db_runtime
+):
+    grant_caps(db_runtime, configured)
+    with db_runtime.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO organization_nodes (tenant_id,contract_id,kind,name,code,active) SELECT :t,:c,'UNIT','Unit','MORE_' || n,false FROM generate_series(1,1000) n"
+            ),
+            {"t": configured["tenant_a"], "c": configured["contract_a"]},
+        )
+    headers = select_context(member, configured["contract_a"])
+    assert (
+        member.get("/api/context/operational-scope", headers=headers).status_code == 503
+    )
+    selected = invoke(
+        db_runtime, headers, "COMPRADOR_NACIONAL", nodes=(configured["datahub_unit"],)
+    )
+    assert {u.id for u in selected.units} == {configured["datahub_unit"]}

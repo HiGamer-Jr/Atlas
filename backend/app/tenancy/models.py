@@ -120,6 +120,9 @@ class TenantRolePermission(Base):
 
 
 class Membership(Timestamps, Base):
+    unit_scope_mode: Mapped[str] = mapped_column(
+        String(10), server_default=text("'RESTRICTED'")
+    )
     invite_requires_admin: Mapped[bool] = mapped_column(
         Boolean, server_default=text("false")
     )
@@ -150,6 +153,10 @@ class Membership(Timestamps, Base):
             ondelete="RESTRICT",
         ),
         CheckConstraint("version > 0", name="ck_membership_version"),
+        CheckConstraint(
+            "unit_scope_mode IN ('ALL', 'RESTRICTED')",
+            name="ck_membership_unit_scope_mode",
+        ),
     )
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")

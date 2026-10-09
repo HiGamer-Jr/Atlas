@@ -112,57 +112,19 @@ def require_capability(
                 403, "MODULE_UNAVAILABLE", "Módulo indisponível neste contexto."
             )
     if organization_node_id is not None:
-        from sqlalchemy import select
+        from app.organization.unit_authorization import require_authorized_node
 
-        from app.organization.models import MembershipUnitScope, OrganizationNode
-        from app.tenancy.models import Membership
-
-        node = db.scalar(
-            select(OrganizationNode)
-            .where(
-                OrganizationNode.id == organization_node_id,
-                OrganizationNode.tenant_id == scope.tenant_id,
-                OrganizationNode.contract_id == scope.contract_id,
-            )
-            .with_for_update()
-            .execution_options(populate_existing=True)
+        member, role = membership_role(
+            db, principal.user_id, scope.tenant_id, scope.contract_id
         )
-        permitted = db.scalar(
-            select(MembershipUnitScope)
-            .join(
-                Membership,
-                (Membership.id == MembershipUnitScope.membership_id)
-                & (Membership.tenant_id == MembershipUnitScope.tenant_id)
-                & (Membership.contract_id == MembershipUnitScope.contract_id),
+        if member is None or role is None:
+            raise ApiError(
+                403, "UNIT_SCOPE_DENIED", "Unidade indisponível neste contexto."
             )
-            .where(
-                MembershipUnitScope.tenant_id == scope.tenant_id,
-                MembershipUnitScope.contract_id == scope.contract_id,
-                MembershipUnitScope.node_id == organization_node_id,
-                MembershipUnitScope.active.is_(True),
-                Membership.user_id == principal.user_id,
-                Membership.active.is_(True),
-                Membership.blocked.is_(False),
-                Membership.invitation_pending.is_(False),
-            )
-            .with_for_update()
-            .execution_options(populate_existing=True)
-        )
-        active = node is not None and node.active
-        if active:
-            from app.organization.services import ancestors
-
-            active = all(
-                parent.active
-                for parent in ancestors(db, scope, node.parent_id, node.id)
-            )
+        require_authorized_node(db, scope, member, organization_node_id)
         if capability not in effective_capabilities(db, principal, scope):
             raise ApiError(
                 403, "CAPABILITY_DENIED", "Ação não permitida neste contexto."
-            )
-        if not active or permitted is None:
-            raise ApiError(
-                403, "UNIT_SCOPE_DENIED", "Unidade indisponível neste contexto."
             )
 
 

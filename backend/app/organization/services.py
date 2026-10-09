@@ -278,7 +278,12 @@ def unit_scope_view(db, scope, member):
             .order_by(MembershipUnitScope.node_id)
         )
     )
-    return {"membership_id": member.id, "node_ids": ids, "version": member.version}
+    return {
+        "membership_id": member.id,
+        "mode": member.unit_scope_mode,
+        "node_ids": ids if member.unit_scope_mode == "RESTRICTED" else [],
+        "version": member.version,
+    }
 
 
 def read_unit_scope(db, principal, scope, member_id):
@@ -312,11 +317,16 @@ def set_unit_scope(db, request, principal, scope, member_id, payload):
         raise ApiError(
             409, "VERSION_CONFLICT", "Vínculo alterado. Atualize antes de confirmar."
         )
-    if desired and (not member.active or member.blocked or member.invitation_pending):
+    if (desired or payload.mode == "ALL") and (
+        not member.active or member.blocked or member.invitation_pending
+    ):
         raise ApiError(409, "MEMBERSHIP_UNAVAILABLE", "Vínculo indisponível.")
     before = MembershipUnitScopeSnapshot(
-        node_ids=unit_scope_view(db, scope, member)["node_ids"], version=member.version
+        mode=member.unit_scope_mode,
+        node_ids=unit_scope_view(db, scope, member)["node_ids"],
+        version=member.version,
     )
+    member.unit_scope_mode = payload.mode
     present = {row.node_id for row in rows}
     for row in rows:
         row.active = row.node_id in desired
@@ -343,7 +353,9 @@ def set_unit_scope(db, request, principal, scope, member_id, payload):
         member.id,
         before=before,
         after=MembershipUnitScopeSnapshot(
-            node_ids=result["node_ids"], version=member.version
+            mode=member.unit_scope_mode,
+            node_ids=result["node_ids"],
+            version=member.version,
         ),
         scope=scope,
     )

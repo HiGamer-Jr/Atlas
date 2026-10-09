@@ -99,6 +99,7 @@ class ContractModuleSnapshot(BaseModel):
 
 
 class MembershipUnitScopeSnapshot(BaseModel):
+    mode: Literal["ALL", "RESTRICTED"] = "RESTRICTED"
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
     node_ids: list[UUID] = Field(max_length=100)
     version: int = Field(ge=1)

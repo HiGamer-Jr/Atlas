@@ -116,7 +116,20 @@ class ModuleList(BaseModel):
 
 
 class UnitScopePatch(ClosedInput):
-    node_ids: list[UUID] = Field(max_length=100)
+    mode: Literal["ALL", "RESTRICTED"] = "RESTRICTED"
+    node_ids: list[UUID] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode="after")
+    def explicit_policy(self):
+        if (
+            "mode" not in self.model_fields_set
+            and "node_ids" not in self.model_fields_set
+        ):
+            raise ValueError("Escopo explícito obrigatório.")
+        if self.mode == "ALL" and self.node_ids:
+            raise ValueError("Escopo total não aceita grants restritos.")
+        return self
+
     expected_version: int = Field(ge=1)
 
     @field_validator("node_ids")
@@ -128,6 +141,7 @@ class UnitScopePatch(ClosedInput):
 
 
 class UnitScopeView(BaseModel):
+    mode: Literal["ALL", "RESTRICTED"]
     membership_id: UUID
     node_ids: list[UUID]
     version: int

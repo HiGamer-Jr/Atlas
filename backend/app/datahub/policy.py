@@ -9,7 +9,8 @@ from app.core.errors import ApiError
 from app.datahub.catalog import DATASETS, template_definition
 from app.datahub.types import AuthorizedSelection, AuthorizedUnit, Operation
 from app.identity.schemas import Principal
-from app.organization.models import MembershipUnitScope, OrganizationNode
+from app.organization.models import OrganizationNode
+from app.organization.unit_authorization import resolve_unit_scope
 from app.platform.policy import (
     effective_capabilities,
     require_capability,
@@ -77,18 +78,10 @@ def authorize_selection(
             "TEMPLATE_READ_ONLY",
             "Este template permite somente consulta e exportação.",
         )
-    assigned = tuple(
-        db.scalars(
-            select(MembershipUnitScope.node_id)
-            .where(
-                MembershipUnitScope.membership_id == membership.id,
-                MembershipUnitScope.tenant_id == scope.tenant_id,
-                MembershipUnitScope.contract_id == scope.contract_id,
-                MembershipUnitScope.active.is_(True),
-            )
-            .order_by(MembershipUnitScope.node_id)
-            .with_for_update()
-        )
+    # Explicit node candidates are checked individually below; complete discovery
+    # is not an authorization prerequisite for a scoped operation.
+    assigned = () if node_ids else tuple(
+        node.id for node in resolve_unit_scope(db, scope, membership).nodes
     )
     requested = tuple(sorted(set(node_ids or assigned), key=str))
     units = []

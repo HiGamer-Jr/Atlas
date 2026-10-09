@@ -7,6 +7,8 @@ from app.support.gate import support_control
 from app.tenancy import services
 from app.tenancy.contexts import authenticated
 from app.tenancy.dependencies import Context
+from app.tenancy.operational_scope import operational_scope_view
+from app.tenancy.operational_scope_schemas import OperationalScopeView
 from app.tenancy.schemas import (
     ContextCreate,
     ContextCreated,
@@ -20,6 +22,15 @@ from app.tenancy.schemas import (
 )
 
 router = APIRouter()
+
+
+@router.get("/context/operational-scope", response_model=OperationalScopeView)
+@support_control("context")
+def operational_scope_get(
+    request: Request, response: Response, db: Database, scope: Context
+):
+    response.headers["Cache-Control"] = "no-store"
+    return operational_scope_view(db, request.state.principal, scope)
 
 
 @router.get("/contracts", response_model=ContractList)

@@ -108,3 +108,23 @@ def test_incremental_phase6_migration_rejects_unsafe_runtime_before_ddl(
     finally:
         migration_config.attributes.pop("connection", None)
         migration_config.attributes["runtime_role"] = good_role
+
+
+def test_customer_scope_incremental_migration_preserves_restricted_memberships(
+    db_owner, db_runtime, migration_config, scope_ids
+):
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0012")
+            assert "unit_scope_mode" not in {
+                c["name"] for c in inspect(conn).get_columns("memberships")
+            }
+            command.upgrade(migration_config, "head")
+            assert set(
+                conn.execute(text("SELECT unit_scope_mode FROM memberships")).scalars()
+            ) == {"RESTRICTED"}
+            checks = inspect(conn).get_check_constraints("memberships")
+            assert any(c["name"] == "ck_membership_unit_scope_mode" for c in checks)
+    finally:
+        migration_config.attributes.pop("connection", None)
