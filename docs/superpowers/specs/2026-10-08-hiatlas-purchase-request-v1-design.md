@@ -1,16 +1,16 @@
 # HiAtlas — Solicitação de Compra V1
 
-Data: 2026-10-08. Mudança arquitetural. Status: proposta para aprovação do written spec; implementação e implementation plan ainda não autorizados por este documento.
+Data: 2026-10-08. Mudança arquitetural. Status: spec e plano aprovados para execução em 2026-10-09, com política de aprovação server-side REQUIRED/NOT_REQUIRED e método Subagent-driven.
 
 ## 1. Propósito, base e limites
 
 O solicitante registra uma necessidade interna com vários itens, acompanha sua evolução e fornece especificações. Compras recebe uma fila formal, realiza triagem e atribui responsabilidade. Solicitação de Compra não é Pedido de Compra: não constitui compromisso com fornecedor, ordem de pagamento, movimentação de estoque ou autorização financeira.
 
-Base exclusiva: `feat/hiatlas-customer-scope-v1`, `fa354b73cdb43d600949e54b81595f416ef5cd65`. Branch deste desenho: `feat/hiatlas-purchase-request-v1`, worktree exclusiva. Sem alterações em main, integration, release, Demo; sem deploy. Nesta etapa somente documentação. A próxima implementação exige aprovação deste spec e, depois, do plano.
+Base exclusiva: `feat/hiatlas-customer-scope-v1`, `fa354b73cdb43d600949e54b81595f416ef5cd65`. Branch deste desenho: `feat/hiatlas-purchase-request-v1`, worktree exclusiva. Sem alterações em main, integration, release, Demo; sem deploy. Implementação autorizada pelo usuário após o ajuste de aprovação descrito abaixo; commits locais, revisão e gate completo precedem push exclusivo desta branch.
 
 Escopo proposto para futura implementação V1: agregado Solicitação, itens, submissão, triagem, aprovação simples, atribuição, registro manual de atendimento real, anexos privados, histórico e interface funcional mínima. Não haverá dados de exemplo, catálogo sintético, dashboard, Pedido de Compra, estoque automático ou ator PARTNER.
 
-Decisão de negócio proposta para revisão: aprovação obrigatória após triagem na V1, por pessoa diferente do solicitante. Dispensa configurável por contrato e cadeias de aprovação ficam para evolução. Esta escolha não está sendo tratada como decisão previamente aprovada do cliente.
+Política de aprovação server-side explícita por contrato: REQUIRED ou NOT_REQUIRED. Ausência de configuração equivale a REQUIRED (default seguro); valor inválido falha fechado. REQUIRED conduz a AWAITING_APPROVAL, com aprovação humana por pessoa diferente do solicitante. NOT_REQUIRED conduz da triagem a APPROVED por decisão de política, sem segundo aprovador. Payloads operacionais nunca escolhem política/dispensa. Cadeias/alçadas monetárias permanecem futuras.
 
 ## 2. Entendimento do repositório atual
 
@@ -72,11 +72,19 @@ Projeto e centro de custo são associações opcionais futuras, não IDs livres 
 
 Depois de submit, quantidades, UOM, unidade, justificativa e itens congelam. Mudança substancial exige cancelar e criar nova solicitação; não há edição silenciosa após aprovação nem reset de autorização. Notes adicionais tornam-se eventos append-only, não sobrescrevem evidência anterior.
 
+### Política server-side de aprovação
+
+ContractRequestPolicy: tenant_id/contract_id scoped, approval_mode REQUIRED|NOT_REQUIRED, version>=1, timestamps. Configuração via GET/PATCH /api/contract/purchase-request-policy exige modules.read/modules.manage existentes; não adiciona poderes administrativos ao comprador/solicitante. Sem row: REQUIRED/version0; PATCH exige expected_version e motivo, contrato bloqueado para serializar insert/update, auditoria na mesma transação. Valor desconhecido nunca dispensa. GET de detalhe operacional expõe somente modo/versão da decisão relevante, sem exigir permissões administrativas.
+
+request-approval é o comando de conclusão da triagem, com expected_version/Idempotency-Key: lê política vigente sob locks e revalida contexto; REQUIRED gera approval_requested/AWAITING_APPROVAL; NOT_REQUIRED gera approval_waived/APPROVED. Registro mantém approval_mode, approval_policy_version e approval_decision_kind HUMAN|POLICY_WAIVER (null até decisão), aprovador real somente HUMAN. Auditoria distingue os dois caminhos, sem inventar ator aprovador para waiver.
+
+Configuração é prospectiva para decisões: política vigente é calculada no comando de conclusão de triagem, não cacheada ao criar rascunho. Uma decisão já registrada não é reescrita pela alteração da política; requests em AWAITING_APPROVAL continuam exigindo aprovação humana (não há promoção automática), e aprovações/waivers existentes mantêm sua evidência histórica. Cada operação posterior continua revalidando autorização/contexto/escopo/módulo/capability no servidor. Concorrência entre configuração e decisão é serializada pelo contrato; snapshots/versões mostram qual política produziu a decisão.
+
 ### PurchaseRequestEvent e ApprovalDecision
 
 Evento privado do agregado: id, scope, request_id, sequence, aggregate_version, action, actor_user_id, actor_membership_id, tenant_role_id/code snapshot quando houver, occurred_at, reason, payload tipado limitado, audit_event_id. Unique(request_id,sequence). Imutável também no banco (runtime INSERT/SELECT, sem UPDATE/DELETE e proteção equivalente à auditoria).
 
-ApprovalDecision: evento tipado APPROVED/REJECTED, aprovador real, versão aprovada, razão; não precisa de tabela mutável paralela na V1. Snapshot de conteúdo aprovado no histórico é evidência, nunca autorização futura. Não forçar TenantRole no campo actor_role da auditoria existente: para tenant actor_role é null, proveniência tenant fica no snapshot tipado.
+ApprovalDecision: evento tipado HUMAN_APPROVED/POLICY_WAIVED/REJECTED, aprovador real somente quando humano, modo e versão da política calculada no servidor, versão aprovada, razão; não precisa de tabela mutável paralela na V1. Snapshot de conteúdo aprovado no histórico é evidência, nunca autorização futura. Não forçar TenantRole no campo actor_role da auditoria existente: para tenant actor_role é null, proveniência tenant fica no snapshot tipado.
 
 ### RequestFulfillmentEntry
 
@@ -97,7 +105,7 @@ Estados persistidos: DRAFT, SUBMITTED, IN_TRIAGE, AWAITING_APPROVAL, APPROVED, I
 | create/edit | DRAFT → DRAFT | Próprio rascunho e create; campos limitados |
 | submit | DRAFT → SUBMITTED | Próprio autor; conteúdo completo, needed_on presente (atrasada é permitida e claramente sinalizada), justificativa obrigatória, URGENT exige razão |
 | start-triage | SUBMITTED → IN_TRIAGE | triage; timestamp real |
-| request-approval | IN_TRIAGE → AWAITING_APPROVAL | triage; descrição/itens válidos; nenhuma dispensa implícita |
+| request-approval | IN_TRIAGE → AWAITING_APPROVAL ou APPROVED | triage; política fresca REQUIRED ou NOT_REQUIRED determina destino; sem escolha no browser; auditoria approval_requested ou approval_waived |
 | approve | AWAITING_APPROVAL → APPROVED | approve; aprovador != solicitante |
 | reject | IN_TRIAGE ou AWAITING_APPROVAL → REJECTED | triage na primeira, approve na segunda; razão obrigatória |
 | assign/reassign | APPROVED ou IN_FULFILLMENT → mesmo estado | assign; candidato comprador válido; timestamp/evento; não é novo estado |
@@ -120,7 +128,7 @@ Namespaces pontuados seguem `datahub.<dataset>.<action>`. Proposta: `procurement
 - create inclui editar/submeter próprio rascunho; não inclui leitura alheia nem execução de comprador.
 - Capabilities de ação não concedem automaticamente read_unit: operadores do fluxo precisam também read_unit para fila/detalhe. Autor usa read_own; comandos em registro existente exigem autorização de leitura correspondente além da ação.
 - fulfill é capacidade de comprador operacional, sem administração. Assignment não concede role/capability/scope a ninguém. Comprador candidato: usuário tenant ativo, membership real do mesmo contrato, role ativa com fulfill + read_unit, PROCUREMENT contratado/ativo e escopo atual da unidade. Cada ação revalida ator e candidato; se comprador perdeu acesso, objeto mantém histórico e triage pode reatribuir, sem exibir dados pessoais além dos autorizados.
-- approve exige segregação solicitante/aprovador. Ter assign não implica approve. Comprador/aprovador podem coincidir se forem pessoas distintas do solicitante; não criar regra hierárquica fictícia.
+- Quando aprovação humana for exigida, approve exige segregação solicitante/aprovador; NOT_REQUIRED dispensa por política no comando de triagem, nunca por capability de aprovador fictício. Ter assign não implica approve. Comprador/aprovador podem coincidir se forem pessoas distintas do solicitante; não criar regra hierárquica fictícia.
 - cancel exige capability própria e relação indicada na tabela; triage sozinha não cancela. comment não concede leitura.
 - Lista de candidatos do comprador exige assign e unidade autorizada, retorna apenas id da membership e nome necessário, sem e-mail ou catálogo administrativo; limite 100/paginação e total só do filtro autorizado.
 
@@ -157,7 +165,7 @@ Erros: 401 sessão inválida; 403 capability/module/unit; 404 NOT_FOUND uniforme
 
 ## 9. Auditoria e evidência
 
-Eventos `procurement.request.created`, `.draft_updated`, `.submitted`, `.triage_started`, `.approval_requested`, `.approved`, `.rejected`, `.assigned`, `.fulfillment_started`, `.fulfillment_recorded`, `.fulfillment_reversed`, `.fulfilled`, `.cancelled`, `.closed`, `.note_added`, `.attachment_added/removed` em catálogo fechado de snapshots tipados. Incluir request scope/version, origem/destino, IDs de itens/quantidades relevantes, reason, ator real, membership/role usadas e request_id. Não copiar bytes, credenciais ou contexto opaco; texto livre limitado ao histórico privado, auditoria central registra hashes/referências e campos allowlisted necessários.
+Eventos `procurement.request.created`, `.draft_updated`, `.submitted`, `.triage_started`, `.approval_requested`, `.approved`, `.approval_waived`, `.rejected`, `.assigned`, `.fulfillment_started`, `.fulfillment_recorded`, `.fulfillment_reversed`, `.fulfilled`, `.cancelled`, `.closed`, `.note_added`, `.attachment_added/removed` em catálogo fechado de snapshots tipados. Incluir request scope/version, origem/destino, IDs de itens/quantidades relevantes, reason, ator real, membership/role usadas e request_id. Não copiar bytes, credenciais ou contexto opaco; texto livre limitado ao histórico privado, auditoria central registra hashes/referências e campos allowlisted necessários.
 
 Sem fabricada PlatformRole para tenant. Ampliar AuditInput entity_type/snapshot validators com precisão; registros de auditoria e histórico no mesmo commit da mudança. Falha na auditoria aborta mutação. Não publicar histórico pela rota administrativa, nem exigir audit.read ao solicitante. Denials usam mecanismo de observação de acesso existente, sem gravar evento de sucesso na transação abortada. Histórico não pode ser reescrito pela runtime role, inclusive SQL direto.
 
@@ -186,6 +194,7 @@ PARTNER é restrição arquitetural futura, sem código nesta branch: classe de 
 - Revogar sessão/context/membership, inativar role/tenant/contrato/node/module, remover capability durante espera de lock; próxima revalidação bloqueia, sem autorização por cache.
 - Módulo contratado/ativo disponível; contratado/inativo informativo indisponível; não contratado inacessível; manipular capabilities/frontend/headers/IDs não autoriza.
 - Role customizada não histórica com create/read_own funciona; solicitante sem powers de buyer/admin; read_own nunca amplia unidade; read_unit não vê rascunho alheio nem count/nomes estrangeiros. INTERNAL/support/grant não obtêm TenantRole/requests.
+- REQUIRED (incluindo row ausente), NOT_REQUIRED explícito, unknown inválido fail-closed, cliente tentando enviar modo, mudança de política antes da decisão, concorrência de configuração/decisão, distinção HUMAN/POLICY_WAIVER e idempotência/expected_version/revalidação em ambos; nenhum requester aprova a própria solicitação humana.
 - Todos os caminhos da tabela, pares origem/comando inválidos, submit incompleto, URGENT sem justificativa, segregação de aprovação, assign sem target elegível, target revogado, reassign auditada, edição pós-submit proibida.
 - Múltiplos itens, precisão decimal, UOM/limites, atendimento parcial/completo, overdelivery, reversão/dupla reversão, cancelamento parcial, terminal não reabre, fechamento explícito e evidence real obrigatória.
 - Conflito de versão e respostas perdidas, mesma chave e payload diverso, retries com scope revogado; concorrência de aprovação/cancel/assign/fulfill e locks administrativos, ausência de dupla contabilização/deadlocks não tratados.
@@ -195,8 +204,8 @@ PARTNER é restrição arquitetural futura, sem código nesta branch: classe de 
 
 ## 13. Riscos, exclusões e self-review
 
-Riscos: decisão de aprovação obrigatória requer revisão do usuário; ausência de projetos/centro de custo/material mestre limita referências estruturadas; armazenamento bytea e idempotency sem TTL crescem; anexos sem scanner exigem evolução operacional; atendimento manual é atestação, não evidência automática de estoque/compra; locks compartilhados precisam testes de concorrência reais; cap/module catalog precisa atualização backend/frontend/SQL coerente.
+Riscos: mudanças de configuração prospectivas não invalidam decisões históricas, conforme regra explicitada; ausência de projetos/centro de custo/material mestre limita referências estruturadas; armazenamento bytea e idempotency sem TTL crescem; anexos sem scanner exigem evolução operacional; atendimento manual é atestação, não evidência automática de estoque/compra; locks compartilhados precisam testes de concorrência reais; cap/module catalog precisa atualização backend/frontend/SQL coerente.
 
-Exclusões deliberadas: dispensa/cadeias/alçadas monetárias de aprovação, notificações/e-mail, import que cria requests, produtos/projetos/cost centers fake, pedidos/cotações/fornecedores, estoque/transferência automática, pagamentos/financeiro/fiscal, dashboards, PARTNER/Trade código, alteração da Demo, configuração de deploy. Não mexer em perfis históricos para autorizar atores reais.
+Exclusões deliberadas: cadeias/alçadas monetárias de aprovação, notificações/e-mail, import que cria requests, produtos/projetos/cost centers fake, pedidos/cotações/fornecedores, estoque/transferência automática, pagamentos/financeiro/fiscal, dashboards, PARTNER/Trade código, alteração da Demo, configuração de deploy. Não mexer em perfis históricos para autorizar atores reais.
 
-Self-review realizada: separamos estado de atribuição e projeção parcial; diferenciamos aprovação de pagamento; ownership não contorna scope; referências inexistentes rejeitadas; todos os comandos passam por permissão/versão e trilha; eventos e auditoria atômicos; módulos/capabilities não são prova reutilizável; Partner é exclusivamente restrição futura. Sem placeholders de implementação. Este documento é spec para revisão, não implementation plan.
+Self-review realizada: separamos estado de atribuição e projeção parcial; diferenciamos aprovação de pagamento; ownership não contorna scope; referências inexistentes rejeitadas; todos os comandos passam por permissão/versão e trilha; eventos e auditoria atômicos; módulos/capabilities não são prova reutilizável; Partner é exclusivamente restrição futura. Sem placeholders de implementação. Self-review do ajuste: ausência REQUIRED; browser não escolhe modo; destino calculado server-side; HUMAN distinto de POLICY_WAIVER; segregação humana preservada; atomicidade, versão, idempotência e revalidação em ambos. Este documento permanece o spec de referência aprovado para execução.
