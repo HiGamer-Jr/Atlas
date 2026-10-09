@@ -16,6 +16,9 @@ from tests.fixtures.maintenance_cases import (
     correction_case,  # noqa: F401 -- pytest fixture registration
     processing_case,  # noqa: F401 -- pytest fixture registration
 )
+from tests.fixtures.purchase_request_policy import (
+    request_policy_case,  # noqa: F401 -- fixture registration
+)
 from tests.fixtures.purchase_requests import (
     purchase_case,  # noqa: F401 -- fixture registration
 )
