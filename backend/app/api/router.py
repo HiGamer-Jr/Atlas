@@ -13,12 +13,14 @@ from app.identity.routes import router as identity_router
 from app.maintenance.routes import router as maintenance_router
 from app.organization.routes import router as organization_router
 from app.platform.routes import router as platform_router
+from app.procurement.requests.routes import router as purchase_request_router
 from app.support.routes import router as support_router
 from app.tenancy.memberships import router as membership_router
 from app.tenancy.routes import router as tenancy_router
 
 router = APIRouter()
 router.include_router(datahub_router)
+router.include_router(purchase_request_router)
 router.include_router(grant_router)
 router.include_router(maintenance_router)
 router.include_router(support_router)

@@ -163,3 +163,13 @@ class BuyerCandidatePage(ClosedSchema):
     total: int = Field(ge=0)
     limit: int = Field(ge=1, le=100)
     next_cursor: str | None = None
+
+
+class RequestFilters(ClosedSchema):
+    visibility: Literal["own", "unit"] = "own"
+    status: RequestStatus | None = None
+    node_id: UUID | None = None
+    requester_membership_id: UUID | None = None
+    buyer_membership_id: UUID | None = None
+    limit: int = Field(default=50, ge=1, le=100)
+    cursor: str | None = Field(default=None, max_length=2048)
