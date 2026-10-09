@@ -31,6 +31,15 @@ from app.organization.models import (
     MembershipUnitScope,
     OrganizationNode,
 )
+from app.procurement.requests.models import (
+    ContractRequestPolicy,
+    PurchaseRequest,
+    PurchaseRequestEvent,
+    PurchaseRequestItem,
+    RequestAttachment,
+    RequestCommandReceipt,
+    RequestFulfillmentEntry,
+)
 from app.support.models import SupportSession
 from app.tenancy.models import (
     AccessContext,
@@ -51,6 +60,7 @@ __all__ = [
     "Base",
     "Contract",
     "ContractModule",
+    "ContractRequestPolicy",
     "DataHubComexReference",
     "DataHubDemand",
     "DataHubFinancialForecast",
@@ -69,6 +79,12 @@ __all__ = [
     "OrganizationNode",
     "PlatformRoleAssignment",
     "ProcessingRun",
+    "PurchaseRequest",
+    "PurchaseRequestEvent",
+    "PurchaseRequestItem",
+    "RequestAttachment",
+    "RequestCommandReceipt",
+    "RequestFulfillmentEntry",
     "SecurityToken",
     "SupportSession",
     "TemporaryPrivilegedGrant",

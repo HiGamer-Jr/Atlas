@@ -16,10 +16,20 @@ from tests.fixtures.maintenance_cases import (
     correction_case,  # noqa: F401 -- pytest fixture registration
     processing_case,  # noqa: F401 -- pytest fixture registration
 )
+from tests.fixtures.purchase_requests import (
+    purchase_case,  # noqa: F401 -- fixture registration
+)
 from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "request_command_receipts",
+    "request_attachments",
+    "request_fulfillment_entries",
+    "purchase_request_events",
+    "purchase_request_items",
+    "purchase_requests",
+    "contract_request_policies",
     "datahub_financial_forecasts",
     "datahub_comex_references",
     "datahub_stock_positions",

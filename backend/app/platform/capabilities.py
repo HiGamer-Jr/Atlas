@@ -70,6 +70,29 @@ CATALOG = MappingProxyType(
                     ),
                 )
             ],
+            *[
+                Capability(
+                    f"procurement.requests.{operation}",
+                    "procurement",
+                    tenant_role=True,
+                    tenant_enabled=True,
+                    read_only_safe=operation.startswith("read_"),
+                    mutates_business_state=not operation.startswith("read_"),
+                    module_code="PROCUREMENT",
+                )
+                for operation in (
+                    "create",
+                    "read_own",
+                    "read_unit",
+                    "triage",
+                    "approve",
+                    "assign",
+                    "fulfill",
+                    "cancel",
+                    "close",
+                    "comment",
+                )
+            ],
             Capability("contracts.read", "platform"),
             Capability("tenants.create", "platform", True),
             Capability("contracts.create", "platform", True),

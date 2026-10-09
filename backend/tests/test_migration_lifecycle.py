@@ -128,3 +128,66 @@ def test_customer_scope_incremental_migration_preserves_restricted_memberships(
             assert any(c["name"] == "ck_membership_unit_scope_mode" for c in checks)
     finally:
         migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("unsafe", ["owner", "superuser", "missing"])
+def test_purchase_request_migration_rejects_unsafe_runtime_before_ddl(
+    db_owner, db_runtime, migration_config, unsafe
+):
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0013")
+            bad_role = (
+                db_owner.url.username
+                if unsafe == "owner"
+                else conn.execute(
+                    text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+                ).scalar_one()
+                if unsafe == "superuser"
+                else None
+            )
+            migration_config.attributes["runtime_role"] = bad_role
+            with pytest.raises(RuntimeError, match="role"):
+                command.upgrade(migration_config, "0014")
+            assert "purchase_requests" not in inspect(conn).get_table_names()
+            migration_config.attributes["runtime_role"] = good_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role
+
+
+def test_purchase_request_downgrade_refuses_evidence_loss(
+    db_owner, db_runtime, migration_config, scope_ids
+):
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            conn.execute(
+                text(
+                    "INSERT INTO contract_request_policies(tenant_id,contract_id) VALUES (:tenant,:contract)"
+                ),
+                {"tenant": scope_ids["tenant_a"], "contract": scope_ids["contract_a"]},
+            )
+            with pytest.raises(RuntimeError, match="evidence must be empty"):
+                command.downgrade(migration_config, "0013")
+            assert "purchase_requests" in inspect(conn).get_table_names()
+            conn.execute(text("DELETE FROM contract_request_policies"))
+            command.downgrade(migration_config, "0013")
+            assert "purchase_requests" not in inspect(conn).get_table_names()
+            command.upgrade(migration_config, "head")
+        with db_runtime.connect() as conn:
+            assert conn.execute(
+                text(
+                    "SELECT has_table_privilege(current_user,'purchase_request_events','INSERT')"
+                )
+            ).scalar_one()
+            assert not conn.execute(
+                text(
+                    "SELECT has_table_privilege(current_user,'purchase_request_events','UPDATE')"
+                )
+            ).scalar_one()
+    finally:
+        migration_config.attributes.pop("connection", None)
