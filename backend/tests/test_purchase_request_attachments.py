@@ -705,3 +705,48 @@ def test_pdf_flat_trailer_optional_info_id_comments_preserved():
     )
     result = api().validate_attachment(candidate, "spec.pdf")
     assert result.media_type == "application/pdf" and result.size == len(candidate)
+
+
+@pytest.mark.parametrize(
+    "dictionary",
+    [
+        b"<< /Root4 0 R /Size7 >>",
+        b"<< /Root 4 0R /Size 7 >>",
+        b"<< /Root4 0 R /Size 7 >>",
+        b"<< /Root 4 0 R /Size7 >>",
+        b"<< /Root 4 0 R /Size 7 /Info6 0 R >>",
+        b"<< /Root 4 0 R /Size " + b"7" * 5000 + b" >>",
+    ],
+    ids=[
+        "concatenated-names",
+        "concatenated-reference",
+        "root-name-prefix",
+        "size-name-prefix",
+        "info-name-prefix",
+        "oversized-integer",
+    ],
+)
+def test_pdf_trailer_lexical_tokens_are_complete(dictionary):
+    with pytest.raises(ApiError) as error:
+        api().validate_attachment(pdf_with_trailer(dictionary), "spec.pdf")
+    assert error.value.status == 422 and error.value.code == "ATTACHMENT_INVALID"
+
+
+@pytest.mark.parametrize(
+    "dictionary",
+    [
+        b"<</Root 4 0 R/Size 7>>",
+        b"<</Size\t7/Root\x004\r0\fR>>",
+        b"<</Root% key\n4% object\n0% generation\nR/Size 7>>",
+        b"<</ID[<00aa><bb11>]/Size 7/Root 4 0 R>>",
+    ],
+    ids=[
+        "dictionary-delimiters",
+        "pdf-whitespace",
+        "comment-delimiters",
+        "array-hex-delimiters",
+    ],
+)
+def test_pdf_trailer_lexical_boundaries_preserve_valid_tokens(dictionary):
+    result = api().validate_attachment(pdf_with_trailer(dictionary), "spec.pdf")
+    assert result.media_type == "application/pdf"

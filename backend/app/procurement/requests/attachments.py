@@ -70,7 +70,8 @@ def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
         raise invalid_file()
     trailer = xref[marker + len(b"trailer") :]
     lexer = re.compile(
-        rb"\s+|%[^\r\n]*|<<|>>|\[|\]|<[0-9a-fA-F\s]*>|/[A-Za-z]+|[0-9]{1,10}|R"
+        rb"[\x00\t\n\f\r ]+|%[^\r\n]*|<<|>>|\[|\]|<[0-9a-fA-F\x00\t\n\f\r ]*>"
+        rb"|/[^\x00\t\n\f\r ()<>\[\]{}/%]+|[^\x00\t\n\f\r ()<>\[\]{}/%]+"
     )
     tokens = []
     position = 0
@@ -80,7 +81,7 @@ def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
             raise invalid_file()
         token = match[0]
         position = match.end()
-        if token.isspace() or token.startswith(b"%"):
+        if token[0] in b"\x00\t\n\f\r " or token.startswith(b"%"):
             continue
         if len(tokens) >= 256:
             raise invalid_file()
@@ -101,7 +102,13 @@ def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
             if index + 3 > len(values):
                 raise invalid_file()
             number, generation, reference = values[index : index + 3]
-            if not number.isdigit() or not generation.isdigit() or reference != b"R":
+            if (
+                not number.isdigit()
+                or len(number) > 10
+                or not generation.isdigit()
+                or len(generation) > 10
+                or reference != b"R"
+            ):
                 raise invalid_file()
             if int(number) < 1 or int(generation) > 65535:
                 raise invalid_file()
@@ -111,6 +118,7 @@ def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
             if (
                 index >= len(values)
                 or not values[index].isdigit()
+                or len(values[index]) > 10
                 or int(values[index]) < 1
             ):
                 raise invalid_file()
@@ -126,7 +134,7 @@ def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
             for identifier in values[index + 1 : index + 3]:
                 if not identifier.startswith(b"<") or not identifier.endswith(b">"):
                     raise invalid_file()
-                hexadecimal = re.sub(rb"\s+", b"", identifier[1:-1])
+                hexadecimal = re.sub(rb"[\x00\t\n\f\r ]+", b"", identifier[1:-1])
                 if not hexadecimal or len(hexadecimal) % 2:
                     raise invalid_file()
             fields[key] = True
