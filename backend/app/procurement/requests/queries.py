@@ -21,7 +21,6 @@ from app.procurement.requests.models import (
     PurchaseRequestEvent,
     PurchaseRequestItem,
     RequestAttachment,
-    RequestFulfillmentEntry,
 )
 from app.procurement.requests.schemas import (
     ActorView,
@@ -191,22 +190,12 @@ def project_request(db, scope, row):
             .order_by(PurchaseRequestItem.position)
         )
     )
-    quantities = dict(
-        db.execute(
-            select(
-                RequestFulfillmentEntry.item_id,
-                func.sum(
-                    RequestFulfillmentEntry.quantity * RequestFulfillmentEntry.sign
-                ),
-            )
-            .where(
-                RequestFulfillmentEntry.tenant_id == scope.tenant_id,
-                RequestFulfillmentEntry.contract_id == scope.contract_id,
-                RequestFulfillmentEntry.request_id == row.id,
-            )
-            .group_by(RequestFulfillmentEntry.item_id)
-        ).all()
+    from app.procurement.requests.fulfillment import (
+        fulfillment_state,
+        fulfillment_totals,
     )
+
+    quantities = fulfillment_totals(db, scope, row.id)
     item_views = [
         ItemView(
             id=item.id,
@@ -224,10 +213,6 @@ def project_request(db, scope, row):
         )
         for item in items
     ]
-    complete = bool(items) and all(
-        quantities.get(item.id, Decimal(0)) >= item.requested_quantity for item in items
-    )
-    partial = any(value > 0 for value in quantities.values())
     buyer = None
     if row.buyer_membership_id:
         candidate = (
@@ -272,7 +257,7 @@ def project_request(db, scope, row):
         buyer=buyer,
         items=item_views,
         attachments=attachments,
-        fulfillment_state="COMPLETE" if complete else "PARTIAL" if partial else "NONE",
+        fulfillment_state=fulfillment_state(item_views),
     )
 
 

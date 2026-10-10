@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response
 
 from app.identity.dependencies import Database
 from app.platform.policy import require_capability
-from app.procurement.requests import assignment, commands, queries
+from app.procurement.requests import assignment, commands, fulfillment, queries
 from app.procurement.requests.approval_policy import (
     effective_approval_policy,
     patch_approval_policy,
@@ -16,6 +16,7 @@ from app.procurement.requests.command_schemas import (
     ApprovalPolicyPatch,
     AssignmentCommand,
     DraftPatch,
+    FulfillmentCommand,
     NoteCommand,
     ReasonCommand,
     RequestCreate,
@@ -271,4 +272,39 @@ for action in ("reject", "cancel"):
         reason_transition(action),
         methods=["POST"],
         response_model=RequestView,
+    )
+
+
+@router.post("/{request_id}/fulfillments", response_model=RequestView)
+def record_fulfillment(
+    request_id: UUID,
+    payload: FulfillmentCommand,
+    request: Request,
+    response: Response,
+    db: Database,
+    scope: Context,
+    key: Key,
+):
+    private(response)
+    return fulfillment.record_fulfillment(
+        db, request, request.state.principal, scope, request_id, payload, key
+    )
+
+
+@router.post(
+    "/{request_id}/fulfillments/{entry_id}/reverse", response_model=RequestView
+)
+def reverse_fulfillment(
+    request_id: UUID,
+    entry_id: UUID,
+    payload: ReasonCommand,
+    request: Request,
+    response: Response,
+    db: Database,
+    scope: Context,
+    key: Key,
+):
+    private(response)
+    return fulfillment.reverse_fulfillment(
+        db, request, request.state.principal, scope, request_id, entry_id, payload, key
     )
