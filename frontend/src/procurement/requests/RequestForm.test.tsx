@@ -1,0 +1,16 @@
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {AuthContext,type Auth} from '../../auth/state';
+import {Context,type ContextState} from '../../platform/state';
+import {OperationalContext} from '../../operational/state';
+import {ApiClient} from '../../api/client';
+import {scope,request} from './fixtures';
+import {parseRequest} from './validate';
+import {RequestForm} from './RequestForm';
+afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+function mount(lost=false){const bodies:Record<string,unknown>[]=[];vi.stubGlobal('fetch',vi.fn(async(url:string,init:RequestInit)=>{if(url==='/api/auth/csrf')return new Response(JSON.stringify({token:'csrf'}));bodies.push(JSON.parse(init.body as string));if(lost)throw new TypeError('lost response');return new Response(JSON.stringify(request()));}));const auth:Auth={api:new ApiClient(),user:{user_id:'user',display_name:'User',platform_role:null},loading:false,busy:false,error:null,login:async()=>{},logout:async()=>{},retry:()=>{}};const context:ContextState={selected:{id:'ctx',tenant_name:'Tenant',contract_id:'contract',contract_code:'CTR',environment:'TEST',expires_at:'2099-01-01',capabilities:[]},loading:false,busy:false,error:null,recovering:false,select:async()=>{},clear:async()=>{},retry:()=>{}};render(<AuthContext.Provider value={auth}><Context.Provider value={context}><OperationalContext.Provider value={{status:'ready',scope}}><RequestForm draft={parseRequest(request(),{tenantId:'tenant',contractId:'contract'})} onSaved={()=>{}}/></OperationalContext.Provider></Context.Provider></AuthContext.Provider>);return bodies;}
+it('draft edits preserve existing item IDs and keep new items without server IDs',async()=>{const bodies=mount();fireEvent.change(screen.getByLabelText('Quantidade do item 1'),{target:{value:'1.000001'}});fireEvent.click(screen.getByRole('button',{name:'Adicionar item'}));fireEvent.change(screen.getByLabelText('Descrição do item 2'),{target:{value:'Second actual need'}});fireEvent.change(screen.getByLabelText('Quantidade do item 2'),{target:{value:'2.5'}});fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));await waitFor(()=>expect(bodies).toHaveLength(1));expect(bodies[0].expected_version).toBe(1);expect(bodies[0].items).toEqual([{id:'item',description:'Concrete need',specification:'',requested_quantity:'1.000001',uom_code:'UN'},{description:'Second actual need',specification:'',requested_quantity:'2.5',uom_code:'UN'}]);});
+it('package UOM requires real content specification before saving',async()=>{const bodies=mount();fireEvent.change(screen.getByLabelText('Unidade de medida do item 1'),{target:{value:'CX'}});fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));expect(await screen.findByRole('alert')).toHaveTextContent(/conteúdo de embalagem/);expect(bodies).toHaveLength(0);});
+
+
+it('lost server response reports connectivity and permits the same draft retry',async()=>{mount(true);fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível conectar ao serviço');expect(screen.getByRole('button',{name:'Salvar rascunho'})).toBeEnabled();});

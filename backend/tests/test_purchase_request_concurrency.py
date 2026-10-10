@@ -277,7 +277,7 @@ def test_revocation_wait_and_admin_lock_order(
             assert admin_locked.wait(5), "Admin did not acquire target locks"
             assign = pool.submit(
                 member.post,
-                f"/api/procurement/requests/{row.id}/assign",
+                f"/api/procurement/requests/{row.id}/assignment",
                 headers=actor_headers,
                 json={
                     "expected_version": row.version,

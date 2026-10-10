@@ -12,7 +12,7 @@ function array(value: unknown): unknown[] {
  if (!Array.isArray(value)) return invalid();
  return value;
 }
-const capabilities = new Set(['memberships.read','roles.read','roles.manage','finance.read','fiscal.read','datahub.read','datahub.template.download','datahub.import','datahub.export', ...['products','partners','demands','stock_positions','comex_references','financial_forecasts'].flatMap(dataset => ['read','import','export'].map(operation => `datahub.${dataset}.${operation}`))]);
+const capabilities = new Set(['memberships.read','roles.read','roles.manage','finance.read','fiscal.read','datahub.read','datahub.template.download','datahub.import','datahub.export', ...['create','read_own','read_unit','triage','approve','assign','fulfill','cancel','close','comment'].map(action => 'procurement.requests.' + action), ...['products','partners','demands','stock_positions','comex_references','financial_forecasts'].flatMap(dataset => ['read','import','export'].map(operation => `datahub.${dataset}.${operation}`))]);
 // Wire validation only: mirrors the physical schema, never grants access.
 const children: Record<string, readonly string[]> = {
  COMPANY: nodeKinds.filter(kind => kind !== 'COMPANY'),
@@ -64,7 +64,7 @@ export function parseOperationalScope(value: unknown, expectedContextId: string)
   const module = object(value);
   if (!moduleCodes.includes(module.code as typeof moduleCodes[number]) || seen.has(module.code) || module.contracted !== true || typeof module.active !== 'boolean' || typeof module.operational_available !== 'boolean') return invalid();
   seen.add(module.code); text(module.label);
-  if (module.operational_available && (!module.active || module.code !== 'DATAHUB')) return invalid();
+  if (module.operational_available && (!module.active || !['DATAHUB','PROCUREMENT'].includes(text(module.code)))) return invalid();
   if (module.active) enabled.add(text(module.code));
  }
  const caps = array(customer.capabilities);
@@ -73,6 +73,7 @@ export function parseOperationalScope(value: unknown, expectedContextId: string)
  const datasetModules: Record<string, string> = {demands:'PROCUREMENT',stock_positions:'INVENTORY',comex_references:'COMEX',financial_forecasts:'FINANCE'};
  for (const value of caps) {
   const code = text(value);
+  if (code.startsWith('procurement.requests.') && (!array(customer.modules).some(value => { const module=object(value);return module.code==='PROCUREMENT' && module.operational_available===true; }) || !nodes.some(value => object(value).kind !== 'COMPANY'))) return invalid();
   if (code.startsWith('datahub.') && !datahubAvailable) return invalid();
   const dataset = code.split('.')[1];
   if (code.startsWith('datahub.') && datasetModules[dataset] && !enabled.has(datasetModules[dataset])) return invalid();

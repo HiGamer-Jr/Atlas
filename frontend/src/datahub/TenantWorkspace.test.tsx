@@ -22,3 +22,19 @@ it('preserves selected file through successful same-context revalidation with co
  view.rerender(<Harness state={{status:'unavailable',scope:null,errorCode:'CONTEXT_INVALID'}}/>);expect(screen.queryByRole('button',{name:'Validar e gerar preview'})).not.toBeInTheDocument();
  view.rerender(<Harness state={ready}/>);await waitFor(()=>expect(screen.getByRole('button',{name:'Validar e gerar preview'})).toBeDisabled());
 });
+
+it('routes custom real procurement reader to requests without Data Hub authority',async()=>{
+ const {scope:procurement}=await import('../procurement/requests/fixtures');
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({items:[],total:0,limit:50,next_cursor:null}))));
+ const view=render(<Harness state={{status:'ready',scope:procurement}}/>);
+ expect(screen.getByRole('button',{name:'Solicitações de compra'})).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Data Hub > Excel'})).not.toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Nova solicitação'})).toBeInTheDocument();
+ const noRead=structuredClone(procurement);if(noRead.actor_kind==='TENANT')noRead.customer_scope.capabilities=['procurement.requests.create'];
+ view.rerender(<Harness state={{status:'ready',scope:noRead}}/>);
+ expect(screen.queryByRole('button',{name:'Nova solicitação'})).not.toBeInTheDocument();
+});
+
+it('ready but malformed server scope shows unavailable explicitly and closes navigation',async()=>{
+ const {scope:procurement}=await import('../procurement/requests/fixtures');const invalid=structuredClone(procurement);if(invalid.actor_kind==='TENANT')invalid.customer_scope.capabilities.push('procurement.requests.future');render(<Harness state={{status:'ready',scope:invalid}}/>);expect(screen.getByText('Escopo operacional indisponível')).toBeInTheDocument();expect(screen.queryByRole('button',{name:'Solicitações de compra'})).not.toBeInTheDocument();
+});

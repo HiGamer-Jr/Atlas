@@ -610,7 +610,7 @@ def test_assignment_http_opaque_context_and_invalid_candidate(member, db, comman
     headers = select_context(member, ids["contract_a"]) | {
         "Idempotency-Key": str(uuid4())
     }
-    path = f"/api/procurement/requests/{row.id}/assign"
+    path = f"/api/procurement/requests/{row.id}/assignment"
     malformed = member.post(
         path,
         headers=headers,
@@ -738,7 +738,7 @@ def test_http_command_csrf_version_key_and_content_freeze(member, db, command_ca
     )
     assert duplicate.json() == submitted.json()
     changed = member.patch(
-        path, headers=headers, json={"expected_version": 2, "items": []}
+        path + "/draft", headers=headers, json={"expected_version": 2, "items": []}
     )
     assert changed.status_code == 409 and changed.json()["code"] == "INVALID_TRANSITION"
     denied = member.post(
@@ -1154,3 +1154,28 @@ def test_urgent_submit_reason_does_not_replace_ordinary_justification(db, comman
         "VALIDATION_ERROR",
     )
     assert db.get(PurchaseRequest, row.id).status == "DRAFT"
+
+
+def test_http_approved_draft_route_contract(member, db, command_case):
+    ids, *_ = command_case
+    row = create(db, command_case)
+    db.commit()
+    headers = select_context(member, ids["contract_a"])
+    path = f"/api/procurement/requests/{row.id}"
+    result = member.patch(
+        path + "/draft",
+        headers=headers,
+        json={"expected_version": 1, "title": "Updated actual need"},
+    )
+    assert result.status_code == 200, result.text
+    assert (
+        result.json()["title"] == "Updated actual need"
+        and result.json()["version"] == 2
+    )
+    assert result.headers["Cache-Control"] == "no-store"
+    assert (
+        member.patch(
+            path, headers=headers, json={"expected_version": 2, "title": "Wrong route"}
+        ).status_code
+        == 405
+    )

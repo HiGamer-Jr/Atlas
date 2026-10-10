@@ -5,6 +5,7 @@ type Options = {
     contextId?: string | null;
     signal?: AbortSignal;
     responseType?: 'json' | 'blob';
+    idempotencyKey?: string;
 };
 /** One instance per mounted app/tab. No authentication credentials are persisted. */
 export class ApiClient {
@@ -54,6 +55,7 @@ export class ApiClient {
             assertCurrent();
             const method = options.method ?? 'GET';
             const headers = new Headers({ Accept: 'application/json' });
+            if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey);
             if (context)
                 headers.set('X-HiAtlas-Context', context);
             if (options.body !== undefined && !(options.body instanceof FormData))

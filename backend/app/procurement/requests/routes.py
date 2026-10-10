@@ -134,7 +134,7 @@ def create_request(
     )
 
 
-@router.patch("/{request_id}", response_model=RequestView)
+@router.patch("/{request_id}/draft", response_model=RequestView)
 def update_draft(
     request_id: UUID,
     payload: DraftPatch,
@@ -155,7 +155,7 @@ def require_assignment_context(
     return assignment.assignment_context(db, request, payload.buyer_membership_id)
 
 
-@router.post("/{request_id}/assign", response_model=RequestView)
+@router.post("/{request_id}/assignment", response_model=RequestView)
 def assign_buyer(
     request_id: UUID,
     payload: AssignmentCommand,

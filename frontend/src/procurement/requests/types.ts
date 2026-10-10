@@ -1,0 +1,15 @@
+export const statuses=['DRAFT','SUBMITTED','IN_TRIAGE','AWAITING_APPROVAL','APPROVED','IN_FULFILLMENT','FULFILLED','CLOSED','REJECTED','CANCELLED'] as const;
+export const uoms=['UN','KG','G','L','ML','M','M2','M3','CX','PCT'] as const;
+export type Status=typeof statuses[number];
+export type ItemInput={id?:string;description:string;specification:string;requested_quantity:string;uom_code:typeof uoms[number]};
+export type DraftInput={requesting_node_id:string;title:string;description?:string;justification?:string;priority?:'NORMAL'|'HIGH'|'URGENT';needed_on?:string|null;notes?:string;items:ItemInput[]};
+export type Actor={membership_id:string;user_id:string;display_name:string};
+export type Buyer={membership_id:string;display_name:string};
+export type AttachmentView={id:string;item_id:string|null;filename:string;media_type:string;digest:string;size:number;uploader_membership_id:string;created_at:string};
+export type ItemView=Required<ItemInput>&{position:number;fulfilled_quantity:string;remaining_quantity:string;created_at:string;updated_at:string};
+export type RequestView={schema_version:1;id:string;tenant_id:string;contract_id:string;requester:Actor;requesting_node:{id:string;name:string;code:string;kind:string};buyer:Buyer|null;title:string;description:string;justification:string;priority:'NORMAL'|'HIGH'|'URGENT';needed_on:string|null;notes:string;status:Status;version:number;fulfillment_state:'NONE'|'PARTIAL'|'COMPLETE';approval_mode:'REQUIRED'|'NOT_REQUIRED'|null;approval_policy_version:number|null;approval_decision_kind:'HUMAN'|'POLICY_WAIVER'|null;created_at:string;updated_at:string;submitted_at:string|null;triage_started_at:string|null;approval_requested_at:string|null;approved_at:string|null;assigned_at:string|null;fulfillment_started_at:string|null;fulfilled_at:string|null;closed_at:string|null;items:ItemView[];attachments:AttachmentView[]};
+export type Page<T>={items:T[];total:number;limit:number;next_cursor:string|null};
+export type RequestPage=Page<RequestView>;
+export type HistoryEvent={id:string;sequence:number;aggregate_version:number;action:string;actor:Actor;tenant_role_id:string;tenant_role_code:string;occurred_at:string;reason:string|null;payload:{schema_version:1;from_status?:Status|null;to_status?:Status;item_ids?:string[];item_id?:string;entry_id?:string;original_entry_id?:string|null;attachment_id?:string;buyer_membership_id?:string;quantity?:string;uom_code?:typeof uoms[number];text?:string;approval_mode?:'REQUIRED'|'NOT_REQUIRED'|null;approval_policy_version?:number|null;approval_decision_kind?:'HUMAN'|'POLICY_WAIVER'|null;content_digest?:string|null}};
+export type Binding={contextId:string;tenantId:string;contractId:string};
+export type Command='submit'|'start-triage'|'request-approval'|'approve'|'reject'|'start-fulfillment'|'cancel'|'close';
