@@ -23,7 +23,8 @@ def test_closed_catalogue_defaults_are_readonly(admin, support, scope_ids, db_ru
             row["id"] is None
             and row["version"] == 0
             and not row["enabled"]
-            and row["operational_available"] == (row["code"] == "DATAHUB")
+            and row["operational_available"]
+            == (row["code"] in {"DATAHUB", "PROCUREMENT"})
             for row in rows
         )
         if client is support:

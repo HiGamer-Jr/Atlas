@@ -106,6 +106,11 @@ def operational_scope_view(
                 continue
             if code.startswith(UNIT_CAP_PREFIXES) and not units.nodes:
                 continue
+            if code.startswith("procurement.requests."):
+                from app.procurement.requests.policy import REQUEST_NODE_KINDS
+
+                if not any(node.kind in REQUEST_NODE_KINDS for node in units.nodes):
+                    continue
             dataset = code.split(".")[1] if code.startswith("datahub.") else None
             if dataset in DATASET_MODULES and DATASET_MODULES[dataset] not in enabled:
                 continue

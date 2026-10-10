@@ -76,13 +76,8 @@ def request_grants(db, ids, member_id, node_ids):
 
 
 @pytest.fixture
-def request_policy_case(db, purchase_case, monkeypatch):
-    # PROCUREMENT becomes operational only in Task4; production grants stay real.
-    from app.organization import modules
-
-    monkeypatch.setattr(
-        modules, "OPERATIONAL_MODULES", modules.OPERATIONAL_MODULES | {"PROCUREMENT"}
-    )
+def request_policy_case(db, purchase_case):
+    # Task4 exposes the actual operational domain; no availability monkeypatch.
     ids = dict(purchase_case)
     ids.update(
         company=uuid4(),

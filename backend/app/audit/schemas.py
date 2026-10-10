@@ -172,6 +172,52 @@ class DataHubImportSnapshot(BaseModel):
     skipped_count: int = Field(ge=0)
 
 
+class RequestAuditChanges(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    approval_mode: Literal["REQUIRED", "NOT_REQUIRED"] | None = None
+    approval_policy_version: int | None = Field(default=None, ge=0)
+    approval_decision_kind: Literal["HUMAN", "POLICY_WAIVER"] | None = None
+    item_ids: list[UUID] = Field(default_factory=list, max_length=100)
+    attachment_id: UUID | None = None
+    entry_id: UUID | None = None
+    quantity: str | None = Field(default=None, max_length=32)
+
+
+class RequestAuditSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    request_id: UUID
+    tenant_id: UUID
+    contract_id: UUID
+    version: int = Field(ge=1)
+    status: Literal[
+        "DRAFT",
+        "SUBMITTED",
+        "IN_TRIAGE",
+        "AWAITING_APPROVAL",
+        "APPROVED",
+        "IN_FULFILLMENT",
+        "FULFILLED",
+        "CLOSED",
+        "REJECTED",
+        "CANCELLED",
+    ]
+    requesting_node_id: UUID
+    requester_user_id: UUID
+    requester_membership_id: UUID
+    buyer_membership_id: UUID | None = None
+    actor_membership_id: UUID
+    tenant_role_id: UUID
+    tenant_role_code: str = Field(max_length=64)
+    changes: RequestAuditChanges = Field(default_factory=RequestAuditChanges)
+
+
+class RequestPolicySnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    approval_mode: Literal["REQUIRED", "NOT_REQUIRED"]
+    version: int = Field(ge=0)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -187,6 +233,25 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "procurement.request.created",
+        "procurement.request.draft_updated",
+        "procurement.request.submitted",
+        "procurement.request.triage_started",
+        "procurement.request.approval_requested",
+        "procurement.request.approved",
+        "procurement.request.approval_waived",
+        "procurement.request.rejected",
+        "procurement.request.assigned",
+        "procurement.request.fulfillment_started",
+        "procurement.request.fulfillment_recorded",
+        "procurement.request.fulfillment_reversed",
+        "procurement.request.fulfilled",
+        "procurement.request.cancelled",
+        "procurement.request.closed",
+        "procurement.request.note_added",
+        "procurement.request.attachment_added",
+        "procurement.request.attachment_removed",
+        "procurement.request_policy.updated",
         "datahub.import.received",
         "datahub.import.validated",
         "datahub.import.failed",
@@ -229,6 +294,8 @@ class AuditInput(BaseModel):
     ]
     outcome: Literal["SUCCESS", "DENIED", "FAILURE"] = "SUCCESS"
     entity_type: Literal[
+        "purchase_request",
+        "contract_request_policy",
         "datahub_import",
         "user",
         "platform_role",
@@ -244,7 +311,9 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        DataHubImportSnapshot
+        RequestAuditSnapshot
+        | RequestPolicySnapshot
+        | DataHubImportSnapshot
         | ProcessingSnapshot
         | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
@@ -261,7 +330,9 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        DataHubImportSnapshot
+        RequestAuditSnapshot
+        | RequestPolicySnapshot
+        | DataHubImportSnapshot
         | ProcessingSnapshot
         | PrivilegedGrantSnapshot
         | SupportSessionSnapshot
@@ -285,6 +356,36 @@ class AuditInput(BaseModel):
     def validate_scope(self):
         if (self.tenant_id is None) != (self.contract_id is None):
             raise ValueError("tenant_id and contract_id must be supplied together")
+        if self.action.startswith("procurement.request."):
+            if (
+                self.tenant_id is None
+                or self.entity_type != "purchase_request"
+                or self.actor_role is not None
+                or not isinstance(self.after, RequestAuditSnapshot)
+                or self.after.request_id != self.entity_id
+                or self.after.tenant_id != self.tenant_id
+                or self.after.contract_id != self.contract_id
+            ):
+                raise ValueError("Request action requires scoped tenant provenance")
+            if self.before is not None and (
+                not isinstance(self.before, RequestAuditSnapshot)
+                or self.before.request_id != self.entity_id
+                or self.before.tenant_id != self.tenant_id
+                or self.before.contract_id != self.contract_id
+            ):
+                raise ValueError(
+                    "Request before snapshot must belong to the same aggregate"
+                )
+            if self.action != "procurement.request.created" and self.before is None:
+                raise ValueError("Request update requires before state")
+        if self.action == "procurement.request_policy.updated" and (
+            self.tenant_id is None
+            or self.entity_type != "contract_request_policy"
+            or self.entity_id != self.contract_id
+            or not isinstance(self.before, RequestPolicySnapshot)
+            or not isinstance(self.after, RequestPolicySnapshot)
+        ):
+            raise ValueError("Policy action requires scoped snapshots")
         if self.action.startswith("datahub.import."):
             if (
                 self.tenant_id is None

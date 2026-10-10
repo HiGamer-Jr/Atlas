@@ -131,6 +131,58 @@ class RequestEventPayload(ClosedSchema):
     content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
+class TransitionEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    from_status: RequestStatus | None = None
+    to_status: RequestStatus
+    approval_mode: ApprovalMode | None = None
+    approval_policy_version: int | None = Field(default=None, ge=0)
+    approval_decision_kind: ApprovalDecisionKind | None = None
+    content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
+class AssignmentEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    buyer_membership_id: UUID
+
+
+class ItemsEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    item_ids: list[UUID] = Field(default_factory=list, max_length=100)
+    content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class NoteEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    text: str = Field(min_length=1, max_length=4000)
+    content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+
+class QuantityEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    item_id: UUID
+    entry_id: UUID
+    original_entry_id: UUID | None = None
+    quantity: str = Field(max_length=32)
+    uom_code: UomCode
+
+
+class AttachmentEventPayload(ClosedSchema):
+    schema_version: Literal[1] = 1
+    attachment_id: UUID
+    content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+ClosedRequestEventPayload = (
+    TransitionEventPayload
+    | AssignmentEventPayload
+    | ItemsEventPayload
+    | NoteEventPayload
+    | QuantityEventPayload
+    | AttachmentEventPayload
+)
+
+
 class RequestHistoryEventView(ClosedSchema):
     id: UUID
     sequence: int = Field(ge=1)
@@ -141,7 +193,7 @@ class RequestHistoryEventView(ClosedSchema):
     tenant_role_code: str
     occurred_at: datetime
     reason: str | None
-    payload: RequestEventPayload
+    payload: ClosedRequestEventPayload
 
 
 class RequestPage(ClosedSchema):

@@ -116,7 +116,7 @@ def test_runtime_cannot_rewrite_evidence(db_runtime, table):
             conn.execute(text(f"DELETE FROM {table}"))
 
 
-def test_purchase_request_capability_catalog_is_operationally_closed(db_runtime):
+def test_purchase_request_capability_catalog_has_no_automatic_grants(db_runtime):
     from app.organization.modules import OPERATIONAL_MODULES
     from app.platform.capabilities import CATALOG
 
@@ -140,7 +140,13 @@ def test_purchase_request_capability_catalog_is_operationally_closed(db_runtime)
         assert capability.module_code == "PROCUREMENT"
         assert capability.read_only_safe == operation.startswith("read_")
         assert capability.mutates_business_state == (not operation.startswith("read_"))
-    assert "PROCUREMENT" not in OPERATIONAL_MODULES
+    assert "PROCUREMENT" in OPERATIONAL_MODULES
+    from app.procurement.requests.routes import router
+
+    assert any(
+        route.path == "/procurement/requests" and "POST" in route.methods
+        for route in router.routes
+    )
     with db_runtime.connect() as conn:
         assert (
             conn.execute(
@@ -479,3 +485,62 @@ def test_approver_requires_explicit_human_decision(db, purchase_case):
         {**empty, "mode": "NOT_REQUIRED", "version": 2, "kind": "POLICY_WAIVER"},
     ]:
         db.execute(statement, values)
+
+
+def test_item_position_constraint_deferrable_and_migration_roundtrip(
+    db_runtime, db_owner, migration_config
+):
+    from alembic import command
+
+    def state(conn):
+        return conn.execute(
+            text(
+                "SELECT condeferrable, condeferred FROM pg_constraint WHERE conname='uq_purchase_request_item_position'"
+            )
+        ).one()
+
+    with db_runtime.connect() as conn:
+        assert state(conn) == (True, False)
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0014")
+            assert state(conn) == (False, False)
+            command.upgrade(migration_config, "head")
+            assert state(conn) == (True, False)
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("unsafe", ["owner", "superuser", "missing"])
+def test_item_order_migration_rejects_unsafe_runtime_before_ddl(
+    db_owner, db_runtime, migration_config, unsafe
+):
+    from alembic import command
+
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0014")
+            migration_config.attributes["runtime_role"] = (
+                db_owner.url.username
+                if unsafe == "owner"
+                else conn.execute(
+                    text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+                ).scalar_one()
+                if unsafe == "superuser"
+                else None
+            )
+            with pytest.raises(RuntimeError, match="role"):
+                command.upgrade(migration_config, "head")
+            assert not conn.execute(
+                text(
+                    "SELECT condeferrable FROM pg_constraint WHERE conname='uq_purchase_request_item_position'"
+                )
+            ).scalar_one()
+            migration_config.attributes["runtime_role"] = good_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role

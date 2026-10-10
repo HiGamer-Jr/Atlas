@@ -178,7 +178,11 @@ class PurchaseRequestItem(ScopedRecord, Timestamps, Base):
             name="uq_purchase_request_item_scope",
         ),
         UniqueConstraint(
-            "request_id", "position", name="uq_purchase_request_item_position"
+            "request_id",
+            "position",
+            name="uq_purchase_request_item_position",
+            deferrable=True,
+            initially="IMMEDIATE",
         ),
         request_fk(),
         CheckConstraint(

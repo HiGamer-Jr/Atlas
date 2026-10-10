@@ -21,8 +21,8 @@ CONTRACT_MODULE_CATALOG = MappingProxyType(
         "DATAHUB": "DataHub",
     }
 )
-# Data Hub persists informational records; other operational domains remain unavailable.
-OPERATIONAL_MODULES = frozenset({"DATAHUB"})
+# Only domains with authenticated operational routes are available.
+OPERATIONAL_MODULES = frozenset({"DATAHUB", "PROCUREMENT"})
 
 
 def snapshot(code, row):

@@ -140,6 +140,27 @@ def create_app(settings: Settings) -> FastAPI:
 
     @application.exception_handler(RequestValidationError)
     async def validation_error(request: Request, _exc: RequestValidationError):
+        # Only this domain's reference validators may expose the allowlisted code.
+        errors = _exc.errors()
+        prefix = settings.api_prefix + "/procurement/requests"
+        if (
+            (request.url.path == prefix or request.url.path.startswith(prefix + "/"))
+            and errors
+            and all(
+                error.get("type") == "REFERENCE_DOMAIN_UNAVAILABLE"
+                and error.get("loc", ())
+                in {("body", "project_id"), ("body", "cost_center_id")}
+                for error in errors
+            )
+        ):
+            return error_response(
+                request,
+                ApiError(
+                    422,
+                    "REFERENCE_DOMAIN_UNAVAILABLE",
+                    "Domínio de referência indisponível.",
+                ),
+            )
         # FastAPI's default detail includes raw input (including passwords).
         return error_response(
             request, ApiError(422, "VALIDATION_ERROR", "Dados inválidos.")
