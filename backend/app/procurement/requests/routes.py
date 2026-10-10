@@ -308,3 +308,147 @@ def reverse_fulfillment(
     return fulfillment.reverse_fulfillment(
         db, request, request.state.principal, scope, request_id, entry_id, payload, key
     )
+
+
+@router.post("/{request_id}/attachments", response_model=RequestView)
+async def add_attachment(
+    request_id: UUID,
+    request: Request,
+    response: Response,
+    db: Database,
+    scope: Context,
+    key: Key,
+):
+    from pydantic import ValidationError
+    from starlette.concurrency import run_in_threadpool
+    from starlette.datastructures import UploadFile
+    from starlette.exceptions import HTTPException
+    from starlette.requests import Request as MultipartRequest
+
+    from app.core.errors import ApiError
+    from app.procurement.requests import attachments
+
+    private(response)
+    await run_in_threadpool(
+        attachments.prepare_upload, db, request.state.principal, scope, request_id, key
+    )
+    # Read a bounded body before multipart parsing; Content-Length is never trusted.
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > attachments.MAX_BODY_BYTES:
+            raise attachments.too_large()
+        body.extend(chunk)
+
+    async def receive():
+        return {"type": "http.request", "body": bytes(body), "more_body": False}
+
+    multipart = MultipartRequest(request.scope, receive)
+    try:
+        async with multipart.form(
+            max_files=1, max_fields=2, max_part_size=1024
+        ) as form:
+            fields = form.multi_items()
+            names = [name for name, _ in fields]
+            if (
+                set(names) - {"file", "expected_version", "item_id"}
+                or len(names) != len(set(names))
+                or "file" not in names
+                or "expected_version" not in names
+            ):
+                raise ApiError(422, "VALIDATION_ERROR", "Campos de anexo inválidos.")
+            uploaded = form["file"]
+            if (
+                not isinstance(uploaded, UploadFile)
+                or isinstance(form["expected_version"], UploadFile)
+                or isinstance(form.get("item_id"), UploadFile)
+            ):
+                raise attachments.invalid_file()
+            try:
+                version_text = form["expected_version"]
+                if not version_text.isascii() or not version_text.isdecimal():
+                    raise ValueError()
+                version = VersionCommand(
+                    expected_version=int(version_text)
+                ).expected_version
+                item_id = UUID(form["item_id"]) if form.get("item_id") else None
+            except (ValueError, ValidationError) as error:
+                raise ApiError(
+                    422, "VALIDATION_ERROR", "Versão ou item inválido."
+                ) from error
+            content = bytearray()
+            while chunk := await uploaded.read(65536):
+                if len(content) + len(chunk) > attachments.MAX_BYTES:
+                    raise attachments.too_large()
+                content.extend(chunk)
+            validated = await run_in_threadpool(
+                attachments.validate_attachment, bytes(content), uploaded.filename or ""
+            )
+            if uploaded.content_type != validated.media_type:
+                raise attachments.invalid_file()
+            return await run_in_threadpool(
+                attachments.add_attachment,
+                db,
+                request,
+                request.state.principal,
+                scope,
+                request_id,
+                version,
+                item_id,
+                uploaded.filename or "",
+                bytes(content),
+                key,
+            )
+    except HTTPException as error:
+        raise ApiError(422, "VALIDATION_ERROR", "Multipart inválido.") from error
+
+
+@router.get("/{request_id}/attachments/{attachment_id}/download")
+def download_attachment(
+    request_id: UUID,
+    attachment_id: UUID,
+    request: Request,
+    db: Database,
+    scope: Context,
+):
+    from urllib.parse import quote
+
+    from app.procurement.requests import attachments
+
+    result = attachments.download_attachment(
+        db, request.state.principal, scope, request_id, attachment_id
+    )
+    name = attachments.sanitize_filename(result.filename)
+    return Response(
+        content=result.content,
+        media_type=result.media_type,
+        headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": "attachment; filename*=UTF-8''"
+            + quote(name, safe=""),
+        },
+    )
+
+
+@router.delete("/{request_id}/attachments/{attachment_id}", response_model=RequestView)
+def remove_attachment(
+    request_id: UUID,
+    attachment_id: UUID,
+    payload: VersionCommand,
+    request: Request,
+    response: Response,
+    db: Database,
+    scope: Context,
+):
+    from app.procurement.requests import attachments
+
+    private(response)
+    return attachments.remove_draft_attachment(
+        db,
+        request,
+        request.state.principal,
+        scope,
+        request_id,
+        attachment_id,
+        payload.expected_version,
+    )

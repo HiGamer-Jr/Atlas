@@ -169,6 +169,7 @@ class QuantityEventPayload(ClosedSchema):
 
 class AttachmentEventPayload(ClosedSchema):
     schema_version: Literal[1] = 1
+    from_status: RequestStatus
     attachment_id: UUID
     content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
