@@ -23,3 +23,40 @@ it('triage delegates policy to server and never sends waiver choice',async()=>{c
 it('manual fulfillment preserves exact quantity evidence and version',async()=>{const posts=mount({...request(),status:'IN_FULFILLMENT',buyer:{membership_id:'buyer',display_name:'Eligible buyer'}} as ReturnType<typeof request>);await screen.findByRole('button',{name:'Registrar atendimento'});fireEvent.change(screen.getByLabelText('Item atendido'),{target:{value:'item'}});fireEvent.change(screen.getByLabelText('Quantidade atendida'),{target:{value:'0.000001'}});fireEvent.change(screen.getByLabelText('Evidência do atendimento'),{target:{value:'Receipt checked'}});fireEvent.change(screen.getByLabelText('Motivo da ação'),{target:{value:'Manual external record'}});fireEvent.click(screen.getByRole('button',{name:'Registrar atendimento'}));await waitFor(()=>expect(posts).toHaveLength(1));expect(posts[0].body).toEqual({expected_version:1,item_id:'item',quantity:'0.000001',evidence:'Receipt checked',reason:'Manual external record'});});
 
 it('request unit outside current server scope never opens detail controls',async()=>{mount({...request(),requesting_node:{...request().requesting_node,id:'foreign-unit'}});await waitFor(()=>expect(screen.getByText('Detalhe indisponível neste escopo.')).toBeInTheDocument());expect(screen.queryByRole('button',{name:'Enviar solicitação'})).not.toBeInTheDocument();});
+
+
+it('comment accepts Unicode at server limit without UTF16 maxlength',async()=>{
+ const posts=mount({...request(),status:'SUBMITTED'});
+ const input=await screen.findByLabelText('Comentário') as HTMLTextAreaElement;
+ expect(input.maxLength).toBe(-1);
+ fireEvent.change(input,{target:{value:'🚀'.repeat(4000)}});
+ expect(input.checkValidity()).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'Adicionar comentário'}));
+ await waitFor(()=>expect(posts).toHaveLength(1));
+ expect(posts[0].body.text).toBe('🚀'.repeat(4000));
+});
+it('comment rejects above Unicode limit before transport',async()=>{
+ const posts=mount({...request(),status:'SUBMITTED'});
+ const input=await screen.findByLabelText('Comentário') as HTMLTextAreaElement;
+ fireEvent.change(input,{target:{value:'🚀'.repeat(4001)}});
+ expect(input.checkValidity()).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'Adicionar comentário'}));
+ expect(await screen.findByRole('alert')).toHaveTextContent(/caracteres/);
+ expect(posts).toHaveLength(0);
+});
+
+
+it.each([['Motivo da ação','😀'.repeat(2001)],['Evidência do atendimento','🚀'.repeat(4001)]])('fulfillment rejects text beyond codepoint bound for %s',async(label,text)=>{
+ const posts=mount({...request(),status:'IN_FULFILLMENT',buyer:{membership_id:'buyer',display_name:'Buyer'}});
+ await screen.findByRole('button',{name:'Registrar atendimento'});
+ fireEvent.change(screen.getByLabelText('Item atendido'),{target:{value:'item'}});
+ fireEvent.change(screen.getByLabelText('Quantidade atendida'),{target:{value:'0.000001'}});
+ fireEvent.change(screen.getByLabelText('Motivo da ação'),{target:{value:'External record'}});
+ fireEvent.change(screen.getByLabelText('Evidência do atendimento'),{target:{value:'Receipt'}});
+ const input=screen.getByLabelText(label) as HTMLTextAreaElement;
+ fireEvent.change(input,{target:{value:text}});
+ expect(input.checkValidity()).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'Registrar atendimento'}));
+ expect(await screen.findByRole('alert')).toHaveTextContent(/caracteres/);
+ expect(posts).toHaveLength(0);
+});

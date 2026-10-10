@@ -56,10 +56,12 @@ def run_idempotent(
             raise ApiError(
                 409, "IDEMPOTENCY_CONFLICT", "Chave já utilizada com outros dados."
             )
-        # Caller reauthorizes the current action before entering. Read authorization
-        # is fresh, but no original response is recomputed and no operation reruns.
+        # Preserve current aggregate/action checks and separately authorize the
+        # original response: a draft may have moved since this receipt was stored.
         policy.authorize_request_read(db, principal, scope, row)
-        return RequestView.model_validate(receipt.result)
+        original = RequestView.model_validate(receipt.result)
+        policy.authorize_response_read(db, principal, scope, original)
+        return original
     result = operation()
     db.add(
         RequestCommandReceipt(

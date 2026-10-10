@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePurchaseRequests } from './state';
 import { RequestForm } from './RequestForm';
-import { decimalUnits } from './validate';
+import { boundedText, textValidationMessage, decimalUnits } from './validate';
 import type { AttachmentView, Buyer, Command, HistoryEvent, Page, RequestView } from './types';
 import { ApiError, errorText, isAbort } from '../../api/errors';
 type OperationTicket = {
@@ -173,8 +173,8 @@ function RequestDetailSession({ requestId, onRefresh }: {
         }
     }
     function command(action: Command, needsReason = false) {
-        if (needsReason && !reason.trim()) {
-            setError('Informe o motivo desta ação.');
+        if (needsReason && textValidationMessage(reason, 2000, false)) {
+            setError(textValidationMessage(reason, 2000, false));
             return;
         }
         void act(signal => p.api.command(binding!, r!.id, action, {
@@ -233,18 +233,26 @@ function RequestDetailSession({ requestId, onRefresh }: {
     function recordFulfillment() {
         try {
             decimalUnits(quantity, true);
+            boundedText(evidence, 4000);
+            boundedText(reason, 2000);
             if (!itemId || !evidence.trim() || !reason.trim()) throw new Error();
             void act(signal => p.api.fulfill(binding!, r!.id, {
                 expected_version: r!.version, item_id: itemId, quantity, evidence, reason,
             }, signal));
         } catch {
-            setError('Informe item, quantidade exata, evidência e motivo.');
+            setError('Informe item, quantidade exata, evidência e motivo dentro dos limites de caracteres.');
         }
     }
 
+    function addNote() {
+        const message = textValidationMessage(note, 4000, false);
+        if (message) { setError(message); return; }
+        void act(signal => p.api.note(binding!, r!.id, { expected_version: r!.version, text: note }, signal));
+    }
+
     function reverseEntry(entryId: string) {
-        if (!reason.trim()) {
-            setError('Informe o motivo da reversão.');
+        if (textValidationMessage(reason, 2000, false)) {
+            setError(textValidationMessage(reason, 2000, false));
             return;
         }
         void act(signal => p.api.reverse(binding!, r!.id, entryId, {
@@ -316,7 +324,7 @@ function RequestDetailSession({ requestId, onRefresh }: {
  {draft && <>
         <button onClick={() => setEditing(true)}>Editar rascunho</button>
         <button onClick={() => command('submit', r.priority === 'URGENT')}>Enviar solicitação</button>{r.priority === 'URGENT' && <p>A urgência exige motivo de envio, além da justificativa salva.</p>}</>}
- <label>Motivo da ação<textarea maxLength={2000} value={reason} onChange={e => setReason(e.target.value)}/>
+ <label>Motivo da ação<textarea value={reason} onChange={e => { e.target.setCustomValidity(textValidationMessage(e.target.value, 2000)); setReason(e.target.value); }}/>
     </label>
  {r.status === 'SUBMITTED' && p.has('triage') && <button onClick={() => command('start-triage')}>Iniciar triagem</button>}
  {r.status === 'IN_TRIAGE' && p.has('triage') && <>
@@ -343,14 +351,14 @@ function RequestDetailSession({ requestId, onRefresh }: {
         </label>
         <label>Quantidade atendida<input inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)}/>
         </label>
-        <label>Evidência do atendimento<textarea maxLength={4000} value={evidence} onChange={e => setEvidence(e.target.value)}/>
+        <label>Evidência do atendimento<textarea value={evidence} onChange={e => { e.target.setCustomValidity(textValidationMessage(e.target.value, 4000)); setEvidence(e.target.value); }}/>
         </label>
         <button onClick={recordFulfillment}>Registrar atendimento</button>
         </>}
  {p.has('comment') && r.status !== 'DRAFT' && r.status !== 'CLOSED' && <>
-        <label>Comentário<textarea maxLength={4000} value={note} onChange={e => setNote(e.target.value)}/>
+        <label>Comentário<textarea value={note} onChange={e => { e.target.setCustomValidity(textValidationMessage(e.target.value, 4000)); setNote(e.target.value); }}/>
         </label>
-        <button disabled={!note.trim()} onClick={() => void act(signal => p.api.note(binding, r.id, { expected_version: r.version, text: note }, signal))}>Adicionar comentário</button>
+        <button disabled={!note.trim()} onClick={addNote}>Adicionar comentário</button>
         </>}
  </fieldset>
     <h3>Arquivos privados</h3>

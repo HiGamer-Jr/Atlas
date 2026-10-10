@@ -15,6 +15,7 @@ from app.organization.models import OrganizationNode
 from app.organization.unit_authorization import require_authorized_node
 from app.platform.policy import require_capability
 from app.procurement.requests.models import PurchaseRequest
+from app.procurement.requests.schemas import RequestView
 from app.support.models import SupportSession
 from app.tenancy.contexts import membership_role, permissions, revalidate
 from app.tenancy.models import Membership
@@ -115,25 +116,66 @@ def authorize_request_read(
     scope: AccessScope,
     row: PurchaseRequest,
 ) -> None:
+    _authorize_read_visibility(
+        db,
+        principal,
+        scope,
+        row.tenant_id,
+        row.contract_id,
+        row.requester_user_id,
+        row.requester_membership_id,
+        row.requesting_node_id,
+        row.status,
+    )
+
+
+def authorize_response_read(
+    db: Session,
+    principal: Principal,
+    scope: AccessScope,
+    response: RequestView,
+) -> None:
+    """Authorize the original snapshot's scope and draft ownership before disclosure."""
+    _authorize_read_visibility(
+        db,
+        principal,
+        scope,
+        response.tenant_id,
+        response.contract_id,
+        response.requester.user_id,
+        response.requester.membership_id,
+        response.requesting_node.id,
+        response.status,
+    )
+
+
+def _authorize_read_visibility(
+    db,
+    principal,
+    scope,
+    tenant_id,
+    contract_id,
+    requester_user_id,
+    requester_membership_id,
+    requesting_node_id,
+    status,
+) -> None:
     member = tenant_actor(db, principal, scope)
-    if row.tenant_id != scope.tenant_id or row.contract_id != scope.contract_id:
+    if tenant_id != scope.tenant_id or contract_id != scope.contract_id:
         raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
     owner = (
-        row.requester_user_id == principal.user_id
-        and row.requester_membership_id == member.id
+        requester_user_id == principal.user_id and requester_membership_id == member.id
     )
-    if row.status == "DRAFT" and not owner:
+    if status == "DRAFT" and not owner:
         raise denied()
     if owner:
         try:
-            require_request_unit(
-                db, principal, scope, row.requesting_node_id, "read_own"
-            )
+            require_request_unit(db, principal, scope, requesting_node_id, "read_own")
             return
         except ApiError as error:
             if error.code != "CAPABILITY_DENIED":
                 raise
-    require_request_unit(db, principal, scope, row.requesting_node_id, "read_unit")
+    require_request_unit(db, principal, scope, requesting_node_id, "read_unit")
 
 
 def candidate_user(db: Session, user_id: UUID) -> None:

@@ -14,3 +14,44 @@ it('package UOM requires real content specification before saving',async()=>{con
 
 
 it('lost server response reports connectivity and permits the same draft retry',async()=>{mount(true);fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível conectar ao serviço');expect(screen.getByRole('button',{name:'Salvar rascunho'})).toBeEnabled();});
+
+
+it('form allows server-valid supplementary Unicode without a UTF16 maxlength cap',async()=>{
+ const bodies=mount();
+ const title=screen.getByLabelText('Título') as HTMLInputElement;
+ const notes=screen.getByLabelText('Observações') as HTMLTextAreaElement;
+ expect(title.maxLength).toBe(-1);
+ expect(notes.maxLength).toBe(-1);
+ fireEvent.change(title,{target:{value:'😀'.repeat(200)}});
+ fireEvent.change(notes,{target:{value:'🚀'.repeat(4000)}});
+ expect(title.checkValidity()).toBe(true);
+ expect(notes.checkValidity()).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));
+ await waitFor(()=>expect(bodies).toHaveLength(1));
+ expect(bodies[0].title).toBe('😀'.repeat(200));
+ expect(bodies[0].notes).toBe('🚀'.repeat(4000));
+});
+it.each([['Título','😀'.repeat(201)],['Observações','🚀'.repeat(4001)],['Descrição do item 1','😀'.repeat(2001)],['Especificação do item 1','🚀'.repeat(4001)]])('form rejects above codepoint bound for %s before transport',async(label,text)=>{
+ const bodies=mount();
+ const input=screen.getByLabelText(label) as HTMLInputElement;
+ fireEvent.change(input,{target:{value:text}});
+ expect(input.checkValidity()).toBe(false);
+ // Even direct submission bypassing browser constraints must remain bounded.
+ fireEvent.submit(screen.getByRole('button',{name:'Salvar rascunho'}).closest('form')!);
+ expect(await screen.findByRole('alert')).toHaveTextContent(/caracteres/);
+ expect(bodies).toHaveLength(0);
+});
+
+
+it('removing an invalid unsaved item clears browser validity on a reused input',async()=>{
+ const bodies=mount();
+ fireEvent.click(screen.getByRole('button',{name:'Adicionar item'}));
+ fireEvent.click(screen.getByRole('button',{name:'Adicionar item'}));
+ fireEvent.change(screen.getByLabelText('Descrição do item 2'),{target:{value:'x'.repeat(2001)}});
+ fireEvent.change(screen.getByLabelText('Descrição do item 3'),{target:{value:'Remaining actual need'}});
+ fireEvent.change(screen.getByLabelText('Quantidade do item 3'),{target:{value:'1'}});
+ fireEvent.click(screen.getByRole('button',{name:'Remover item 2'}));
+ expect((screen.getByLabelText('Descrição do item 2') as HTMLTextAreaElement).checkValidity()).toBe(true);
+ fireEvent.click(screen.getByRole('button',{name:'Salvar rascunho'}));
+ await waitFor(()=>expect(bodies).toHaveLength(1));
+});

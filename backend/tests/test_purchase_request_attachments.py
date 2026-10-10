@@ -750,3 +750,81 @@ def test_pdf_trailer_lexical_tokens_are_complete(dictionary):
 def test_pdf_trailer_lexical_boundaries_preserve_valid_tokens(dictionary):
     result = api().validate_attachment(pdf_with_trailer(dictionary), "spec.pdf")
     assert result.media_type == "application/pdf"
+
+
+@pytest.mark.parametrize("revoke_original", [False, True])
+def test_attachment_receipt_reauthorizes_original_unit_after_draft_move(
+    db, command_case, revoke_original
+):
+    from app.audit.models import AuditEvent
+    from app.organization.models import MembershipUnitScope
+    from tests.fixtures.purchase_request_policy import request_grants
+
+    ids, actor, scope, *_ = command_case
+    request_grants(db, ids, ids["member_a"], [ids["second_node"]])
+    before = create(db, command_case)
+    key = uuid4()
+    original = upload(db, command_case, before, key=key)
+    original_wire = original.model_dump(mode="json")
+    moved = commands.update_draft(
+        db,
+        request(),
+        actor,
+        scope,
+        original.id,
+        command_schemas.DraftPatch(
+            expected_version=original.version,
+            requesting_node_id=ids["second_node"],
+            title="Moved purchasing need",
+        ),
+    )
+    assert moved.requesting_node.id == ids["second_node"]
+    if revoke_original:
+        grant = db.scalar(
+            select(MembershipUnitScope).where(
+                MembershipUnitScope.membership_id == ids["member_a"],
+                MembershipUnitScope.node_id == ids["node"],
+            )
+        )
+        grant.active = False
+    db.commit()
+
+    def effects():
+        return {
+            "counts": tuple(
+                db.scalar(select(func.count()).select_from(model))
+                for model in (
+                    RequestAttachment,
+                    PurchaseRequestEvent,
+                    AuditEvent,
+                    RequestCommandReceipt,
+                )
+            ),
+            "version": db.get(
+                PurchaseRequest, original.id, populate_existing=True
+            ).version,
+            "receipts": [
+                (r.id, r.digest, r.result)
+                for r in db.scalars(
+                    select(RequestCommandReceipt).order_by(RequestCommandReceipt.id)
+                )
+            ],
+        }
+
+    unchanged = effects()
+    # Current B authorization must still succeed: only the stored A response is denied.
+    assert (
+        commands.load_command_row(db, actor, scope, original.id).requesting_node_id
+        == ids["second_node"]
+    )
+    if revoke_original:
+        fail(lambda: upload(db, command_case, before, key=key), "UNIT_SCOPE_DENIED")
+    else:
+        assert (
+            upload(db, command_case, before, key=key).model_dump(mode="json")
+            == original_wire
+        )
+        assert original_wire["requesting_node"]["id"] == str(ids["node"])
+        assert original_wire["title"] != moved.title
+    db.commit()
+    assert effects() == unchanged

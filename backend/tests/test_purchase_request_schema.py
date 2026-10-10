@@ -571,3 +571,38 @@ def test_submit_canonical_command_union_keeps_reason_bounds_and_strict_version()
     ]:
         with pytest.raises(ValidationError):
             adapter.validate_python(values)
+
+
+def test_frontend_unicode_wire_matches_python_command_and_response_limits():
+    import json
+    from pathlib import Path
+
+    from pydantic import ValidationError
+
+    from app.procurement.requests.command_schemas import NoteCommand, RequestCreate
+    from app.procurement.requests.schemas import RequestHistoryPage, RequestView
+
+    wire = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "frontend/src/procurement/requests/unicode-wire.json"
+        ).read_text(encoding="utf-8")
+    )
+    view = RequestView.model_validate(wire["request"])
+    history = RequestHistoryPage.model_validate(wire["history"])
+    assert view.title == "😀" * 200
+    assert history.items[0].payload.text == "🚀" * 4000
+    assert (
+        RequestCreate(
+            requesting_node_id=view.requesting_node.id, title=view.title
+        ).title
+        == view.title
+    )
+    assert (
+        NoteCommand(expected_version=1, text=history.items[0].payload.text).text
+        == "🚀" * 4000
+    )
+    with pytest.raises(ValidationError):
+        RequestCreate(requesting_node_id=view.requesting_node.id, title="😀" * 201)
+    with pytest.raises(ValidationError):
+        NoteCommand(expected_version=1, text="🚀" * 4001)

@@ -1,7 +1,22 @@
 import { statuses, uoms, type RequestView, type RequestPage, type Page, type HistoryEvent, type Buyer } from './types';
 const invalid = (): never => { throw new Error('PURCHASE_REQUEST_INVALID'); };
 const obj = (v: unknown): Record<string, unknown> => !v || typeof v !== 'object' || Array.isArray(v) ? invalid() : v as Record<string, unknown>;
-const str = (v: unknown, max = 4000, empty = false): string => typeof v !== 'string' || v.length > max || (!empty && !v.trim()) ? invalid() : v;
+// Python/Pydantic count Unicode code points; UTF-16 length rejects valid text.
+export function boundedText(v: unknown, max = 4000, empty = false): string {
+    if (typeof v !== 'string' || (!empty && !v.trim())) return invalid();
+    let count = 0;
+    for (const character of v) {
+        const point = character.codePointAt(0)!;
+        if (++count > max || (point >= 0xd800 && point <= 0xdfff)) return invalid();
+    }
+    return v;
+}
+const str = boundedText;
+
+export function textValidationMessage(value: string, max: number, empty = true): string {
+    try { boundedText(value, max, empty); return ''; }
+    catch { return `Informe texto válido com até ${max} caracteres Unicode.`; }
+}
 const integer = (v: unknown, min = 0, max = Number.MAX_SAFE_INTEGER) => typeof v !== 'number' || !Number.isSafeInteger(v) || v < min || v > max ? invalid() : v;
 const choice = (v: unknown, values: readonly string[]) => typeof v !== 'string' || !values.includes(v) ? invalid() : v;
 const list = (v: unknown, max = 100): unknown[] => !Array.isArray(v) || v.length > max ? invalid() : v;
