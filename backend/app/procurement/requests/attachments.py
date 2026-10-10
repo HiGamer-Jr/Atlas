@@ -63,6 +63,79 @@ def sanitize_filename(filename: str) -> str:
     return name
 
 
+def parse_pdf_trailer(xref: bytes) -> tuple[int, int]:
+    # Find the first marker once; reject oversized tails before tokenizing them.
+    marker = xref.find(b"trailer")
+    if marker < 0 or len(xref) - marker - len(b"trailer") > 8192:
+        raise invalid_file()
+    trailer = xref[marker + len(b"trailer") :]
+    lexer = re.compile(
+        rb"\s+|%[^\r\n]*|<<|>>|\[|\]|<[0-9a-fA-F\s]*>|/[A-Za-z]+|[0-9]{1,10}|R"
+    )
+    tokens = []
+    position = 0
+    while position < len(trailer):
+        match = lexer.match(trailer, position)
+        if match is None:
+            raise invalid_file()
+        token = match[0]
+        position = match.end()
+        if token.isspace() or token.startswith(b"%"):
+            continue
+        if len(tokens) >= 256:
+            raise invalid_file()
+        tokens.append(token)
+    if len(tokens) < 2 or tokens[0] != b"<<" or tokens[-1] != b">>":
+        raise invalid_file()
+    # Support one flat classic trailer: references, size and optional hex IDs.
+    # Nested dictionaries, duplicate/unknown keys and incremental trailers fail closed.
+    values = tokens[1:-1]
+    fields = {}
+    index = 0
+    while index < len(values):
+        key = values[index]
+        index += 1
+        if key not in {b"/Root", b"/Size", b"/Info", b"/ID"} or key in fields:
+            raise invalid_file()
+        if key in {b"/Root", b"/Info"}:
+            if index + 3 > len(values):
+                raise invalid_file()
+            number, generation, reference = values[index : index + 3]
+            if not number.isdigit() or not generation.isdigit() or reference != b"R":
+                raise invalid_file()
+            if int(number) < 1 or int(generation) > 65535:
+                raise invalid_file()
+            fields[key] = (int(number), int(generation))
+            index += 3
+        elif key == b"/Size":
+            if (
+                index >= len(values)
+                or not values[index].isdigit()
+                or int(values[index]) < 1
+            ):
+                raise invalid_file()
+            fields[key] = int(values[index])
+            index += 1
+        else:
+            if (
+                index + 4 > len(values)
+                or values[index] != b"["
+                or values[index + 3] != b"]"
+            ):
+                raise invalid_file()
+            for identifier in values[index + 1 : index + 3]:
+                if not identifier.startswith(b"<") or not identifier.endswith(b">"):
+                    raise invalid_file()
+                hexadecimal = re.sub(rb"\s+", b"", identifier[1:-1])
+                if not hexadecimal or len(hexadecimal) % 2:
+                    raise invalid_file()
+            fields[key] = True
+            index += 4
+    if b"/Root" not in fields or b"/Size" not in fields:
+        raise invalid_file()
+    return fields[b"/Root"]
+
+
 def validate_pdf(content):
     # Accept classic cross-reference PDFs only. Unsupported structures fail closed.
     # Decode escaped names before checking active/encrypted/embedded content markers.
@@ -81,8 +154,7 @@ def validate_pdf(content):
     if offset >= len(content) or not content[offset:].startswith(b"xref"):
         raise invalid_file()
     xref = content[offset : end.start()]
-    if not re.search(rb"trailer\s*<<.*?/Root\s+\d+\s+\d+\s+R.*?>>", xref, re.DOTALL):
-        raise invalid_file()
+    root = parse_pdf_trailer(xref)
     if not re.search(rb"/Type\s*/Catalog\b", content) or not re.search(
         rb"/Type\s*/Pages\b", content
     ):
@@ -97,15 +169,23 @@ def validate_pdf(content):
     if not entries or len({start for start, _ in entries}) != len(entries):
         raise invalid_file()
     entries.sort()
+    root_found = False
     for index, (start, generation) in enumerate(entries):
         boundary = entries[index + 1][0] if index + 1 < len(entries) else offset
         if start >= boundary or boundary > offset:
             raise invalid_file()
-        header = re.compile(rb"\d+\s+" + str(generation).encode() + rb"\s+obj\b")
-        if not header.match(content, start, boundary):
+        header = re.compile(rb"(\d{1,10})\s+" + str(generation).encode() + rb"\s+obj\b")
+        header_match = header.match(content, start, boundary)
+        if not header_match:
             raise invalid_file()
+        if (int(header_match[1]), generation) == root:
+            root_found = bool(
+                re.compile(rb"/Type\s*/Catalog\b").search(content, start, boundary)
+            )
         if content.find(b"endobj", start, boundary) < 0:
             raise invalid_file()
+    if not root_found:
+        raise invalid_file()
 
 
 def validate_attachment(content: bytes, filename: str) -> ValidatedAttachment:

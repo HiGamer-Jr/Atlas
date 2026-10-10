@@ -637,3 +637,71 @@ def test_pdf_cross_reference_work_is_bounded():
     )
     with pytest.raises(ApiError):
         api().validate_attachment(oversized_table, "spec.pdf")
+
+
+def pdf_with_trailer(dictionary):
+    pdf = picture("PDF")
+    return (
+        pdf[: pdf.rfind(b"trailer")]
+        + b"trailer\n"
+        + dictionary
+        + b"\n"
+        + pdf[pdf.rfind(b"startxref") :]
+    )
+
+
+def test_pdf_repeated_malformed_trailer_never_scans_unbounded_suffix(monkeypatch):
+    import re
+
+    candidate = pdf_with_trailer(b"trailer <<\n" * 4000)
+    original_search = re.search
+    scanned = []
+
+    def budgeted_search(pattern, value, flags=0):
+        if flags & re.DOTALL:
+            scanned.append(len(value))
+            assert len(value) <= 8192, "PDF trailer regex received an unbounded suffix"
+        return original_search(pattern, value, flags)
+
+    monkeypatch.setattr(api().re, "search", budgeted_search)
+    with pytest.raises(ApiError) as error:
+        api().validate_attachment(candidate, "spec.pdf")
+    assert error.value.status == 422 and error.value.code == "ATTACHMENT_INVALID"
+    assert sum(scanned) <= 8192
+
+
+@pytest.mark.parametrize(
+    "dictionary",
+    [
+        b"<< /Root 4 0 R /Size 7 " + b" " * 8192 + b">>",
+        b"<< /Root 4 0 R /Root 4 0 R /Size 7 >>",
+        b"<< /Nested << /Root 4 0 R >> /Size 7 >>",
+        b"<< /Root 4 0 R /Size 7 >> trailer << /Root 4 0 R /Size 7 >>",
+        b"<< /Root 0 0 R /Size 7 >>",
+        b"<< /Root 99 0 R /Size 7 >>",
+        b"<< /Root 4 0 /Size 7 >>",
+        b"<< /Info 6 0 R /Size 7 >>",
+    ],
+    ids=[
+        "oversized",
+        "duplicate-root",
+        "nested",
+        "duplicate-trailer",
+        "zero-root",
+        "missing-object-root",
+        "malformed-reference",
+        "missing-root",
+    ],
+)
+def test_pdf_trailer_is_one_bounded_flat_dictionary_with_real_root(dictionary):
+    with pytest.raises(ApiError) as error:
+        api().validate_attachment(pdf_with_trailer(dictionary), "spec.pdf")
+    assert error.value.status == 422 and error.value.code == "ATTACHMENT_INVALID"
+
+
+def test_pdf_flat_trailer_optional_info_id_comments_preserved():
+    candidate = pdf_with_trailer(
+        b"<< /Size 7 /Info 6 0 R /ID [<00aa> <bb11>] % catalog reference\n /Root 4 0 R >>"
+    )
+    result = api().validate_attachment(candidate, "spec.pdf")
+    assert result.media_type == "application/pdf" and result.size == len(candidate)
