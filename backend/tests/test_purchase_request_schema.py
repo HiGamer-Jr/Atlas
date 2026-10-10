@@ -544,3 +544,30 @@ def test_item_order_migration_rejects_unsafe_runtime_before_ddl(
     finally:
         migration_config.attributes.pop("connection", None)
         migration_config.attributes["runtime_role"] = good_role
+
+
+def test_submit_canonical_command_union_keeps_reason_bounds_and_strict_version():
+    from pydantic import TypeAdapter
+
+    from app.procurement.requests.command_schemas import ReasonCommand, VersionCommand
+
+    adapter = TypeAdapter(ReasonCommand | VersionCommand)
+    assert isinstance(adapter.validate_python({"expected_version": 1}), VersionCommand)
+    reason = adapter.validate_python(
+        {"expected_version": 1, "reason": "Urgent safety risk"}
+    )
+    assert isinstance(reason, ReasonCommand) and reason.reason == "Urgent safety risk"
+    for values in [
+        {"expected_version": True},
+        {"expected_version": "1"},
+        {"expected_version": 1, "reason": "   "},
+        {"expected_version": 1, "reason": "a" * 2001},
+        {"expected_version": 1, "reason": None},
+        {
+            "expected_version": 1,
+            "reason": "Urgent safety risk",
+            "approval_mode": "NOT_REQUIRED",
+        },
+    ]:
+        with pytest.raises(ValidationError):
+            adapter.validate_python(values)

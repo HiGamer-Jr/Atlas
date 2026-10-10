@@ -358,10 +358,8 @@ def transition_request(
                 raise ApiError(
                     422, "VALIDATION_ERROR", "Preencha a necessidade e seus itens."
                 )
-            if row.priority == "URGENT" and not row.justification.strip():
-                raise ApiError(
-                    422, "VALIDATION_ERROR", "Informe a justificativa de urgência."
-                )
+            if row.priority == "URGENT" and not getattr(payload, "reason", "").strip():
+                raise ApiError(422, "VALIDATION_ERROR", "Informe o motivo de urgência.")
         if (
             command in {"reject", "cancel"}
             and not getattr(payload, "reason", "").strip()

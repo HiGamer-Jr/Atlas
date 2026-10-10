@@ -939,3 +939,218 @@ def test_duplicate_item_positions_remain_blocked_at_commit(db, command_case):
             .order_by(PurchaseRequestItem.position)
         )
     ) == [1, 2]
+
+
+@pytest.mark.parametrize("missing_reason", [None, "   "])
+def test_urgent_submit_requires_distinct_reason(db, command_case, missing_reason):
+    commands, schemas = api()
+    ids, actor, scope, *_ = command_case
+    values = payload(ids["node"]) | {"priority": "URGENT"}
+    row = commands.create_request(
+        db, request(), actor, scope, schemas.RequestCreate(**values), uuid4()
+    )
+    receipts = db.scalar(select(func.count()).select_from(RequestCommandReceipt))
+    evidence = db.scalar(select(func.count()).select_from(PurchaseRequestEvent))
+    body = schemas.VersionCommand(expected_version=1)
+    if missing_reason is not None:
+        # Canonical DTOs are mutable for internal callers; service validation stays defensive.
+        body = schemas.ReasonCommand(
+            expected_version=1, reason="Initially validated reason"
+        )
+        body.reason = missing_reason
+    with db.begin_nested():
+        fail(
+            lambda: commands.transition_request(
+                db, request(), actor, scope, row.id, "submit", body, uuid4()
+            ),
+            "VALIDATION_ERROR",
+        )
+    stored = db.get(PurchaseRequest, row.id)
+    assert stored.status == "DRAFT" and stored.version == 1
+    assert stored.justification == values["justification"]
+    assert (
+        db.scalar(select(func.count()).select_from(RequestCommandReceipt)) == receipts
+    )
+    assert db.scalar(select(func.count()).select_from(PurchaseRequestEvent)) == evidence
+
+
+@pytest.mark.parametrize("revocation", ["create", "read"])
+def test_urgent_submit_reason_evidence_retry_and_authority(
+    db, command_case, revocation
+):
+    from app.tenancy.models import TenantRolePermission
+
+    commands, schemas = api()
+    ids, actor, scope, *_ = command_case
+    values = payload(ids["node"]) | {"priority": "URGENT"}
+    row = commands.create_request(
+        db, request(), actor, scope, schemas.RequestCreate(**values), uuid4()
+    )
+    key = uuid4()
+    body = schemas.ReasonCommand(
+        expected_version=1, reason="Urgent safety risk requires immediate action"
+    )
+    result = commands.transition_request(
+        db, request(), actor, scope, row.id, "submit", body, key
+    )
+    assert result.status == "SUBMITTED" and result.version == 2
+    stored = db.get(PurchaseRequest, row.id)
+    assert (
+        stored.justification == values["justification"]
+        and stored.justification != body.reason
+    )
+    evidence = db.scalar(
+        select(PurchaseRequestEvent).where(
+            PurchaseRequestEvent.request_id == row.id,
+            PurchaseRequestEvent.aggregate_version == 2,
+        )
+    )
+    assert evidence.reason == body.reason
+    audit = db.get(AuditEvent, evidence.audit_event_id)
+    assert audit.reason is None
+    assert body.reason not in str(audit.before_state) + str(audit.after_state)
+    receipt_count = db.scalar(select(func.count()).select_from(RequestCommandReceipt))
+    event_count = db.scalar(select(func.count()).select_from(PurchaseRequestEvent))
+    replay = commands.transition_request(
+        db, request(), actor, scope, row.id, "submit", body, key
+    )
+    assert replay.model_dump(mode="json") == result.model_dump(mode="json")
+    fail(
+        lambda: commands.transition_request(
+            db,
+            request(),
+            actor,
+            scope,
+            row.id,
+            "submit",
+            schemas.ReasonCommand(
+                expected_version=1, reason="A changed urgent risk explanation"
+            ),
+            key,
+        ),
+        "IDEMPOTENCY_CONFLICT",
+    )
+    assert (
+        db.scalar(select(func.count()).select_from(RequestCommandReceipt))
+        == receipt_count
+    )
+    assert (
+        db.scalar(select(func.count()).select_from(PurchaseRequestEvent)) == event_count
+    )
+    codes = ["create"] if revocation == "create" else ["read_own", "read_unit"]
+    for permission in db.scalars(
+        select(TenantRolePermission).where(
+            TenantRolePermission.role_id == ids["role_basic"],
+            TenantRolePermission.capability.in_(
+                ["procurement.requests." + code for code in codes]
+            ),
+        )
+    ):
+        permission.active = False
+    db.flush()
+    fail(
+        lambda: commands.transition_request(
+            db, request(), actor, scope, row.id, "submit", body, key
+        ),
+        "CAPABILITY_DENIED",
+    )
+
+
+@pytest.mark.parametrize("bad_reason", [None, "   ", "a" * 2001])
+def test_http_urgent_submit_rejects_invalid_reason(
+    member, db, command_case, bad_reason
+):
+    commands, schemas = api()
+    ids, actor, scope, *_ = command_case
+    values = payload(ids["node"]) | {"priority": "URGENT"}
+    row = commands.create_request(
+        db, request(), actor, scope, schemas.RequestCreate(**values), uuid4()
+    )
+    db.commit()
+    headers = select_context(member, ids["contract_a"]) | {
+        "Idempotency-Key": str(uuid4())
+    }
+    body = {"expected_version": 1}
+    if bad_reason is not None:
+        body["reason"] = bad_reason
+    response = member.post(
+        f"/api/procurement/requests/{row.id}/submit", headers=headers, json=body
+    )
+    assert response.status_code == 422 and response.json()["code"] == "VALIDATION_ERROR"
+    stored = db.get(PurchaseRequest, row.id)
+    db.refresh(stored)
+    assert stored.status == "DRAFT" and stored.version == 1
+    assert (
+        len(
+            list(
+                db.scalars(
+                    select(PurchaseRequestEvent).where(
+                        PurchaseRequestEvent.request_id == row.id
+                    )
+                )
+            )
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize("priority", ["NORMAL", "URGENT"])
+def test_http_submit_reason_contract_and_exact_replay(
+    member, db, command_case, priority
+):
+    commands, schemas = api()
+    ids, actor, scope, *_ = command_case
+    values = payload(ids["node"]) | {"priority": priority}
+    row = commands.create_request(
+        db, request(), actor, scope, schemas.RequestCreate(**values), uuid4()
+    )
+    db.commit()
+    headers = select_context(member, ids["contract_a"]) | {
+        "Idempotency-Key": str(uuid4())
+    }
+    body = {"expected_version": 1}
+    if priority == "URGENT":
+        body["reason"] = "Urgent immediate safety requirement"
+    path = f"/api/procurement/requests/{row.id}/submit"
+    response = member.post(path, headers=headers, json=body)
+    assert response.status_code == 200 and response.json()["status"] == "SUBMITTED"
+    assert response.headers["Cache-Control"] == "no-store"
+    assert member.post(path, headers=headers, json=body).json() == response.json()
+    if priority == "URGENT":
+        changed = member.post(
+            path, headers=headers, json=body | {"reason": "Different reason"}
+        )
+        assert (
+            changed.status_code == 409
+            and changed.json()["code"] == "IDEMPOTENCY_CONFLICT"
+        )
+        evidence = db.scalar(
+            select(PurchaseRequestEvent).where(
+                PurchaseRequestEvent.request_id == row.id,
+                PurchaseRequestEvent.aggregate_version == 2,
+            )
+        )
+        assert evidence.reason == body["reason"]
+
+
+def test_urgent_submit_reason_does_not_replace_ordinary_justification(db, command_case):
+    commands, schemas = api()
+    ids, actor, scope, *_ = command_case
+    values = payload(ids["node"]) | {"priority": "URGENT", "justification": ""}
+    row = commands.create_request(
+        db, request(), actor, scope, schemas.RequestCreate(**values), uuid4()
+    )
+    fail(
+        lambda: commands.transition_request(
+            db,
+            request(),
+            actor,
+            scope,
+            row.id,
+            "submit",
+            schemas.ReasonCommand(expected_version=1, reason="Urgent safety reason"),
+            uuid4(),
+        ),
+        "VALIDATION_ERROR",
+    )
+    assert db.get(PurchaseRequest, row.id).status == "DRAFT"

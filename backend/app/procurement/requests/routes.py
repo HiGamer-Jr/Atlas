@@ -186,6 +186,22 @@ def add_note(
     )
 
 
+@router.post("/{request_id}/submit", response_model=RequestView)
+def submit_request(
+    request_id: UUID,
+    payload: ReasonCommand | VersionCommand,
+    request: Request,
+    response: Response,
+    db: Database,
+    scope: Context,
+    key: Key,
+):
+    private(response)
+    return commands.transition_request(
+        db, request, request.state.principal, scope, request_id, "submit", payload, key
+    )
+
+
 def version_transition(command):
     def endpoint(
         request_id: UUID,
@@ -237,7 +253,6 @@ def reason_transition(command):
 
 
 for action in (
-    "submit",
     "start-triage",
     "request-approval",
     "approve",
