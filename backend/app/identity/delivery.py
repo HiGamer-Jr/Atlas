@@ -18,6 +18,7 @@ from app.identity.email_transport import (
     SMTPEmailTransport,
 )
 from app.identity.models import EmailOutbox, SecurityToken, User
+from app.identity.operators import lock_operator_population
 from app.identity.tokens import eligible_token, lifecycle_lock
 
 
@@ -39,8 +40,10 @@ class DeliveryWorker:
         result = DeliverySummary()
         for _ in range(limit):
             with Session(self.engine) as db, db.begin():
+                db.info.update(clock=self.clock, settings=self.settings)
                 validate_runtime_connection(db.connection())
                 lifecycle_lock(db)
+                lock_operator_population(db)
                 now = self.clock()
                 # A crash after durable claim may have delivered. Never blindly resend.
                 db.execute(
@@ -76,8 +79,10 @@ class DeliveryWorker:
                 row_id = row.id
             # Separate from business HTTP transaction; durable claim before external I/O.
             with Session(self.engine) as db, db.begin():
+                db.info.update(clock=self.clock, settings=self.settings)
                 validate_runtime_connection(db.connection())
                 lifecycle_lock(db)
+                lock_operator_population(db)
                 now = self.clock()
                 row = db.get(EmailOutbox, row_id, with_for_update=True)
                 if row.status != "DISPATCHING":

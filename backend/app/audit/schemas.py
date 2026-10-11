@@ -245,6 +245,19 @@ class PartnerMembershipSnapshot(BaseModel):
     permissions: list[str] = Field(max_length=10)
 
 
+class PartnerInvitationSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    schema_version: Literal[1] = 1
+    target_kind: Literal["PARTNER"] = "PARTNER"
+    actor_kind: Literal["INTERNAL", "PARTNER"]
+    partner_org_id: UUID
+    partner_membership_id: UUID
+    recipient_user_id: UUID
+    issuer_user_id: UUID
+    invitation_pending: bool
+    version: int = Field(ge=1)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -343,7 +356,8 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        PartnerOrganizationSnapshot
+        PartnerInvitationSnapshot
+        | PartnerOrganizationSnapshot
         | PartnerMembershipSnapshot
         | RequestAuditSnapshot
         | RequestPolicySnapshot
@@ -364,7 +378,8 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        PartnerOrganizationSnapshot
+        PartnerInvitationSnapshot
+        | PartnerOrganizationSnapshot
         | PartnerMembershipSnapshot
         | RequestAuditSnapshot
         | RequestPolicySnapshot
@@ -472,6 +487,33 @@ class AuditInput(BaseModel):
             or self.outcome != "FAILURE"
         ):
             raise ValueError("Processing failure requires typed scoped state")
+        if isinstance(self.after, PartnerInvitationSnapshot):
+            issued = self.action in {"access.invite.requested", "access.invite.resent"}
+            accepted = self.action == "access.invite.consumed"
+            if (
+                not (issued or accepted)
+                or self.entity_type != "partner_membership"
+                or self.entity_id != self.after.partner_membership_id
+                or self.tenant_id is not None
+                or self.support_session_id is not None
+                or self.before is not None
+                or self.actor_id
+                != (
+                    self.after.issuer_user_id
+                    if issued
+                    else self.after.recipient_user_id
+                )
+                or (
+                    issued
+                    and (
+                        self.actor_role != "PLATFORM_ADMIN"
+                        or self.after.actor_kind != "INTERNAL"
+                    )
+                )
+            ):
+                raise ValueError(
+                    "Partner invitation requires typed target and actor binding"
+                )
         if self.action.startswith("partner."):
             organization = self.action == "partner.organization.created"
             snapshot_type = (

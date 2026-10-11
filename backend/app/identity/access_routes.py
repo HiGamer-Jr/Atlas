@@ -22,6 +22,7 @@ from app.identity.tokens import (
     access_limit,
     consume,
     event,
+    invitation_target,
     lifecycle_lock,
     load_token,
     queue_access_email,
@@ -40,6 +41,9 @@ NEUTRAL = {
 def protect(db, request):
     require_origin(request)
     lifecycle_lock(db)
+    from app.identity.operators import lock_operator_population
+
+    lock_operator_population(db)
     csrf_scope(db, request)
 
 
@@ -95,7 +99,7 @@ def validate_token(payload: ValidateTokenInput, request: Request, db: Database):
             ApiError(429, "AUTH_RATE_LIMITED", "Aguarde antes de tentar novamente."),
         )
     try:
-        _, user = load_token(
+        token, user = load_token(
             db,
             payload.token.get_secret_value(),
             payload.purpose,
@@ -105,9 +109,10 @@ def validate_token(payload: ValidateTokenInput, request: Request, db: Database):
         record_access(db, request, "access.token.rejected", "DENIED", reason=exc.code)
         return error_response(request, exc)
     return {
+        "target_kind": invitation_target(token),
         "requires_authentication": bool(
             payload.purpose == "INVITE" and user.password_hash
-        )
+        ),
     }
 
 
@@ -144,6 +149,7 @@ def reset_password(payload: ResetInput, request: Request, db: Database):
     return Response(status_code=204)
 
 
+@router.post("/auth/invite/accept", status_code=204)
 @router.post("/auth/accept-invite", status_code=204)
 def accept_invite(payload: AcceptInput, request: Request, db: Database):
     protect(db, request)
@@ -165,6 +171,28 @@ def accept_invite(payload: AcceptInput, request: Request, db: Database):
             now,
             candidate.user_id if candidate else None,
         )
+        target_kind = invitation_target(token)
+        if payload.target_kind is not None and payload.target_kind != target_kind:
+            raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
+        if target_kind == "PARTNER":
+            if payload.target_kind != "PARTNER":
+                raise ApiError(
+                    422, "INVITE_TARGET_REQUIRED", "Confirme o tipo do convite."
+                )
+            from app.partners.invitations import accept_partner_invitation
+
+            accept_partner_invitation(
+                db,
+                payload.token.get_secret_value(),
+                candidate.user_id if candidate else None,
+                payload.new_password.get_secret_value()
+                if payload.new_password
+                else None,
+            )
+            return Response(
+                status_code=204, headers={"X-HiAtlas-Invite-Target": "PARTNER"}
+            )
+        now = request.app.state.clock()
         if user.password_hash:
             if not candidate or candidate.user_id != user.id:
                 raise ApiError(
@@ -213,7 +241,7 @@ def accept_invite(payload: AcceptInput, request: Request, db: Database):
     event(
         db, user.id, "access.invite.consumed", request.state.request_id, member=member
     )
-    return Response(status_code=204)
+    return Response(status_code=204, headers={"X-HiAtlas-Invite-Target": target_kind})
 
 
 @router.post("/platform/operators/invite", status_code=202)

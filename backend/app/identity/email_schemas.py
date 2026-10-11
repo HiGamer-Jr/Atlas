@@ -29,6 +29,7 @@ class ResetInput(TokenInput):
 
 
 class AcceptInput(TokenInput):
+    target_kind: Literal["INTERNAL", "TENANT", "PARTNER"] | None = None
     new_password: SecretStr | None = Field(default=None, max_length=1024)
 
 

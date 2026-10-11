@@ -106,6 +106,7 @@ def queue_access_email(
     member=None,
     issuer_role=None,
     actor_id=None,
+    partner_member=None,
 ):
     """Caller owns lifecycle/user locks and transaction. Returns only outbox ID."""
     from app.identity.mailboxes import single_mailbox
@@ -122,6 +123,8 @@ def queue_access_email(
             )
         if issuer_role == "PLATFORM_ADMIN":
             member.invite_requires_admin = False
+    if partner_member is not None and (purpose != "INVITE" or member is not None):
+        raise ValueError("Invalid invitation target")
     previous = list(
         db.scalars(
             select(SecurityToken)
@@ -131,6 +134,9 @@ def queue_access_email(
                 SecurityToken.consumed_at.is_(None),
                 SecurityToken.invalidated_at.is_(None),
                 SecurityToken.expires_at > now,
+                SecurityToken.partner_membership_id == partner_member.id
+                if partner_member is not None
+                else SecurityToken.partner_membership_id.is_(None),
             )
             .with_for_update()
         )
@@ -155,6 +161,8 @@ def queue_access_email(
         recipient_user_id=user.id,
         recipient_email=user.email_normalized,
         membership_id=member.id if member else None,
+        partner_membership_id=partner_member.id if partner_member else None,
+        issuer_user_id=actor_id,
         issuer_role=issuer_role,
         created_at=now,
         expires_at=now
@@ -184,6 +192,18 @@ def queue_access_email(
     db.add(outbox)
     db.flush()
     name = "invite" if purpose == "INVITE" else "reset"
+    if partner_member is not None:
+        partner_invitation_event(
+            db,
+            token,
+            partner_member,
+            f"access.invite.{'resent' if previous else 'requested'}",
+            request_id,
+            actor_id,
+            issuer_role,
+            "INTERNAL",
+        )
+        return outbox.id
     event(
         db,
         user.id,
@@ -194,6 +214,33 @@ def queue_access_email(
         actor_id,
     )
     return outbox.id
+
+
+def partner_invitation_event(
+    db, token, member, action, request_id, actor_id, actor_role, actor_kind
+):
+    from app.audit.schemas import PartnerInvitationSnapshot
+
+    append_event(
+        db,
+        AuditInput(
+            actor_id=actor_id,
+            actor_role=actor_role,
+            action=action,
+            entity_type="partner_membership",
+            entity_id=member.id,
+            request_id=request_id,
+            after=PartnerInvitationSnapshot(
+                actor_kind=actor_kind,
+                partner_org_id=member.organization_id,
+                partner_membership_id=member.id,
+                recipient_user_id=token.recipient_user_id,
+                issuer_user_id=token.issuer_user_id,
+                invitation_pending=member.invitation_pending,
+                version=member.version,
+            ),
+        ),
+    )
 
 
 def eligible_token(db, token, user, purpose, now):
@@ -213,6 +260,23 @@ def eligible_token(db, token, user, purpose, now):
         raise ApiError(400, "TOKEN_EXPIRED", "Este link expirou. Solicite um novo.")
     if purpose == "PASSWORD_RESET" and not user.password_hash:
         raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
+    if token.partner_membership_id:
+        from app.partners.invitations import eligible_partner_member
+
+        eligible_partner_member(db, token, user)
+    elif purpose == "INVITE" and token.membership_id is None:
+        # NULL scope is only the established curated INTERNAL onboarding flow.
+        from app.identity.models import PlatformRoleAssignment
+
+        assignment = db.get(PlatformRoleAssignment, user.id, populate_existing=True)
+        if (
+            token.issuer_role != "PLATFORM_ADMIN"
+            or assignment is None
+            or assignment.active
+            or assignment.role not in {"PLATFORM_ADMIN", "PLATFORM_SUPPORT"}
+            or user.password_hash is not None
+        ):
+            raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
     if token.membership_id:
         from app.tenancy.contexts import contract_rows
 
@@ -269,7 +333,21 @@ def eligible_token(db, token, user, purpose, now):
                 if purpose == "INVITE":
                     cancel_member_invites(db, member, now, requires_admin=True)
                 raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
+    from app.tenancy.contexts import now as fresh_clock
+
+    if token.expires_at <= (fresh_clock(db) if "clock" in db.info else now):
+        raise ApiError(400, "TOKEN_EXPIRED", "Este link expirou. Solicite um novo.")
     return token
+
+
+def invitation_target(token):
+    if token.purpose == "PASSWORD_RESET":
+        return "USER"
+    if token.partner_membership_id is not None:
+        return "PARTNER"
+    if token.membership_id is not None:
+        return "TENANT"
+    return "INTERNAL"
 
 
 def load_token(db, raw, purpose, now, actor_id=None):
@@ -278,7 +356,16 @@ def load_token(db, raw, purpose, now, actor_id=None):
     )
     if token is None:
         raise ApiError(400, "TOKEN_INVALID", "Link invalido ou ja utilizado.")
-    lock_users(db, [token.recipient_user_id] + ([actor_id] if actor_id else []))
+    lock_users(
+        db,
+        [token.recipient_user_id]
+        + ([actor_id] if actor_id else [])
+        + (
+            [token.issuer_user_id]
+            if token.partner_membership_id and token.issuer_user_id
+            else []
+        ),
+    )
     user = db.get(User, token.recipient_user_id, populate_existing=True)
     token = db.scalar(
         select(SecurityToken)
@@ -319,6 +406,7 @@ def revoke_sessions(db, user_id, now):
     if request is not None:
         revoke_owned(db, request, user_id=user_id)
         from app.grants.services import revoke_owned as revoke_grants
+
         revoke_grants(db, request, user_id=user_id)
     db.execute(
         update(AuthSession)

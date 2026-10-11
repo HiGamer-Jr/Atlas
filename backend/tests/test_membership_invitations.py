@@ -37,7 +37,7 @@ def test_new_invitation_accept_login_and_replay(
     csrf(client)
     assert client.post(
         "/api/auth/token/validate", json={"token": raw, "purpose": "INVITE"}
-    ).json() == {"requires_authentication": False}
+    ).json() == {"target_kind": "TENANT", "requires_authentication": False}
     payload = {"token": raw, "new_password": NEW_PASSWORD}
     assert client.post("/api/auth/accept-invite", json=payload).status_code == 204
     assert client.post("/api/auth/accept-invite", json=payload).status_code == 400

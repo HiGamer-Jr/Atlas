@@ -94,6 +94,13 @@ class SecurityToken(Base):
             "purpose IN ('INVITE','PASSWORD_RESET')", name="ck_security_purpose"
         ),
         CheckConstraint("expires_at > created_at", name="ck_security_lifetime"),
+        CheckConstraint(
+            "NOT (membership_id IS NOT NULL AND partner_membership_id IS NOT NULL) "
+            "AND (purpose = 'INVITE' OR partner_membership_id IS NULL) "
+            "AND (partner_membership_id IS NULL OR "
+            "(issuer_role IS NOT NULL AND issuer_role = 'PLATFORM_ADMIN' AND issuer_user_id IS NOT NULL))",
+            name="ck_security_invitation_target",
+        ),
     )
     id: Mapped[UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")
@@ -106,6 +113,12 @@ class SecurityToken(Base):
     recipient_email: Mapped[str] = mapped_column(String(320))
     membership_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("memberships.id", ondelete="RESTRICT")
+    )
+    partner_membership_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("partner_memberships.id", ondelete="RESTRICT")
+    )
+    issuer_user_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT")
     )
     issuer_role: Mapped[str | None] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
