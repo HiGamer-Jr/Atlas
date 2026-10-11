@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../App';
 let validation = 200, code = 'TOKEN_EXPIRED', existing = false, unavailable = false, rejectPassword = false;
@@ -53,7 +53,7 @@ it('allows long passwords without silent truncation and displays server policy',
  expect(screen.getByLabelText('Nova senha')).not.toHaveAttribute('maxlength');fireEvent.click(screen.getByRole('button',{name:'Redefinir senha'}));await screen.findByText('Senha redefinida.');expect(calls.find(c=>c.path==='/auth/reset-password')?.body.new_password).toBe(long);
 });
 it('completion moves keyboard focus to status and never stores secrets',async () => {
- const write = vi.spyOn(Storage.prototype,'setItem');open('/password/reset#token=memory-only-test');await password();fireEvent.click(screen.getByRole('button',{name:'Redefinir senha'}));const status=await screen.findByText('Senha redefinida.');expect(status).toHaveFocus();expect(write.mock.calls.every(([key])=>key==='hiatlas-theme')).toBe(true);write.mockRestore();
+ const write = vi.spyOn(Storage.prototype,'setItem');open('/password/reset#token=memory-only-test');await password();fireEvent.click(screen.getByRole('button',{name:'Redefinir senha'}));const status=await screen.findByText('Senha redefinida.');await waitFor(()=>expect(status).toHaveFocus());expect(write.mock.calls.every(([key])=>key==='hiatlas-theme')).toBe(true);write.mockRestore();
 });
 it.each(['/password/reset','/invite/accept'])('ends unrelated browser session after %s',async path=>{open(path+'#token=browser-session');await password();fireEvent.click(screen.getByRole('button',{name:path.includes('invite')?'Aceitar convite':'Redefinir senha'}));await screen.findByText(path.includes('invite')?'Convite aceito.':'Senha redefinida.');expect(calls.some(c=>c.path==='/auth/logout')).toBe(true);});
 it.each(['/auth/token/validate','/auth/password-policy'])('retries transient %s failure with memory token',async endpoint=>{const original=fetch;let failed=false;vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>{if(url.endsWith(endpoint)&&!failed){failed=true;return Promise.resolve(new Response('{}',{status:503}));}return original(url,init);}));open('/password/reset#token=retry-memory');await screen.findByRole('alert');fireEvent.click(screen.getByRole('button',{name:'Tentar novamente'}));await password();fireEvent.click(screen.getByRole('button',{name:'Redefinir senha'}));await screen.findByText('Senha redefinida.');expect(calls.find(c=>c.path==='/auth/reset-password')?.body.token).toBe('retry-memory');});
