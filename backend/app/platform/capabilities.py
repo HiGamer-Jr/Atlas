@@ -93,6 +93,8 @@ CATALOG = MappingProxyType(
                     "comment",
                 )
             ],
+            Capability("partners.organizations.manage", "partners", sensitive=True),
+            Capability("partners.memberships.manage", "partners", sensitive=True),
             Capability("contracts.read", "platform"),
             Capability("tenants.create", "platform", True),
             Capability("contracts.create", "platform", True),
@@ -175,6 +177,8 @@ INTERNAL_GRANTS = MappingProxyType(
         | frozenset(
             {
                 "organization.manage",
+                "partners.organizations.manage",
+                "partners.memberships.manage",
                 "modules.read",
                 "modules.manage",
                 "grants.request",

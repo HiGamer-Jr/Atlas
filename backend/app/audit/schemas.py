@@ -218,6 +218,33 @@ class RequestPolicySnapshot(BaseModel):
     version: int = Field(ge=0)
 
 
+class PartnerOrganizationSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    schema_version: Literal[1] = 1
+    actor_kind: Literal["INTERNAL"] = "INTERNAL"
+    partner_org_id: UUID
+    name: str = Field(min_length=1, max_length=200)
+    category: Literal[
+        "TRADE", "CUSTOMS_BROKER", "LOGISTICS_OPERATOR", "FREIGHT_FORWARDER", "OTHER"
+    ]
+    active: bool
+    version: int = Field(ge=1)
+
+
+class PartnerMembershipSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
+    schema_version: Literal[1] = 1
+    actor_kind: Literal["INTERNAL"] = "INTERNAL"
+    partner_org_id: UUID
+    partner_membership_id: UUID
+    user_id: UUID
+    active: bool
+    blocked: bool
+    invitation_pending: bool
+    version: int = Field(ge=1)
+    permissions: list[str] = Field(max_length=10)
+
+
 class AuditInput(BaseModel):
     """Internal service input, never a request-body schema."""
 
@@ -233,6 +260,9 @@ class AuditInput(BaseModel):
     tenant_id: UUID | None = None
     contract_id: UUID | None = None
     action: Literal[
+        "partner.organization.created",
+        "partner.membership.created",
+        "partner.membership.replaced",
         "procurement.request.created",
         "procurement.request.draft_updated",
         "procurement.request.submitted",
@@ -294,6 +324,8 @@ class AuditInput(BaseModel):
     ]
     outcome: Literal["SUCCESS", "DENIED", "FAILURE"] = "SUCCESS"
     entity_type: Literal[
+        "partner_organization",
+        "partner_membership",
         "purchase_request",
         "contract_request_policy",
         "datahub_import",
@@ -311,7 +343,9 @@ class AuditInput(BaseModel):
     ]
     entity_id: UUID
     before: (
-        RequestAuditSnapshot
+        PartnerOrganizationSnapshot
+        | PartnerMembershipSnapshot
+        | RequestAuditSnapshot
         | RequestPolicySnapshot
         | DataHubImportSnapshot
         | ProcessingSnapshot
@@ -330,7 +364,9 @@ class AuditInput(BaseModel):
         | None
     ) = None
     after: (
-        RequestAuditSnapshot
+        PartnerOrganizationSnapshot
+        | PartnerMembershipSnapshot
+        | RequestAuditSnapshot
         | RequestPolicySnapshot
         | DataHubImportSnapshot
         | ProcessingSnapshot
@@ -436,6 +472,39 @@ class AuditInput(BaseModel):
             or self.outcome != "FAILURE"
         ):
             raise ValueError("Processing failure requires typed scoped state")
+        if self.action.startswith("partner."):
+            organization = self.action == "partner.organization.created"
+            snapshot_type = (
+                PartnerOrganizationSnapshot
+                if organization
+                else PartnerMembershipSnapshot
+            )
+            entity_type = (
+                "partner_organization" if organization else "partner_membership"
+            )
+
+            def snapshot_matches(value):
+                return (
+                    isinstance(value, snapshot_type)
+                    and (
+                        value.partner_org_id
+                        if organization
+                        else value.partner_membership_id
+                    )
+                    == self.entity_id
+                )
+
+            if (
+                self.actor_role != "PLATFORM_ADMIN"
+                or self.tenant_id is not None
+                or self.support_session_id is not None
+                or self.entity_type != entity_type
+                or not snapshot_matches(self.after)
+                or (self.before is not None and not snapshot_matches(self.before))
+                or (self.action.endswith(".replaced") and self.before is None)
+                or (self.action.endswith(".created") and self.before is not None)
+            ):
+                raise ValueError("Partner lifecycle requires typed internal provenance")
         registered = {
             "maintenance.correction.applied": (
                 "organization_node",
