@@ -136,9 +136,10 @@ def recover_admin(db, request, password, settings, *, recovery_role):
 
     validate_password(password, settings)
 
-    lock_operator_population(db)
-
+    # Global identity/outbox order: lifecycle before operator, then user rows.
     lifecycle_lock(db)
+
+    lock_operator_population(db)
 
     lock_users(db, [request.user_id])
 

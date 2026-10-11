@@ -613,3 +613,68 @@ def test_cli_mismatched_protected_attestation_uuid_never_opens_database(monkeypa
 
     monkeypatch.setattr(module, "create_database_engine", forbidden_engine)
     assert module.main() == 2
+
+
+def test_recovery_waits_for_lifecycle_without_holding_operator_lock(
+    recovery_engine, db_runtime, settings
+):
+    import time
+    from threading import Event
+
+    from sqlalchemy import event
+
+    from app.identity.operators import OPERATOR_LOCK
+    from app.identity.tokens import lifecycle_lock
+
+    target = disabled_admin(db_runtime)
+    connected = Event()
+    worker_pid = []
+
+    def capture_backend(dbapi_connection, _):
+        worker_pid.append(dbapi_connection.info.backend_pid)
+        connected.set()
+
+    event.listen(recovery_engine, "connect", capture_backend)
+    with Session(db_runtime) as invitation_transaction:
+        # Real invitation/delivery order: lifecycle must precede operator.
+        lifecycle_lock(invitation_transaction)
+        blocker_pid = invitation_transaction.scalar(text("SELECT pg_backend_pid()"))
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pending_recovery = pool.submit(recovery, recovery_engine, target, settings)
+            try:
+                assert connected.wait(10), "Recovery connection did not open"
+                deadline = time.monotonic() + 10
+                with db_runtime.connect() as observer:
+                    while not observer.scalar(
+                        text("SELECT :pid=ANY(pg_blocking_pids(:worker_pid))"),
+                        {"worker_pid": worker_pid[0], "pid": blocker_pid},
+                    ):
+                        assert time.monotonic() < deadline, (
+                            "Recovery never waited on the invitation lifecycle lock"
+                        )
+                        time.sleep(0.01)
+                # A nonblocking real acquisition detects the old deadlock edge
+                # without relying on PostgreSQL choosing a deadlock victim.
+                assert invitation_transaction.scalar(
+                    text("SELECT pg_try_advisory_xact_lock(:key)"),
+                    {"key": OPERATOR_LOCK},
+                ), "Recovery holds OPERATOR_LOCK while waiting for LIFECYCLE_LOCK"
+            finally:
+                invitation_transaction.rollback()
+                event.remove(recovery_engine, "connect", capture_backend)
+            assert pending_recovery.result(timeout=10) == target
+    with db_runtime.connect() as conn:
+        state = conn.execute(
+            text("SELECT active, blocked FROM users WHERE id=:id"), {"id": target}
+        ).one()
+        assert state.active and not state.blocked
+        assert (
+            conn.execute(
+                text(
+                    "SELECT count(*) FROM audit_events "
+                    "WHERE action='identity.admin.recovered' AND entity_id=:id"
+                ),
+                {"id": target},
+            ).scalar_one()
+            == 1
+        )
