@@ -1,0 +1,435 @@
+[TASK8_OFFICIAL_GATE_ATTEMPT_3]
+Command: .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'
+Product HEAD: 96b6706f6e8530bec5d152b93e933f75d695110a
+Started UTC: 2026-10-11T07:09:14.6725838Z
+PYTHONUTF8 absent; utf8_mode=0; default_decoder=cp1252
+Attempt1/2 failed output preserved separately; full native stdout/stderr and PowerShell streams follow:
+[START] Owned temporary cluster: C:\Users\romil\AppData\Local\Temp\hiatlas-testdb-944c0015367c4f0494a64c44813a42d8
+[READY] Disposable PostgreSQL 18.6 on 127.0.0.1:57142; owner/runtime/recovery verified.
+>> Backend tests (PostgreSQL required)
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1231 items
+
+tests\test_access_lifecycle.py ...                                       [  0%]
+tests\test_access_tokens.py .............                                [  1%]
+tests\test_admin_recovery.py .................................           [  3%]
+tests\test_audit_integrity.py ............                               [  4%]
+tests\test_auth_api.py ............                                      [  5%]
+tests\test_base.py .                                                     [  6%]
+tests\test_bootstrap.py .........                                        [  6%]
+tests\test_context_api.py ..................                             [  8%]
+tests\test_contract_modules.py ....                                      [  8%]
+tests\test_correction_handlers.py ................................       [ 11%]
+tests\test_customer_scope_command.py .......                             [ 11%]
+tests\test_database.py .                                                 [ 11%]
+tests\test_database_lifecycle.py .......                                 [ 12%]
+tests\test_datahub_api.py ............                                   [ 13%]
+tests\test_datahub_catalog.py ...................                        [ 14%]
+tests\test_datahub_confirmation.py .....................                 [ 16%]
+tests\test_datahub_excel.py ............................................ [ 20%]
+                                                                         [ 20%]
+tests\test_datahub_policy.py ........................                    [ 22%]
+tests\test_datahub_preview.py .......................                    [ 23%]
+tests\test_datahub_queries.py ........                                   [ 24%]
+tests\test_datahub_races.py .........                                    [ 25%]
+tests\test_datahub_retention.py ....                                     [ 25%]
+tests\test_datahub_schema.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests\test_email_outbox.py ..........                                    [ 30%]
+tests\test_foundation_schema.py ..............                           [ 31%]
+tests\test_grant_contract.py ...                                         [ 31%]
+tests\test_grant_races.py ..............                                 [ 32%]
+tests\test_grant_schema.py ......................                        [ 34%]
+tests\test_grants.py ................................................... [ 38%]
+...................                                                      [ 40%]
+tests\test_health.py .                                                   [ 40%]
+tests\test_local_gate_collection.py .                                    [ 40%]
+tests\test_maintenance_acceptance_races.py ............                  [ 41%]
+tests\test_maintenance_contract.py .............                         [ 42%]
+tests\test_maintenance_races.py .........                                [ 42%]
+tests\test_membership_invitations.py ............                        [ 43%]
+tests\test_membership_lifecycle.py ..............................        [ 46%]
+tests\test_migration_lifecycle.py ............                           [ 47%]
+tests\test_operational_scope_api.py ........................             [ 49%]
+tests\test_organization_api.py .................                         [ 50%]
+tests\test_phase6_access.py ............................                 [ 52%]
+tests\test_phase7_audit.py .......                                       [ 53%]
+tests\test_phase7_policy.py ....                                         [ 53%]
+tests\test_phase7_races.py ...........                                   [ 54%]
+tests\test_phase7_schema.py ....................                         [ 56%]
+tests\test_platform_acceptance.py ...                                    [ 56%]
+tests\test_platform_operators.py .......................                 [ 58%]
+tests\test_processing_diagnostics.py .....                               [ 58%]
+tests\test_processing_schema.py ....                                     [ 59%]
+tests\test_production_config.py ...................                      [ 60%]
+tests\test_production_surface.py ............                            [ 61%]
+tests\test_purchase_request_attachments.py ............................. [ 64%]
+........                                                                 [ 64%]
+tests\test_purchase_request_commands.py ................................ [ 67%]
+......                                                                   [ 67%]
+tests\test_purchase_request_concurrency.py ................              [ 69%]
+tests\test_purchase_request_fulfillment.py ............................. [ 71%]
+...........                                                              [ 72%]
+tests\test_purchase_request_policy.py .................................. [ 75%]
+..........                                                               [ 75%]
+tests\test_purchase_request_queries.py .....................             [ 77%]
+tests\test_purchase_request_schema.py .....................              [ 79%]
+tests\test_quality_gate.py ....                                          [ 79%]
+tests\test_reprocessing.py .............................                 [ 82%]
+tests\test_role_assignment_api.py .............................          [ 84%]
+tests\test_role_policy.py ...................                            [ 85%]
+tests\test_runtime_privileges.py ................                        [ 87%]
+tests\test_session_security.py ........................                  [ 89%]
+tests\test_settings.py ...                                               [ 89%]
+tests\test_support_races.py .............                                [ 90%]
+tests\test_support_schema.py ...............                             [ 91%]
+tests\test_support_sessions.py ......................................... [ 95%]
+....................                                                     [ 96%]
+tests\test_tenant_isolation.py ...........................               [ 98%]
+tests\test_test_database_safety.py ..............                        [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 1231 passed, 1 warning in 1957.06s (0:32:37) =================
+>> Backend lint
+All checks passed!
+>> Windows local database safety tests
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1
+plugins: anyio-4.14.2
+collected 37 items
+
+..\scripts\tests\test_local_testdb_scripts.py .......................... [ 70%]
+...........                                                              [100%]
+
+======================= 37 passed in 107.99s (0:01:47) ========================
+>> Windows local database test lint
+All checks passed!
+>> Frontend tests
+
+> frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 D:/Atlas/.worktrees/hiatlas-purchase-request-v1/frontend
+
+ ❯ src/maintenance/Controlled.test.tsx (28 tests | 1 failed) 13243ms
+   × maintenance review moves keyboard focus to contextual confirmation 235ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/maintenance/Controlled.test.tsx > maintenance review moves keyboard focus to contextual confirmation
+Error: expect(element).toHaveFocus()
+
+Expected element with focus:
+  <button>
+  Confirmar acesso de manutenção
+</button>
+Received element with focus:
+  <body>
+  <div>
+    <main
+      class="hiatlas-access real-app portal"
+      data-theme="light"
+    >
+      <header
+        class="access-top"
+      >
+        <img
+          alt="HiAtlas — Supply Chain Intelligence"
+          class="portal-logo"
+          src="/src/assets/hiatlas-light.png"
+        />
+        <div
+          aria-label="Aparência"
+          class="theme-picker"
+          role="group"
+        >
+          <button
+            aria-label="Tema claro"
+            aria-pressed="true"
+          >
+            ☀ Claro
+          </button>
+          <button
+            aria-label="Tema escuro"
+            aria-pressed="false"
+          >
+            ☾ Escuro
+          </button>
+        </div>
+        <button>
+          Sair
+        </button>
+      </header>
+      <header
+        class="context-header"
+        data-testid="contract-context"
+      >
+        <dl>
+          <div>
+            <dt>
+              Empresa
+            </dt>
+            <dd>
+              Empresa A
+            </dd>
+          </div>
+          <div>
+            <dt>
+              Contrato
+            </dt>
+            <dd>
+              CTR-A
+            </dd>
+          </div>
+          <div>
+            <dt>
+              Ambiente
+            </dt>
+            <dd>
+              Teste
+            </dd>
+          </div>
+        </dl>
+        <button>
+          Trocar empresa/contrato
+        </button>
+      </header>
+      <section
+        class="portal-content"
+      >
+        <p
+          class="eyebrow"
+        >
+          Portal interno
+        </p>
+        <h1
+          data-support-return="true"
+          tabindex="-1"
+        >
+          Administração HiAtlas
+        </h1>
+        <nav
+          aria-label="Ferramentas do contexto"
+          class="access-nav"
+        >
+          <button
+            aria-current="page"
+          >
+            Manutenção
+          </button>
+          <button>
+            Usuários
+          </button>
+        </nav>
+        <section
+          class="maintenance-page"
+        >
+          <h2>
+            Manutenção
+          </h2>
+          <p>
+            Operações registradas e autorizadas para o contrato atual.
+          </p>
+          <ul>
+            <li>
+              <strong>
+                Renomear nó controlado
+              </strong>
+              <button>
+                Solicitar acesso de manutenção
+              </button>
+            </li>
+          </ul>
+          <section>
+            <h3>
+              Diagnóstico de processamentos
+            </h3>
+            <p>
+              Informações permitidas para este contrato, sem registros técnicos ou conteúdo operacional.
+            </p>
+            <article
+              class="processing-run"
+            >
+              <h4>
+                FIXTURE_NODE_RENAME
+              </h4>
+              <dl>
+                <dt>
+                  Status
+                </dt>
+                <dd>
+                  Falhou
+                </dd>
+                <dt>
+                  Resultado
+                </dt>
+                <dd>
+                  Falha controlada
+                </dd>
+                <dt>
+                  Diagnóstico
+                </dt>
+                <dd>
+                  Falha controlada
+                </dd>
+                <dt>
+                  Código de atendimento
+                </dt>
+                <dd>
+                  33333333-3333-4333-8333-333333333333
+                </dd>
+                <dt>
+                  Data
+                </dt>
+                <dd>
+                  03/10/2026, 9:00:00 BRT
+                </dd>
+              </dl>
+            </article>
+            <article
+              class="processing-run"
+            >
+              <h4>
+                FIXTURE_NODE_RENAME
+              </h4>
+              <dl>
+                <dt>
+                  Status
+                </dt>
+                <dd>
+                  Resultado desconhecido
+                </dd>
+                <dt>
+                  Resultado
+                </dt>
+                <dd>
+                  Falha controlada
+                </dd>
+                <dt>
+                  Diagnóstico
+                </dt>
+                <dd>
+                  Falha controlada
+                </dd>
+                <dt>
+                  Código de atendimento
+                </dt>
+                <dd>
+                  33333333-3333-4333-8333-333333333333
+                </dd>
+                <dt>
+                  Data
+                </dt>
+                <dd>
+                  03/10/2026, 9:00:00 BRT
+                </dd>
+              </dl>
+            </article>
+            <div
+              class="pagination"
+            >
+              <button
+                disabled=""
+              >
+                Processamentos anteriores
+              </button>
+              <span>
+                2
+                 processamentos
+              </span>
+              <button
+                disabled=""
+              >
+                Próximos processamentos
+              </button>
+            </div>
+          </section>
+          <dialog
+            aria-labelledby="_r_b_"
+            class="access-dialog"
+            open=""
+          >
+            <h2
+              id="_r_b_"
+            >
+              Revisar acesso de manutenção
+            </h2>
+            <p
+              class="dialog-context"
+            >
+              Empresa:·
+              Empresa A
+               · Contrato:·
+              CTR-A
+               · Ambiente:·
+              Teste
+            </p>
+            <p>
+              Operador:·
+              Admin
+            </p>
+            <p>
+              Ação:·
+              Renomear nó controlado
+            </p>
+            <p>
+              Entidade:·
+              entity-a
+            </p>
+            <p>
+              Motivo:·
+              Concessão controlada
+            </p>
+            <p>
+              Referência:·
+              SUP-1
+            </p>
+            <p>
+              A concessão autoriza somente a ação e a entidade revisadas, durante o prazo definido pelo servidor.
+            </p>
+            <button>
+              Confirmar acesso de manutenção
+            </button>
+            <button
+              type="button"
+            >
+              Cancelar
+            </button>
+          </dialog>
+        </section>
+      </section>
+      <footer
+        class="access-footer"
+      >
+        © HiGamer
+      </footer>
+    </main>
+  </div>
+</body>
+ ❯ src/maintenance/Controlled.test.tsx:31:983
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 28 passed (29)
+      Tests  1 failed | 409 passed (410)
+   Start at  04:44:12
+   Duration  56.40s (transform 23.55s, setup 132.17s, import 45.00s, tests 85.98s, environment 774.37s)
+
+[FAIL] Frontend tests failed (exit 1).
+[FAIL] Local quality gate failed; see the failed step above.
+[CLEAN] Owned disposable cluster stopped and removed.
+[GATE_EXIT] 1
+Finished UTC: 2026-10-11T07:46:16.2816204Z

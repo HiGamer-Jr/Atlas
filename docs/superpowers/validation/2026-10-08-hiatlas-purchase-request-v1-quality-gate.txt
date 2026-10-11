@@ -1,0 +1,161 @@
+[TASK8_OFFICIAL_GATE_ATTEMPT_4]
+Command: .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'
+Product HEAD: 3c79c91a77c995c8db67d00f92e8d2f871a87881
+Started UTC: 2026-10-11T07:57:53.8116083Z
+PYTHONUTF8 absent; utf8_mode=0; default_decoder=cp1252
+Attempt1/2/3 failed output preserved separately; full native stdout/stderr and PowerShell streams follow:
+[START] Owned temporary cluster: C:\Users\romil\AppData\Local\Temp\hiatlas-testdb-746ef17999a04325b2f0ecc18f81c0ee
+[READY] Disposable PostgreSQL 18.6 on 127.0.0.1:60015; owner/runtime/recovery verified.
+>> Backend tests (PostgreSQL required)
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1231 items
+
+tests\test_access_lifecycle.py ...                                       [  0%]
+tests\test_access_tokens.py .............                                [  1%]
+tests\test_admin_recovery.py .................................           [  3%]
+tests\test_audit_integrity.py ............                               [  4%]
+tests\test_auth_api.py ............                                      [  5%]
+tests\test_base.py .                                                     [  6%]
+tests\test_bootstrap.py .........                                        [  6%]
+tests\test_context_api.py ..................                             [  8%]
+tests\test_contract_modules.py ....                                      [  8%]
+tests\test_correction_handlers.py ................................       [ 11%]
+tests\test_customer_scope_command.py .......                             [ 11%]
+tests\test_database.py .                                                 [ 11%]
+tests\test_database_lifecycle.py .......                                 [ 12%]
+tests\test_datahub_api.py ............                                   [ 13%]
+tests\test_datahub_catalog.py ...................                        [ 14%]
+tests\test_datahub_confirmation.py .....................                 [ 16%]
+tests\test_datahub_excel.py ............................................ [ 20%]
+                                                                         [ 20%]
+tests\test_datahub_policy.py ........................                    [ 22%]
+tests\test_datahub_preview.py .......................                    [ 23%]
+tests\test_datahub_queries.py ........                                   [ 24%]
+tests\test_datahub_races.py .........                                    [ 25%]
+tests\test_datahub_retention.py ....                                     [ 25%]
+tests\test_datahub_schema.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests\test_email_outbox.py ..........                                    [ 30%]
+tests\test_foundation_schema.py ..............                           [ 31%]
+tests\test_grant_contract.py ...                                         [ 31%]
+tests\test_grant_races.py ..............                                 [ 32%]
+tests\test_grant_schema.py ......................                        [ 34%]
+tests\test_grants.py ................................................... [ 38%]
+...................                                                      [ 40%]
+tests\test_health.py .                                                   [ 40%]
+tests\test_local_gate_collection.py .                                    [ 40%]
+tests\test_maintenance_acceptance_races.py ............                  [ 41%]
+tests\test_maintenance_contract.py .............                         [ 42%]
+tests\test_maintenance_races.py .........                                [ 42%]
+tests\test_membership_invitations.py ............                        [ 43%]
+tests\test_membership_lifecycle.py ..............................        [ 46%]
+tests\test_migration_lifecycle.py ............                           [ 47%]
+tests\test_operational_scope_api.py ........................             [ 49%]
+tests\test_organization_api.py .................                         [ 50%]
+tests\test_phase6_access.py ............................                 [ 52%]
+tests\test_phase7_audit.py .......                                       [ 53%]
+tests\test_phase7_policy.py ....                                         [ 53%]
+tests\test_phase7_races.py ...........                                   [ 54%]
+tests\test_phase7_schema.py ....................                         [ 56%]
+tests\test_platform_acceptance.py ...                                    [ 56%]
+tests\test_platform_operators.py .......................                 [ 58%]
+tests\test_processing_diagnostics.py .....                               [ 58%]
+tests\test_processing_schema.py ....                                     [ 59%]
+tests\test_production_config.py ...................                      [ 60%]
+tests\test_production_surface.py ............                            [ 61%]
+tests\test_purchase_request_attachments.py ............................. [ 64%]
+........                                                                 [ 64%]
+tests\test_purchase_request_commands.py ................................ [ 67%]
+......                                                                   [ 67%]
+tests\test_purchase_request_concurrency.py ................              [ 69%]
+tests\test_purchase_request_fulfillment.py ............................. [ 71%]
+...........                                                              [ 72%]
+tests\test_purchase_request_policy.py .................................. [ 75%]
+..........                                                               [ 75%]
+tests\test_purchase_request_queries.py .....................             [ 77%]
+tests\test_purchase_request_schema.py .....................              [ 79%]
+tests\test_quality_gate.py ....                                          [ 79%]
+tests\test_reprocessing.py .............................                 [ 82%]
+tests\test_role_assignment_api.py .............................          [ 84%]
+tests\test_role_policy.py ...................                            [ 85%]
+tests\test_runtime_privileges.py ................                        [ 87%]
+tests\test_session_security.py ........................                  [ 89%]
+tests\test_settings.py ...                                               [ 89%]
+tests\test_support_races.py .............                                [ 90%]
+tests\test_support_schema.py ...............                             [ 91%]
+tests\test_support_sessions.py ......................................... [ 95%]
+....................                                                     [ 96%]
+tests\test_tenant_isolation.py ...........................               [ 98%]
+tests\test_test_database_safety.py ..............                        [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 1231 passed, 1 warning in 1865.71s (0:31:05) =================
+>> Backend lint
+All checks passed!
+>> Windows local database safety tests
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1
+plugins: anyio-4.14.2
+collected 37 items
+
+..\scripts\tests\test_local_testdb_scripts.py .......................... [ 70%]
+...........                                                              [100%]
+
+======================= 37 passed in 111.07s (0:01:51) ========================
+>> Windows local database test lint
+All checks passed!
+>> Frontend tests
+
+> frontend@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 D:/Atlas/.worktrees/hiatlas-purchase-request-v1/frontend
+
+
+ Test Files  29 passed (29)
+      Tests  410 passed (410)
+   Start at  05:31:12
+   Duration  20.95s (transform 16.86s, setup 18.18s, import 28.30s, tests 84.89s, environment 122.51s)
+
+>> Frontend lint
+
+> frontend@0.0.0 lint
+> oxlint
+
+>> Frontend build
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 99 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             0.55 kB │ gzip:   0.34 kB
+dist/assets/hiatlas-dark-CfqG4lAg.png   1,001.95 kB
+dist/assets/hiatlas-light-CyXrr_ri.png  1,062.23 kB
+dist/assets/index-GQLbi_se.css             18.69 kB │ gzip:   4.37 kB
+dist/assets/index-CC87ZBL3.js             348.88 kB │ gzip: 100.07 kB
+
+✓ built in 250ms
+>> Working diff
+warning: in the working copy of 'docs/architecture/purchase-requests-v1.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/validation/2026-10-08-hiatlas-purchase-request-v1-report.md', LF will be replaced by CRLF the next time Git touches it
+>> Staged diff
+[PASS] HiAtlas Phase Quality Gate
+[CLEAN] Owned disposable cluster stopped and removed.
+[PASS] HiAtlas local quality gate and disposable database cleanup
+[GATE_EXIT] 0
+Finished UTC: 2026-10-11T08:32:42.1378596Z

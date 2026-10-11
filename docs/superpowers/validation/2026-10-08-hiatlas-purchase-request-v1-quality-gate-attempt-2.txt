@@ -1,0 +1,953 @@
+[TASK8_OFFICIAL_GATE_ATTEMPT_2]
+Command: .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'
+Product HEAD: 96b6706f6e8530bec5d152b93e933f75d695110a
+Started UTC: 2026-10-11T06:23:16.3497435Z
+Attempt1 failed output preserved separately; full native stdout/stderr and PowerShell streams follow:
+[START] Owned temporary cluster: C:\Users\romil\AppData\Local\Temp\hiatlas-testdb-af899371dc774da281d943fc667ce499
+[READY] Disposable PostgreSQL 18.6 on 127.0.0.1:54397; owner/runtime/recovery verified.
+>> Backend tests (PostgreSQL required)
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 1231 items
+
+tests\test_access_lifecycle.py ...                                       [  0%]
+tests\test_access_tokens.py .............                                [  1%]
+tests\test_admin_recovery.py .................................           [  3%]
+tests\test_audit_integrity.py ............                               [  4%]
+tests\test_auth_api.py ............                                      [  5%]
+tests\test_base.py .                                                     [  6%]
+tests\test_bootstrap.py .........                                        [  6%]
+tests\test_context_api.py ..................                             [  8%]
+tests\test_contract_modules.py ....                                      [  8%]
+tests\test_correction_handlers.py ................................       [ 11%]
+tests\test_customer_scope_command.py .......                             [ 11%]
+tests\test_database.py .                                                 [ 11%]
+tests\test_database_lifecycle.py .......                                 [ 12%]
+tests\test_datahub_api.py ............                                   [ 13%]
+tests\test_datahub_catalog.py ...................                        [ 14%]
+tests\test_datahub_confirmation.py .....................                 [ 16%]
+tests\test_datahub_excel.py ............................................ [ 20%]
+                                                                         [ 20%]
+tests\test_datahub_policy.py ........................                    [ 22%]
+tests\test_datahub_preview.py .......................                    [ 23%]
+tests\test_datahub_queries.py ........                                   [ 24%]
+tests\test_datahub_races.py .........                                    [ 25%]
+tests\test_datahub_retention.py ....                                     [ 25%]
+tests\test_datahub_schema.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests\test_email_outbox.py ..........                                    [ 30%]
+tests\test_foundation_schema.py ..............                           [ 31%]
+tests\test_grant_contract.py ...                                         [ 31%]
+tests\test_grant_races.py ..............                                 [ 32%]
+tests\test_grant_schema.py ......................                        [ 34%]
+tests\test_grants.py ................................................... [ 38%]
+...................                                                      [ 40%]
+tests\test_health.py .                                                   [ 40%]
+tests\test_local_gate_collection.py .                                    [ 40%]
+tests\test_maintenance_acceptance_races.py ............                  [ 41%]
+tests\test_maintenance_contract.py .............                         [ 42%]
+tests\test_maintenance_races.py .........                                [ 42%]
+tests\test_membership_invitations.py ............                        [ 43%]
+tests\test_membership_lifecycle.py ..............................        [ 46%]
+tests\test_migration_lifecycle.py ............                           [ 47%]
+tests\test_operational_scope_api.py ........................             [ 49%]
+tests\test_organization_api.py .................                         [ 50%]
+tests\test_phase6_access.py ............................                 [ 52%]
+tests\test_phase7_audit.py .......                                       [ 53%]
+tests\test_phase7_policy.py ....                                         [ 53%]
+tests\test_phase7_races.py ...........                                   [ 54%]
+tests\test_phase7_schema.py ....................                         [ 56%]
+tests\test_platform_acceptance.py ...                                    [ 56%]
+tests\test_platform_operators.py .......................                 [ 58%]
+tests\test_processing_diagnostics.py .....                               [ 58%]
+tests\test_processing_schema.py ....                                     [ 59%]
+tests\test_production_config.py ...................                      [ 60%]
+tests\test_production_surface.py ............                            [ 61%]
+tests\test_purchase_request_attachments.py ............................. [ 64%]
+........                                                                 [ 64%]
+tests\test_purchase_request_commands.py ................................ [ 67%]
+......                                                                   [ 67%]
+tests\test_purchase_request_concurrency.py ................              [ 69%]
+tests\test_purchase_request_fulfillment.py ............................. [ 71%]
+...........                                                              [ 72%]
+tests\test_purchase_request_policy.py .................................. [ 75%]
+..........                                                               [ 75%]
+tests\test_purchase_request_queries.py .....................             [ 77%]
+tests\test_purchase_request_schema.py .....................              [ 79%]
+tests\test_quality_gate.py ....                                          [ 79%]
+tests\test_reprocessing.py .............................                 [ 82%]
+tests\test_role_assignment_api.py .............................          [ 84%]
+tests\test_role_policy.py ...................                            [ 85%]
+tests\test_runtime_privileges.py ................                        [ 87%]
+tests\test_session_security.py ........................                  [ 89%]
+tests\test_settings.py ...                                               [ 89%]
+tests\test_support_races.py .............                                [ 90%]
+tests\test_support_schema.py ...............                             [ 91%]
+tests\test_support_sessions.py ......................................... [ 95%]
+....................                                                     [ 96%]
+tests\test_tenant_isolation.py ...........................               [ 98%]
+tests\test_test_database_safety.py ..............                        [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 1231 passed, 1 warning in 2117.03s (0:35:17) =================
+>> Backend lint
+All checks passed!
+>> Windows local database safety tests
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: D:\Atlas\.worktrees\hiatlas-purchase-request-v1
+plugins: anyio-4.14.2
+collected 37 items
+
+..\scripts\tests\test_local_testdb_scripts.py ..........FFFFFFFFFFF..... [ 70%]
+.FF....F...                                                              [100%]
+
+================================== FAILURES ===================================
+_____ test_incomplete_portable_distribution_is_rejected[bin/postgres.exe] _____
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr0')
+missing = 'bin/postgres.exe'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+______ test_incomplete_portable_distribution_is_rejected[bin/initdb.exe] ______
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr1')
+missing = 'bin/initdb.exe'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+______ test_incomplete_portable_distribution_is_rejected[bin/pg_ctl.exe] ______
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr2')
+missing = 'bin/pg_ctl.exe'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+____ test_incomplete_portable_distribution_is_rejected[bin/pg_isready.exe] ____
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr3')
+missing = 'bin/pg_isready.exe'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+_______ test_incomplete_portable_distribution_is_rejected[bin/psql.exe] _______
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr4')
+missing = 'bin/psql.exe'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+____ test_incomplete_portable_distribution_is_rejected[share/postgres.bki] ____
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_incomplete_portable_distr5')
+missing = 'share/postgres.bki'
+
+    @pytest.mark.parametrize(
+        "missing",
+        [
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ],
+    )
+    def test_incomplete_portable_distribution_is_rejected(tmp_path, missing):
+        for name in (
+            "bin/postgres.exe",
+            "bin/initdb.exe",
+            "bin/pg_ctl.exe",
+            "bin/pg_isready.exe",
+            "bin/psql.exe",
+            "share/postgres.bki",
+        ):
+            if name != missing:
+                path = tmp_path / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+        path = str(tmp_path).replace("'", "''")
+        result = run_module(f"Assert-PortableDistribution '{path}'")
+        assert result.returncode != 0
+>       assert "incomplete" in result.stderr.lower()
+                               ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 'lower'
+
+..\scripts\tests\test_local_testdb_scripts.py:107: AttributeError
+________ test_missing_distribution_does_not_set_env_or_create_cluster _________
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_missing_distribution_does0')
+
+    def test_missing_distribution_does_not_set_env_or_create_cluster(tmp_path):
+        path = str(tmp_path / "absent").replace("'", "''")
+        result = run_module(
+            "$env:TEST_DATABASE_OWNER_URL='sentinel-secret'; "
+            f"try {{ Start-HiAtlasTestDb -PostgresRoot '{path}' }} "
+            "catch { if($env:TEST_DATABASE_OWNER_URL -ne 'sentinel-secret'){throw 'env changed'}; 'safe refusal' }"
+        )
+        assert result.returncode == 0, result.stderr
+        assert "safe refusal" in result.stdout
+>       assert "sentinel-secret" not in result.stdout + result.stderr
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "NoneType") to str
+
+..\scripts\tests\test_local_testdb_scripts.py:119: TypeError
+_________ test_stop_without_owned_state_preserves_foreign_environment _________
+
+    def test_stop_without_owned_state_preserves_foreign_environment():
+        result = run_module(
+            "$env:TEST_DATABASE_OWNER_URL='sentinel-secret'; Stop-HiAtlasTestDb; "
+            "if($env:TEST_DATABASE_OWNER_URL -ne 'sentinel-secret'){throw 'modified external configuration'}; 'preserved'"
+        )
+        assert result.returncode == 0, result.stderr
+>       assert "sentinel-secret" not in result.stdout + result.stderr
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "NoneType") to str
+
+..\scripts\tests\test_local_testdb_scripts.py:129: TypeError
+_____________ test_native_failure_never_prints_output_or_password _____________
+
+    def test_native_failure_never_prints_output_or_password():
+        invocation = native_ps_body("Write-Output 'sentinel-secret'; exit 23")
+        result = run_module(f"Invoke-TestDbNative {invocation} -Label 'controlled failure'")
+        assert result.returncode != 0
+>       assert "23" in result.stderr
+               ^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: argument of type 'NoneType' is not iterable
+
+..\scripts\tests\test_local_testdb_scripts.py:143: TypeError
+___________ test_native_connection_environment_cannot_be_redirected ___________
+
+    def test_native_connection_environment_cannot_be_redirected():
+        invocation = native_ps_body(
+            "if($env:PGSERVICE){exit 21}; if($env:PGOPTIONS){exit 22}; 'isolated'"
+        )
+        result = run_module(
+            "$env:PGSERVICE='sentinel-secret'; $env:PGOPTIONS='unsafe'; "
+            f"$out=Invoke-TestDbNative {invocation} -Label 'env isolation'; "
+            "if($out.Trim() -ne 'isolated'){throw 'wrong output'}; "
+            "if($env:PGSERVICE -ne 'sentinel-secret'){throw 'parent env modified'}; 'isolated'"
+        )
+        assert result.returncode == 0, result.stderr
+        assert "isolated" in result.stdout
+>       assert "sentinel-secret" not in result.stdout + result.stderr
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "NoneType") to str
+
+..\scripts\tests\test_local_testdb_scripts.py:159: TypeError
+_______________ test_cleanup_refuses_junction_inside_owned_root _______________
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_cleanup_refuses_junction_0')
+
+    def test_cleanup_refuses_junction_inside_owned_root(tmp_path):
+        root = tmp_path / "hiatlas-testdb-00000000000000000000000000000000"
+        root.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "keep.txt").write_text("preserve")
+        path = str(root).replace("'", "''")
+        destination = str(outside).replace("'", "''")
+        result = run_module(
+            f"New-Item -ItemType Junction -Path '{path}/link' -Target '{destination}' | Out-Null; Assert-NoReparseTree '{path}'"
+        )
+        try:
+            assert result.returncode != 0
+>           assert "Reparse" in result.stderr
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: argument of type 'NoneType' is not iterable
+
+..\scripts\tests\test_local_testdb_scripts.py:175: TypeError
+________ test_owned_root_still_requires_matching_ownership_seal[None] _________
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_owned_root_still_requires0')
+seal = None
+
+    @pytest.mark.parametrize("seal", [None, "hiatlas-owned-cluster:wrong"])
+    def test_owned_root_still_requires_matching_ownership_seal(tmp_path, seal):
+        identifier = "0" * 32
+        root = tmp_path / f"hiatlas-testdb-{identifier}"
+        root.mkdir()
+        if seal is not None:
+            (root / ".hiatlas-owned-cluster").write_text(seal)
+        parent = str(tmp_path).replace("'", "''")
+        path = str(root).replace("'", "''")
+        result = run_module(
+            f"Assert-OwnedTestRoot @{{Id='{identifier}';Root='{path}';TempParent='{parent}'}}"
+        )
+        assert result.returncode != 0
+>       assert "Ownership" in result.stderr
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: argument of type 'NoneType' is not iterable
+
+..\scripts\tests\test_local_testdb_scripts.py:293: TypeError
+_ test_owned_root_still_requires_matching_ownership_seal[hiatlas-owned-cluster:wrong] _
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_owned_root_still_requires1')
+seal = 'hiatlas-owned-cluster:wrong'
+
+    @pytest.mark.parametrize("seal", [None, "hiatlas-owned-cluster:wrong"])
+    def test_owned_root_still_requires_matching_ownership_seal(tmp_path, seal):
+        identifier = "0" * 32
+        root = tmp_path / f"hiatlas-testdb-{identifier}"
+        root.mkdir()
+        if seal is not None:
+            (root / ".hiatlas-owned-cluster").write_text(seal)
+        parent = str(tmp_path).replace("'", "''")
+        path = str(root).replace("'", "''")
+        result = run_module(
+            f"Assert-OwnedTestRoot @{{Id='{identifier}';Root='{path}';TempParent='{parent}'}}"
+        )
+        assert result.returncode != 0
+>       assert "Ownership" in result.stderr
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: argument of type 'NoneType' is not iterable
+
+..\scripts\tests\test_local_testdb_scripts.py:293: TypeError
+______ test_locked_initdb_password_aborts_instead_of_silently_continuing ______
+
+tmp_path = WindowsPath('C:/Users/romil/AppData/Local/Temp/pytest-of-romil/pytest-15/test_locked_initdb_password_ab0')
+
+    def test_locked_initdb_password_aborts_instead_of_silently_continuing(tmp_path):
+        identifier = "0" * 32
+        root = tmp_path / f"hiatlas-testdb-{identifier}"
+        root.mkdir()
+        (root / ".hiatlas-owned-cluster").write_text(f"hiatlas-owned-cluster:{identifier}")
+        (root / "initdb-password").write_text("sentinel-secret")
+        parent = str(tmp_path).replace("'", "''")
+        path = str(root).replace("'", "''")
+        result = run_module(
+            "Get-Command Remove-InitPassword -ErrorAction Stop | Out-Null; "
+            f"$s=@{{Id='{identifier}';Root='{path}';TempParent='{parent}'}}; "
+            f"$locked=[IO.File]::Open('{path}/initdb-password','Open','ReadWrite','None'); "
+            "$denied=$false; try {try {Remove-InitPassword $s} catch {$denied=$true}} finally {$locked.Dispose()}; "
+            "if(-not $denied){throw 'plaintext removal failure was ignored'}; 'refused'"
+        )
+        assert result.returncode == 0, result.stderr
+        assert "refused" in result.stdout
+>       assert "sentinel-secret" not in result.stdout + result.stderr
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: can only concatenate str (not "NoneType") to str
+
+..\scripts\tests\test_local_testdb_scripts.py:335: TypeError
+============================== warnings summary ===============================
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/postgres.exe]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-22 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/initdb.exe]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-24 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/pg_ctl.exe]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-26 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/pg_isready.exe]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-28 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/psql.exe]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-30 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[share/postgres.bki]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-32 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_missing_distribution_does_not_set_env_or_create_cluster
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-34 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_without_owned_state_preserves_foreign_environment
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-36 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_native_failure_never_prints_output_or_password
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-38 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_native_connection_environment_cannot_be_redirected
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-40 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_cleanup_refuses_junction_inside_owned_root
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-42 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_native_detached_output_does_not_wait_for_inherited_pipe
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-44 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_owned_root_still_requires_matching_ownership_seal[None]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-56 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_owned_root_still_requires_matching_ownership_seal[hiatlas-owned-cluster:wrong]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-58 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_refuses_missing_pid_after_start_attempt[STARTING]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-60 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_refuses_missing_pid_after_start_attempt[BOOTSTRAP]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-62 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_refuses_missing_pid_after_start_attempt[DATABASE_CREATING]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-64 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_refuses_missing_pid_after_start_attempt[READY]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-66 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_locked_initdb_password_aborts_instead_of_silently_continuing
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-68 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_stop_drains_noisy_native_output_before_owned_cleanup
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-70 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_native_failure_category_is_sanitized[import time; time.sleep(4)-TIMEOUT]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-72 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+scripts/tests/test_local_testdb_scripts.py::test_native_failure_category_is_sanitized[import sys; sys.exit(2)-NONZERO_EXIT]
+  D:\Atlas\.worktrees\hiatlas-purchase-request-v1\backend\.venv\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-74 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\romil\AppData\Roaming\uv\python\cpython-3.13-windows-x86_64-none\Lib\subprocess.py", line 1615, in _readerthread
+      buffer.append(fh.read())
+                    ~~~~~~~^^
+    File "<frozen codecs>", line 325, in decode
+  UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa2 in position 268: invalid start byte
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/postgres.exe]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/initdb.exe]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/pg_ctl.exe]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/pg_isready.exe]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[bin/psql.exe]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_incomplete_portable_distribution_is_rejected[share/postgres.bki]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_missing_distribution_does_not_set_env_or_create_cluster
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_stop_without_owned_state_preserves_foreign_environment
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_native_failure_never_prints_output_or_password
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_native_connection_environment_cannot_be_redirected
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_cleanup_refuses_junction_inside_owned_root
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_owned_root_still_requires_matching_ownership_seal[None]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_owned_root_still_requires_matching_ownership_seal[hiatlas-owned-cluster:wrong]
+FAILED ..\scripts\tests\test_local_testdb_scripts.py::test_locked_initdb_password_aborts_instead_of_silently_continuing
+=========== 14 failed, 23 passed, 22 warnings in 113.49s (0:01:53) ============
+[FAIL] Windows local database safety tests failed (exit 1).
+[FAIL] Local quality gate failed; see the failed step above.
+[CLEAN] Owned disposable cluster stopped and removed.
+[GATE_EXIT] 1
+Finished UTC: 2026-10-11T07:01:30.0131937Z

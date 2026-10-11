@@ -1,9 +1,9 @@
 # Purchase requests V1 — durable validation report
 
-Date: 2026-10-10. Branch: `feat/hiatlas-purchase-request-v1`. Worktree: `D:/Atlas/.worktrees/hiatlas-purchase-request-v1`.
+Date: 2026-10-11. Branch: `feat/hiatlas-purchase-request-v1`. Worktree: `D:/Atlas/.worktrees/hiatlas-purchase-request-v1`.
 Approved spec: [design](../specs/2026-10-08-hiatlas-purchase-request-v1-design.md); approved execution: [plan](../plans/2026-10-08-hiatlas-purchase-request-v1.md); implemented contract: [architecture](../../architecture/purchase-requests-v1.md).
 
-**Status: Task 8 Phase A documentation complete; independent whole-branch review and Phase B official full quality gate PENDING. No full-gate PASS or publication is claimed.** Tasks 1–7 and their fix reviews are complete per the authoritative controller ledger. This is a pre-gate evidence checkpoint; the controller must review the entire branch before resuming the implementer for Phase B.
+**Status: implementation, reviewed fixes and official full gate attempt4 PASS at product HEAD3c79c91a77c995c8db67d00f92e8d2f871a87881. Backend1231, scripts37 and frontend410 all passed with zero skips; all lint/build/diff stages and original normal owning cleanup passed, gate exit0.** Tasks1–7 and independent whole-branch/fix reviews are complete per the controller ledger. Task8 final documentation/evidence commit and clean-state checks are recorded in its local execution report; controller Task8 documentation review and exclusive branch publication remain pending. Three earlier failed attempts and their distinct cleanup outcomes remain preserved.
 
 Product-exclusive base: `fa354b73cdb43d600949e54b81595f416ef5cd65` (customer-scope). Task 8 input HEAD: `858d7d139e359a319cde25188deb55b695c31720`. The Phase A docs-only commit SHA is recorded in the execution report `.superpowers/sdd/2026-10-08-hiatlas-purchase-request-v1/task-8-report.md`; a commit cannot contain its own SHA.
 
@@ -19,11 +19,11 @@ Task 8 is documentation work. Its RED was actual completeness inspection before 
 - Singular architecture path did not exist; the existing plural file was extended, avoiding a duplicate document.
 - Original doc still described attachments as a later task. That stale handoff is removed from the implemented contract.
 
-GREEN is a fresh section-by-section contract audit against spec sections 1–13, actual route decorators/command schemas/errors, test names and final task reports. Architecture now documents all identified gaps; this report supplies coverage, all eight task outcomes, decisions and honest pending gate status. Local `task-8-doc-green.txt` records the fresh completeness/route/test/ruling/ref/diff checks. These documentation checks do not claim software execution or replace the official full gate.
+GREEN is a fresh section-by-section contract audit against spec sections 1–13, actual route decorators/command schemas/errors, test names and final task reports. Architecture now documents all identified gaps; this report supplies coverage, all eight task outcomes, decisions and final gate evidence. Local `task-8-doc-green.txt` records the fresh completeness/route/test/ruling/ref/diff checks. These documentation checks do not claim software execution or replace the official full gate.
 
 ## Spec → implementation → test evidence matrix
 
-Tests referenced below are real files/cases inspected at input HEAD. Parameterized cases explain why function counts differ from executed case counts. The matrix maps behavior; final project totals are intentionally pending.
+Tests referenced below are real files/cases inspected at input HEAD. Parameterized cases explain why function counts differ from executed case counts. The matrix maps behavior; actual final project totals appear in the official attempt4 record below.
 
 | Spec section | Implemented evidence / acceptance boundary | Test evidence |
 |---|---|---|
@@ -43,7 +43,7 @@ Tests referenced below are real files/cases inspected at input HEAD. Parameteriz
 | 10 UI isolation | Context/scope and request/refresh generation, abort and guarded callbacks; independent tabs/drafts; private blobs/retry intents | RequestWorkspace.test.tsx, state.test.tsx, api.test.ts, RequestDetail.lifecycle.test.tsx (9 regressions including stale A→B actions/candidates/history/private-file fields) |
 
 | 11 Evolution / indicators / PARTNER | Explicit future scoped projects/cost center/material and downstream many-to-many item sources; separate Partner actor/payment-request-only; no future code/dashboard | commands/schema reject unavailable non-null reference; frontend form/parser tests; whole-diff absence inspection for future product code |
-| 12 Acceptance / exclusions | Native PostgreSQL owner/runtime migration replay; scoped suites and per-task review; mandatory zero skips and final gate | schema/migration lifecycle; all named task suites below; official full backend/frontend/scripts/lint/TS/Vite/cleanup PENDING |
+| 12 Acceptance / exclusions | Native PostgreSQL owner/runtime migration replay; scoped suites and per-task review; mandatory zero skips and final gate | schema/migration lifecycle; all named task suites below; official attempt4 backend1231/scripts37/frontend410 PASS, zero skips; lint/TS/Vite/diff/normal cleanup PASS |
 | 13 Risks | Bytea/immutable receipts grow; no scanner; conservative PDF; manual evidence; contract serialization; UX tentative buyer; frozen warning/audit baseline | Attachment parser/work/lexical regressions; concurrency barriers; UI lifecycle regression; risk disclosures below (not asserted as solved) |
 
 Test paths: backend rows use `backend/tests/test_purchase_request_{schema,policy,queries,commands,concurrency,fulfillment,attachments}.py` and `backend/tests/test_migration_lifecycle.py`. Frontend rows use `frontend/src/procurement/requests/*.test.ts(x)`, `frontend/src/operational/procurement.test.ts`, OperationalScopeProvider.test.tsx and TenantWorkspace.test.tsx. Fixtures are test-only persisted inputs; there are no fake production requests/catalogues.
@@ -59,9 +59,9 @@ Test paths: backend rows use `backend/tests/test_purchase_request_{schema,policy
 | 5 Fulfillment — 28f896cfca19624f3fde33ac611de32a8e1b5fa3 | Missing route404; first combined 8 failed/75 passed (immutable-entry FOR UPDATE needed forbidden UPDATE permission) | Fixed by aggregate serialization/ordered item locks, without grant change. Fresh 40 fulfillment PASS + prior 53 unchanged command/concurrency PASS; zero skips; all 3 CLEAN. Approved; no Critical/Important open. |
 | 6 Attachments — 3350d54b791e18a01c6638c28d078cd11d06c6a1 | 10 missing module/route failures; auth-before-bytes/PNG trailer 2 failures; invalid first lock-wait experiment (ResourceClosedError) explicitly NOT valid RED, corrected lock-wait actual RED; PDF bound RED; review-fix trailer RED 7 failed/3 passed and lexical RED 6 failed/4 passed | Initial 71 regression PASS precedes last offload changes; final original 15 attachment PASS; fix1 25 PASS; final fix2 full attachment35 PASS/zero skips/CLEAN/Ruff. Review + 2 scoped fixes Approved; quadratic trailer and token-boundary Important findings resolved. Conservative PDF/no-scanner limitations remain. |
 | 7 Operational UI — 858d7d139e359a319cde25188deb55b695c31720 | 4 missing-interface suites + 1 PROCUREMENT acceptance test; invalid wire/navigation/network/node behavior RED; expected API paths RED3; review stale-request callback RED5 actual private visible outcomes | Backend realigned routes54 PASS/CLEAN; final frontend390 PASS/29 files; required57/scoped94 PASS; lint/TypeScript/Vite PASS; zero skips. Original review + fix Approved; Important callback and Minor formatting findings resolved. |
-| 8 Documentation + final verification — Phase A commit in task-8-report.md | Measured absent/incomplete documentation described above; no fabricated software RED | Documentation completeness/diff/ref GREEN only. Independent whole-branch review, fresh full gate, final evidence commit/clean tree and controller push are PENDING. |
+| 8 Documentation + final verification — Phase A commit in task-8-report.md | Measured absent/incomplete documentation described above; no fabricated software RED | Documentation completeness GREEN; independent whole-branch/final fixes and narrow gate fixes approved. Official attempt4 full gate PASS/zero skips/normal CLEAN; final docs-only evidence commit/clean checks recorded in task-8-report.md. Controller Task8 docs review/push pending. |
 
-Task reviews are controller-run independent reviews, not implementer self-approval. Frozen standalone migration guard duplication was an explicit plan-conflict disposition, not a hidden unresolved product defect. Baseline Starlette/npm-audit minors and specified limitations remain visible for final review. No counts in this table are final whole-project gate counts.
+Task reviews are controller-run independent reviews, not implementer self-approval. Frozen standalone migration guard duplication was an explicit plan-conflict disposition, not a hidden unresolved product defect. Baseline Starlette/npm-audit minors and specified limitations remain visible for final review. Earlier task rows carry scoped counts; the separate attempt4 record contains final whole-project gate totals.
 
 ## Whole-branch boundary inspection (Phase A)
 
@@ -76,12 +76,12 @@ git remote get-url origin
 git for-each-ref --format='%(refname) %(objectname)' refs/heads refs/remotes/origin
 ```
 
-Saved diff: local `task-8-whole-branch.diff` at input HEAD. This implementer audit checks domain/boundary/documentation evidence; it does not replace the controller's pending independent code review.
+Saved diff: local `task-8-whole-branch.diff` at input HEAD. This implementer audit checks domain/boundary/documentation evidence; it does not replace the controller's independent code review, subsequently completed and recorded below.
 
 Actual scan occurrences were inspected:
 - Demo/synthetic/DeploymentBanner/localStorage/SQLite references occur in approved docs as prohibitions/explanations. Added product domain code contains no production Demo import, synthetic data source, banner, SQLite or localStorage authority. frontend fixtures.ts is consumed by tests only.
 - Finance/fiscal/financial_forecasts strings in migration0014 OLD_CHECK/NEW_CHECK, tenancy model and frontend operational closed catalogue retain inherited sensitive entries while adding only the ten procurement permissions. No FINANCIAL_FISCAL or INTERNAL_GRANTS changes, finance routes or payment writes.
-- `skipped_count` in audit schemas is unchanged Data Hub import-context text in the diff, not a pytest/Vitest skip. No added test skip marker or harness weakening; official gate zero skips still must be proved in Phase B.
+- `skipped_count` in audit schemas is unchanged Data Hub import-context text in the diff, not a pytest/Vitest skip. No added test skip marker or harness weakening; official attempt4 subsequently proved zero skips across the full backend/script/frontend suites.
 - GRANT statements in new migration0014 are scoped runtime database privileges, including INSERT/SELECT evidence and bounded draft/config mutation, not actor authorization grants. Existing exact unit grant predicates and TemporaryPrivilegedGrant reads validate or reject access; no permission grant creation. Policy reads explicitly reject support/grant contexts.
 - Existing Data Hub workspace is extended only to expose validated real procurement navigation; inherited Data Hub behavior/finance catalogue strings are not new operational finance authority.
 - Changed paths are domain/migration/catalogue/audit/API registration/operational scope/test/frontend workspace/docs. No scripts/database_harness/dependency-lock/deploy/Demo product files changed.
@@ -95,7 +95,6 @@ Base ancestry exit0; Task8 input ancestry exit0. Official origin URL is `https:/
 | refs/heads/fix/demo-customer-workspace | 00e585edadc3d8cabd841ac7c2b92a36368892c4 |
 | refs/heads/integration/hiatlas-product-v1 | 0538d18b49f7c4d6efdbdec370f363c5061cc29c |
 | refs/heads/feat/hiatlas-customer-scope-v1 | fa354b73cdb43d600949e54b81595f416ef5cd65 |
-
 | refs/heads/release/hiatlas-demo-v1 | 1277afae61e349d01d04f551d505e5e491de9e29 |
 
 ## Decisions and ledger rulings, including cost if wrong
@@ -148,26 +147,100 @@ Ruling: Do not add backend actor-membership representation solely to hide candid
 - Manual fulfillment is a user attestation of real delivery, not automatic order/stock evidence. Post-FULFILLED corrections, structured material/project/cost center, monetary approval chains, reporting timezone/dashboard, notifications and downstream process/order/inventory integration remain future work.
 - Future PARTNER must be a separate actor/partner organization with explicitly shared downstream access; it may request payment, never approve/execute it. No Partner branch/code or payment/actor union change is part of this delivery.
 
-## Official final gate — Phase B pending
+## Final whole-branch review and one fix wave
 
-Do not reuse task-scoped totals. After controller's independent whole-branch review and resolution/review of any proved finding, the implementer must run exactly from the worktree root:
+Independent whole-branch review at2290660 inspected all63 changed files and found two Important issues, no Critical. Both were addressed in one local commit a9fe070e9f72c73ae19f47734f4fafcfaffc742a; independent scoped re-review found no new Critical/Important/actionable Minor breakage. Evidence: final-review.md, final-fix-report.md and final-fix-review.md in the local SDD directory.
+
+1. Historic receipt unit disclosure: attachment replay after draft A→B could return A after A access was revoked while B/action checks still passed. The shared replay path now authorizes both the current aggregate/action and the parsed original RequestView's tenant/contract/requester/private-draft visibility and current original-unit/read capability. Denial never reprojects/rewrites the receipt or reruns the operation. Real PostgreSQL test_attachment_receipt_reauthorizes_original_unit_after_draft_move proves revoked-A denial with B readable, exact old-response replay with both units authorized, and unchanged attachment/event/audit/receipt/version effects.
+2. Unicode parser/form bounds: JavaScript UTF-16 length/native maxLength rejected backend-valid supplementary text. Shared validation now counts code points, bounds work, rejects lone surrogates and retains blank/non-string/overlimit denial. Forms use matching custom validity and pre-transport guards; ref synchronization fixes validity reuse after item removal. Actual Python-generated wire and test_frontend_unicode_wire_matches_python_command_and_response_limits plus frontend parser/form/detail regressions cover title200/note4000 and rejection at201/4001.
+
+Scoped fix evidence: backend196 PASS/zero skips/normal owning CLEAN; initial frontend409 PASS before final form refinement; later full frontend410 collected with409 PASS/1 unchanged AccessLifecycle focus FAIL, retained. Final targeted form/auth32 PASS, final lint and corrected TypeScript/Vite build PASS. Auth source/tests were unchanged and unsuppressed; timing is an inference, not a proven cause. These are scoped historical counts, not final gate totals. The JSON Unicode wire is test-only; no production sample catalogue, dependencies, grants/migrations or harness changes.
+
+## Official gate attempt 1 — FAILED, fresh complete gate pending
+
+Executed exact official gate on2026-10-11 at product HEAD a9fe070e9f72c73ae19f47734f4fafcfaffc742a with UTF8 Tee capture of native stdout/stderr and PowerShell streams. Preserved full [attempt1 output](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-1.txt); canonical quality-gate.txt now records attempt2; the attempt1 file preserves this failed result. Initial unsupported Tee LiteralPath+Append binding failure happened before gate/database output and was separately preserved locally; corrected FilePath+Append capture recorded the actual gate.
+
+Backend collected1231: **1230 passed,1 failed,1 baseline warning in2273.00s (0:37:52), zero skips**. Failure: backend/tests/test_support_sessions.py:186, test_workspace_has_no_management_finance_or_fictitious_business_grants assumes operational_available only for DATAHUB. Approved implemented catalogue is DATAHUB+PROCUREMENT; unchanged support workspace describes code in OPERATIONAL_MODULES separately from authority. The same test's earlier read_only=True/capabilities=[] and no-FINANCE module-set assertions passed. Assertions after the stale expectation did not execute. Controller owns the narrow RED/GREEN correction and review; Task8 made no product/test/harness/spec change. Later lint/scripts/frontend/build/diff gate stages did not run.
+
+Original normal native Stop **also FAILED NONZERO_EXIT**; gate exit1, no normal CLEAN. Exact owned root f07721fc28434f5287faa383680e7581/port51438 was inspected using unchanged official ownership/seal/no-reparse guards before any removal. Native wrapper calls fast pg_ctl -w -t120 with150s process bound; reported category is nonzero-child exit rather than wrapper timeout/output drainage. Actual pg_ctl numeric code/stdout/stderr were withheld and process memory ended; no pg_ctl.log, postgres.log0bytes (fatal-only logging). Gate end06:06:56.743Z, shutdown checkpoint06:07:05Z, pg_control write06:07:28.333Z and directory write06:07:31.327Z establish shutdown metadata finalized after the wrapper/gate returned. Underlying cause/exact child-exit instant remain unknown.
+
+Fresh stopped proof: PID absent, pg_ctlstatus3, readiness2, cluster state shut down. After diagnostics preservation, controller authorized ONLY exact-root recovery; repeated guards/PID/status checks and literal removal without Force/kill/broad cleanup succeeded. Separate RECOVERY CLEAN does not convert original Stop/gate to PASS. Local diagnostic evidence: task-8-gate-attempt-1-diagnostic.md, task-8-cleanup-diagnostic.json, task-8-cleanup-timing.json and task-8-cleanup-recovery.txt. The original failures remain in the durable raw attempt. No retry before reviewed correction; final full gate still must itself prove every stage and normal stop/removal.
+
+## Reviewed narrow gate assertion correction
+
+Commit96b6706f6e8530bec5d152b93e933f75d695110a changes only the support-workspace test's expected operational availability from DATAHUB-only to the independent literal set DATAHUB+PROCUREMENT, retaining every empty-capability/read-only/FINANCE-exclusion/management-denial/actor/CSRF assertion. It imports no production constant and does not alter product permissions, catalogue, harness, stop timeout or dependencies. Recorded attempt1 is the RED; scoped11PASS/zero skips plus Ruff and normal owning CLEAN in16.07s are GREEN, including downstream assertions that did not run after the original failure. Exact scoped root8e7c9b6c5bcf4a44ae51f7f80c8374f5 was verified absent before commit. Independent task-8-gate-fix-review.md approves spec/quality with zero Critical/Important; source/evidence in task-8-gate-fix-report.md. These are scoped counts and do not replace a fresh complete gate.
+
+Controller authorized official attempt2 after that review. Attempt1 raw failure and unknown native-stop cause/separate recovery remain preserved; no timeout/harness change, cleanup trick or blind retry. Complete native UTF8 output is captured afresh with immediate LASTEXITCODE; local sidecar records output-emission timestamps to improve future diagnosis without changing the gate.
+## Official gate attempt 2 — FAILED, normal cleanup PASS
+
+Exact unchanged official command executed at96b6706f6e8530bec5d152b93e933f75d695110a from06:23:16.3497435Z to07:01:30.0131937Z on2026-10-11; exit1. Full [attempt2 output](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-2.txt) is identical to canonical quality-gate.txt (SHA25646DF6F9D92B632095FF07EF682F0F5515D5F03D9F4829EAF5BCB6BC0D682869D). Backend1231PASS/zero skips/1 existing Starlette warning in2117.03s and backend RuffPASS. Script37collected:23PASS/14FAIL/22 reader-thread warnings in113.49s, zero skips. Script lint/frontend tests/frontend lint/TypeScript/Vite/gate diff stages NOT RUN. Original normal owning cleanup PASS: af899371dc774da281d943fc667ce499/port54397 stopped and removed; fresh root absence and no postgres/pg_ctl processes confirmed. No recovery was needed. This gate remains FAILED.
+
+First failure is None.stderr.lower() at scripts/tests/test_local_testdb_scripts.py:107, following subprocess reader UTF8 decode failure for byte0xa2 at268. All22 reader warnings share that exact exception. Six incomplete-distribution cases fail None.lower(); four missing-distribution/stop/environment/password cases fail str+None; four controlled-native/junction/ownership cases fail membership on None. Earlier returncode/stdout checks passed, but subsequent protection assertions did not execute and are not claimed PASS.
+
+Cause is proved by controlled no-database probes of identical child bytes and the exact unchanged run_module helper. Our execution wrapper imposed PYTHONUTF8=1, making Python3.13 text=True subprocess decoding UTF8 while legacy Windows PowerShell emitted non-UTF8 localized CLIXML progress on stderr. Same stderr1333bytes/SHA256a38cb6375af7425ee8773588f1d9fd6783477db355376ad178eb277398b537e6: UTF8 override gives reader exception/stderrNone; only removing that override gives default cp1252/stderrstr and expected ASCII safety error. This was a Task8 capture-wrapper mistake; no product/harness change is justified by these failures. Local task-8-gate-attempt-2-diagnostic.md and task-8-encoding[-text]-probe.py/.txt preserve source/byte/timing evidence.
+
+Controller authorized removing ONLY the wrapper process-local PYTHONUTF8 override and first running the complete unchanged37 script tests plus Ruff with UTF8 outer Tee. Scoped GREEN at unchanged HEAD: all37 script tests PASS/zero skips/no warnings in108.52s, exit0; script RuffPASS/exit0. Transcript task-8-script-default-decoder-green.txt, UTC07:05:52.0927797Z–07:07:41.5384964Z. No cluster needed, test/harness edit, suppression or timeout change. This completes the full previously failed script stage with the intended default child decoder; it does not replace the required fresh complete gate. Controller then confirmed fresh complete attempt3; its failed outcome is retained below. Original attempt1 Stop failure/unknown cause/separate recovery and raw attempt2 failure remain preserved.
+## Official gate attempt 3 — FAILED frontend focus, normal cleanup PASS
+
+Controller authorized fresh exact official gate after proved wrapper remediation and full unchanged37-script/Ruff GREEN. At unchanged96b6706f6e8530bec5d152b93e933f75d695110a, UTC07:09:14.6725838Z–07:46:16.2816204Z on2026-10-11; exit1. Preflight explicitly verified PYTHONUTF8 absent/Pythonutf8_mode0/defaultdecodercp1252; UTF8 outer capture only. Full [attempt3 output](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-3.txt) equals canonical quality-gate.txt, SHA256A83933DE5E4866216F0461BBF48A961738175B6F6FA7EBCC1E20671EECF55A69.
+
+Backend1231PASS/zero skips/1 existing Starlette warning in1957.06s; backend RuffPASS. Script37PASS/zero skips/no warnings in107.99s; script RuffPASS. Frontend410tests:409PASS/1FAIL/zero skips;29files:28PASS/1FAIL;56.40s. Failure: maintenance/Controlled.test.tsx:31:983, maintenance review moves keyboard focus to contextual confirmation; expected confirmation button focus, actual body. Review dialog/button are rendered and button is enabled. Earlier input-focus assertion passed; later Tab/Escape/opener-restoration assertions did not execute. Frontend lint/TypeScript/Vite/official diff stages NOT RUN. Prior historical auth focus failure passed in this run; neither earlier failure is erased or excused as proven load-related behavior.
+
+Source proves a synchronization gap: unchanged test awaits findByRole button presence then immediately asserts focus; unchanged RequestMaintenanceDialog assigns focus in passive useEffect on review after asynchronous CSRF/reauthentication. DOM existence does not contractually wait for that effect. No fake timers/RAF/artificial callback delay in failing test/component; setup only stubs native jsdom dialog lifecycle. Source/test/setup unchanged vs exclusive base. Exact failed-process scheduling is untraced, so passive-effect timing remains an inference; no speculative product fix, test relaxation or blind retry. Local task-8-gate-attempt-3-diagnostic.md contains exact source/test phases and diagnosis limits; controller owns narrow RED/GREEN correction/review before another full gate.
+
+Original normal owning CLEAN PASS: root944c0015367c4f0494a64c44813a42d8/port57142 stopped and removed; root absent/no postgres or pg_ctl process fresh. No recovery/force/kill/lifecycle overlap/timeout/harness change. Full gate remains FAILED. Attempt1 unknown original native-stop failure/separate recovery and attempt2 wrapper failure/normal cleanup remain preserved distinctly; final success must include every stage and original normal owning cleanup in one fresh complete run.
+## Reviewed narrow frontend focus synchronization correction
+
+Commit3c79c91a77c995c8db67d00f92e8d2f871a87881 changes only the two actual observed focus assertions in auth/AccessLifecycle.test.tsx and maintenance/Controlled.test.tsx: after existing presence queries, await the same toHaveFocus predicate using existing Testing Library waitFor defaults. The auth import is the third changed line. No sleep/timeout/manual focus/product source/setup/dependency/harness change; initial input focus, Tab/Escape/opener restoration and auth storage-secret checks retain their original predicates. Preserved actual historical auth RED and gate3 maintenance RED precede the correction; exact scheduler interleavings remain untraced.
+
+Scoped affected suites51PASS/zero skips in15.04s; complete frontend410PASS across29files/zero skips in21.13s; frontend oxlintPASS and tsc/VitePASS(99modules,767ms), all native exits0. Local task-8-focus-fix-report.md/four original logs record these scoped results; independent task-8-focus-fix-review.md approves spec/quality with no Critical/Important finding or observed new frontend failure. These counts are historical/scoped and do not substitute for fresh complete gate totals. Controller authorized attempt4 at reviewed3c79c91; original three attempts and distinct cleanup outcomes remain intact.
+## Controller artifact preservation ruling
+
+Ruling: Preserve exact attempt2 raw bytes in .raw.gz and trim only whitespace-only separator lines in readable attempt2.txt, with original/readable hashes, explicitmanifest and verified decompressed bytehash — exactfailureevidence retained while gitdiff whitespace gate stays intact — if wrong, regenerate readableartifact from preservedraw, no product impact.
+
+## Versioned evidence manifest
+
+| File | Evidence retained |
+|---|---|
+| [Architecture](../../architecture/purchase-requests-v1.md) | Implemented API/authorization/state/quantity/file/UI contract, reviewed receipt/Unicode corrections and future boundaries |
+| This report |13-section spec→test matrix;8-task RED/GREEN/review ledger;17verbatimRulings/costs (16 original plus artifact preservation); actual review/fix/gate history; risks and final proof |
+| [Attempt1 raw failure](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-1.txt) |SHA2568F94F8379D3F8C8B2B3FE94D38211AF47EDE2021574F5C60F5F8A7E218061E93; backend assertion FAIL plus original Stop FAIL/unknown cause; distinct authorized recovery described above|
+| [Attempt2 readable failure](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-2.txt) |SHA256A61EC6F47E9CE0D60C81DD0E6BB2072C0D92A9B486BC4239127E1EEB28FD3CBC; only44 whitespace-only warning separators trimmed; failure text/counts unchanged; original normal CLEAN|
+| [Attempt2 exact raw bytes](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-2.raw.gz) |GzipSHA2561BEC10ACF9476D08667273FF91516FBF5E92DB984D7736D3C11076A93707B929; decompressed originalSHA25646DF6F9D92B632095FF07EF682F0F5515D5F03D9F4829EAF5BCB6BC0D682869D verified; byte-exact failed output retained|
+| [Attempt3 raw failure](2026-10-08-hiatlas-purchase-request-v1-quality-gate-attempt-3.txt) |SHA256A83933DE5E4866216F0461BBF48A961738175B6F6FA7EBCC1E20671EECF55A69; frontend focus FAIL; original normal CLEAN|
+| [Final attempt4 raw PASS](2026-10-08-hiatlas-purchase-request-v1-quality-gate.txt) |SHA256EBD6DB42F4079D810D4D8477D7DDF3AEA85F461FFBB934AFDD5857FA8664AF1A; all native stages/counts/zero skips/normal CLEAN/exit0|
+
+
+Attempt2 readable text differs only by removing two spaces on44 otherwise blank warning-separator lines to satisfy the unchanged staged whitespace check. Exact original bytes are retained in the linked raw gzip; decompression length/hash verified before trimming. Original/decompressedSHA256: 46DF6F9D92B632095FF07EF682F0F5515D5F03D9F4829EAF5BCB6BC0D682869D. ReadableSHA256: A61EC6F47E9CE0D60C81DD0E6BB2072C0D92A9B486BC4239127E1EEB28FD3CBC. CompressedSHA256: 1BEC10ACF9476D08667273FF91516FBF5E92DB984D7736D3C11076A93707B929. No content/exit/count/diagnosis change, Git attributes/guard relaxation or product impact. Other three native captures retain their exact original bytes/hashes.
+
+Detailed diagnostics, output-emission timing sidecars, scoped fix/review logs, final documentation audit and commit/clean-state record remain in the existing local ignored SDD execution directory. Their material decisions, failures, diagnosis limits and final evidence are carried into this versioned report; scratch artifacts are not republished as redundant evidence. Raw captures passed strict UTF8/no replacement-character checks and unmasked credential-URL inspection; fixture sentinel strings are test data. The final commit contains exactly these seven documentation/evidence files and changes no product, test, dependency or harness source after the official gate.
+## Official final gate — attempt4 PASS
+
+After approved3c79c91 focus synchronization correction, ran the exact unchanged command from the worktree root:
+
 ```powershell
 .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'
 ```
 
-Full native stdout/stderr and lifecycle must be captured without secrets in `docs/superpowers/validation/2026-10-08-hiatlas-purchase-request-v1-quality-gate.txt`. Start-Transcript alone can omit native stdout on this Windows host; durable gate evidence must include the actual native output and return code. Do not publish runtime/owner URLs or environment credentials.
+Product/code HEAD:3c79c91a77c995c8db67d00f92e8d2f871a87881. UTC2026-10-11T07:57:53.8116083Z–08:32:42.1378596Z. Actual native gate exit0. Preflight confirmed prior root absent/no active PostgreSQL process, PYTHONUTF8 absent, Pythonutf8_mode0/defaultcp1252 subprocess decoder. Only outer PowerShell stream/Tee files use UTF8; no child-decoder override, test/harness/timeout change or precleanup. Full native stdout/stderr and PowerShell streams are preserved in [official quality gate output](2026-10-08-hiatlas-purchase-request-v1-quality-gate.txt), SHA256EBD6DB42F4079D810D4D8477D7DDF3AEA85F461FFBB934AFDD5857FA8664AF1A. LASTEXITCODE was captured immediately and appears as [GATE_EXIT]0; Start-Transcript alone was not used as evidence.
 
-| Required final proof | Phase A status |
+| Required final proof | Actual attempt4 result |
 |---|---|
-| Complete backend tests / actual totals / zero skips | PENDING |
-| Complete frontend tests / actual totals / zero skips | PENDING |
-| Complete script tests / actual totals / zero skips | PENDING |
-| Backend/frontend/scripts lint | PENDING |
-| TypeScript and Vite build | PENDING |
-| Official PostgreSQL stop and owned-root removal | PENDING |
-| Independent whole-branch review / all proved findings resolved | PENDING |
-| Final git diff --check / staged check / ancestry/protected refs | PENDING final; Phase A fresh checks recorded locally |
-| Final evidence commit and clean working tree | PENDING |
-| Controller-only exclusive branch push/upstream/local=remote SHA | PENDING; no merge/deploy |
+| Complete backend tests |1231PASS/zero skips;1 existing Starlette warning;1865.71s(31:05)|
+| Complete script safety tests |37PASS/zero skips/no warnings;111.07s(1:51)|
+| Complete frontend tests |410PASS/zero skips;29/29filesPASS;20.95s|
+| Backend/script/frontend lint |Ruff app/tests/alembicPASS; Ruff script safety testsPASS; oxlintPASS|
+| TypeScript and Vite build |tsc -bPASS; Vite8.2.2PASS,99modules,250ms|
+| Official working/staged diff checks |BothPASS; existing LF→CRLF notices for docs retained|
+| Original owning PostgreSQL stop/removal |Normal CLEAN PASS, not recovery; fresh root absence/no postgres or pg_ctl process|
+| Native gate result |[PASS] HiAtlas Phase Quality Gate; [CLEAN]; [PASS] local quality gate and disposable database cleanup; exit0|
+| Independent whole-branch/final/narrow gate-fix reviews |APPROVED; proved Important findings resolved; no observed new breakage|
+| Fresh refs/origin/ancestry/Rulings/final docs checks |Six protected refs retain ledger SHAs; official origin unchanged; both bases are ancestors;17verbatimRulings; docs/whitespace checks recorded locally|
+| Final local evidence commit/clean tree |Docs/transcripts only; SHA and postcommit clean/staged checks recorded in task-8-report.md; product code unchanged after gate|
+| Controller Task8 docs review/exclusive branch push |Pending; no push/merge/deployment by implementer|
 
-Any failure requires diagnosis, reviewed fixes if code changes, and a new complete official gate. Recovery cannot be substituted for official cleanup PASS. Preserve strict ownership guards; no broad process kills/deletes, SQLite, skip marker, dependency change or harness relaxation. The controller performs the authorized narrow push only after final review/gate/evidence commit/clean status; no other refs, Partner branch, merge or deployment.
+Owning root746ef17999a04325b2f0ecc18f81c0ee/port60015 was created by this attempt. Normal CLEAN output08:32:42.1296062Z; fresh literal root-absence check and no PostgreSQL/pg_ctl process confirmed before final documentation work. Quality-stage PASS output08:31:44.0172531Z to CLEAN is58.1123531s emission interval, not the exact native Stop invocation duration. No force, broad cleanup, recovery or concurrent lifecycle. This original normal cleanup satisfies the gate requirement; it does not explain or erase attempt1/Task1/Task4 stop failures, whose unknown causes and separate recoveries remain disclosed.
+
+The full gate itself includes both corrected focus tests and the support-workspace assertion's downstream protections. Historical attempts1–3 remain FAILED with their exact counts and distinct original cleanup outcomes; scoped corrections never replace this complete attempt's proof. Frozen npm-audit High and the existing Starlette warning remain baseline concerns, with no dependency update/suppression. PDF compatibility/scanner absence, tentative buyer UX, immutable growth and lifecycle serialization limitations remain as documented above.
+
+Final Task8 changes following this gate update only existing architecture/evidence documentation and add the raw native captures. The final code ancestry points to the exact tested3c79c91 product state. Controller performs Task8 documentation review, then the authorized narrow push/upstream/local=remote SHA verification; other refs, Partner branch, merge and deployment remain outside this task.
