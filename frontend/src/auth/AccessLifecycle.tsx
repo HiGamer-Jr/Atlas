@@ -44,7 +44,10 @@ export default function AccessLifecycle({ path }: { path: string }) {
     const [validationAttempt, setValidationAttempt] = useState(0);
     const submission = useRef<AbortController | null>(null);
     const formRef = useRef<HTMLFormElement | null>(null);
+    const invitationGeneration = useRef(0);
+    const logoutRequest = useRef<AbortController | null>(null);
     useLayoutEffect(() => () => {
+        invitationGeneration.current++; logoutRequest.current?.abort();
         submission.current?.abort(); api.cancelAll();
         formRef.current?.reset();
     }, [api]);
@@ -58,11 +61,12 @@ export default function AccessLifecycle({ path }: { path: string }) {
     }, []);
     useEffect(() => {
         const replaceToken = () => {
+            invitationGeneration.current++; logoutRequest.current?.abort();
             submission.current?.abort(); api.cancelAll(); formRef.current?.reset();
             const next = new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
             window.history.replaceState(null, '', window.location.pathname);
             initialToken.current = next; setToken(next); setInspection(null); setPolicy(null);
-            setExisting(false); setDone(false); setTerminal(false); setError(''); setBusy(false);
+            setExisting(false); setDone(false); setTerminal(false); setError(''); setBusy(false); setLogoutPending(false);
             locked.current = false; setLoading(!forgot); setValidationAttempt(value => value + 1);
         };
         window.addEventListener('hashchange', replaceToken);
@@ -109,10 +113,23 @@ export default function AccessLifecycle({ path }: { path: string }) {
         return () => window.clearTimeout(timer);
     }, [done, forgot, logoutPending]);
     async function endSession(signal?: AbortSignal) {
+        if (signal?.aborted) return;
+        const generation = invitationGeneration.current;
+        logoutRequest.current?.abort();
+        const controller = new AbortController();
+        logoutRequest.current = controller;
+        const abort = () => controller.abort();
+        signal?.addEventListener('abort', abort, { once: true });
+        const current = () => !controller.signal.aborted && generation === invitationGeneration.current && logoutRequest.current === controller;
         api.cancelAll(); formRef.current?.reset();
-        try { await api.request('/auth/logout', { method: 'POST', contextId: null, signal }); if (!signal?.aborted) setLogoutPending(false); }
-        catch (cause) {
-            if (!signal?.aborted) setLogoutPending(!(cause instanceof ApiError && cause.status === 401));
+        try {
+            await api.request('/auth/logout', { method: 'POST', contextId: null, signal: controller.signal });
+            if (current()) setLogoutPending(false);
+        } catch (cause) {
+            if (current() && !isAbort(cause)) setLogoutPending(!(cause instanceof ApiError && cause.status === 401));
+        } finally {
+            signal?.removeEventListener('abort', abort);
+            if (logoutRequest.current === controller) logoutRequest.current = null;
         }
     }
     async function submit(event: FormEvent<HTMLFormElement>) {

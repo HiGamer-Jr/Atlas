@@ -73,3 +73,22 @@ it('swapped invite ignores late inspection and clears credentials',async()=>{con
 it('unmount clears password fields retained by browser DOM',async()=>{history.replaceState(null,'','/invite/accept#token=unmount-secret');const view=render(<App/>);await password();const field=screen.getByLabelText('Nova senha') as HTMLInputElement;view.unmount();expect(field.value).toBe('');});
 
 it('late replaced submission cannot clear new invitation credentials',async()=>{const {act}=await import('@testing-library/react');const original=fetch;let finish!:(response:Response)=>void;let acceptCount=0;vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>url.endsWith('/auth/accept-invite')?new Promise<Response>(resolve=>{acceptCount++;if(acceptCount===1)finish=resolve;}):original(url,init)));open('/invite/accept#token=old-submission');await password();fireEvent.click(screen.getByRole('button',{name:'Aceitar convite'}));await waitFor(()=>expect(finish).toBeDefined());await act(async()=>{history.replaceState(null,'','/invite/accept#token=new-submission');window.dispatchEvent(new HashChangeEvent('hashchange'));});await password();const field=screen.getByLabelText('Nova senha') as HTMLInputElement;fireEvent.click(screen.getByRole('button',{name:'Aceitar convite'}));await waitFor(()=>expect(acceptCount).toBe(2));await act(async()=>finish(new Response(null,{status:204})));fireEvent.submit(field.form!);await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0));});expect(acceptCount).toBe(2);expect(field.value).toBe('A-long-private-password!');expect(screen.queryByText('Convite aceito.')).not.toBeInTheDocument();});
+
+it.each([204,503])('replaced invite ignores old logout retry completion %s',async status=>{
+ const {act}=await import('@testing-library/react');
+ const original=fetch;let attempts=0;let finish!:(response:Response)=>void;
+ vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>{
+  if(url.endsWith('/auth/logout')){attempts++;if(attempts===1)return Promise.resolve(new Response('{}',{status:503}));return new Promise<Response>(resolve=>{finish=resolve;});}
+  return original(url,init);
+ }));
+ open('/invite/accept#token=old-logout');await password();fireEvent.click(screen.getByRole('button',{name:'Aceitar convite'}));
+ await screen.findByText('Convite aceito.');fireEvent.click(await screen.findByRole('button',{name:'Encerrar sess\u00e3o'}));await waitFor(()=>expect(finish).toBeDefined());
+ target='PARTNER';await act(async()=>{history.replaceState(null,'','/invite/accept#token=new-logout');window.dispatchEvent(new HashChangeEvent('hashchange'));});
+ await screen.findByText('Convite para parceiro');expect(screen.queryByRole('button',{name:'Encerrar sess\u00e3o'})).not.toBeInTheDocument();
+ await password();await act(async()=>finish(status===204?new Response(null,{status}):new Response('{}',{status})));
+ expect(screen.getByLabelText('Nova senha')).toHaveValue('A-long-private-password!');expect(screen.queryByRole('button',{name:'Encerrar sess\u00e3o'})).not.toBeInTheDocument();expect(screen.queryByText('Convite aceito.')).not.toBeInTheDocument();
+});
+it('current invitation keeps genuine logout retry failure visible',async()=>{
+ const original=fetch;vi.stubGlobal('fetch',vi.fn((url:string,init?:RequestInit)=>url.endsWith('/auth/logout')?Promise.resolve(new Response('{}',{status:503})):original(url,init)));
+ open('/invite/accept#token=current-logout');await password();fireEvent.click(screen.getByRole('button',{name:'Aceitar convite'}));await screen.findByText('Convite aceito.');fireEvent.click(await screen.findByRole('button',{name:'Encerrar sess\u00e3o'}));await waitFor(()=>expect(calls.filter(c=>c.path==='/auth/csrf').length).toBeGreaterThan(3));expect(screen.getByRole('button',{name:'Encerrar sess\u00e3o'})).toBeInTheDocument();expect(screen.getByRole('alert')).toHaveTextContent('Tente novamente antes de voltar ao login');
+});
