@@ -1,6 +1,6 @@
 # HiAtlas Partner / Trade Portal V1 — desenho arquitetural
 
-Data: 2026-10-11. Status: escrito e self-reviewed; aguardando aprovação do usuário. Este documento é um desenho, não uma implementação nem um implementation plan.
+Data: 2026-10-11. Status: escrito e self-reviewed; aprovado pelo usuário em 2026-10-11. Este documento é um desenho, não uma implementação nem um implementation plan.
 
 ## 1. Intenção, escopo e base verificada
 
@@ -296,4 +296,4 @@ Revisão realizada sobre o desenho e as fontes inventariadas:
 - Estado atual: registros/model registry/router confirmam ausência de COMEX/Finance operacionais; não tratar referências DataHub ou menus como entrega real.
 - Escopo: documento arquitetural, sem código ou implementation plan; dependências/deferred explícitos, sem placeholders de decisão essenciais.
 
-Written spec aguarda aprovação do usuário. Somente após essa aprovação poderá começar writing-plans, com plano apresentado para revisão antes de execução. Branch exclusiva permanece local: nenhum push, merge, deploy ou alteração de main/Demo nesta etapa.
+Written spec aprovado pelo usuário em 2026-10-11. Writing-plans autorizado; o plano deve ser apresentado para revisão antes de execução. Branch exclusiva permanece local: nenhum push, merge, deploy ou alteração de main/Demo nesta etapa.
