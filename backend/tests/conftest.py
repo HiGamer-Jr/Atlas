@@ -16,6 +16,7 @@ from tests.fixtures.maintenance_cases import (
     correction_case,  # noqa: F401 -- pytest fixture registration
     processing_case,  # noqa: F401 -- pytest fixture registration
 )
+from tests.fixtures.partners import partner_case  # noqa: F401 -- fixture registration
 from tests.fixtures.purchase_request_policy import (
     request_policy_case,  # noqa: F401 -- fixture registration
 )
@@ -26,6 +27,9 @@ from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "partner_membership_permissions",
+    "partner_memberships",
+    "partner_organizations",
     "request_command_receipts",
     "request_attachments",
     "request_fulfillment_entries",

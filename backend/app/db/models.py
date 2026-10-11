@@ -31,6 +31,11 @@ from app.organization.models import (
     MembershipUnitScope,
     OrganizationNode,
 )
+from app.partners.models import (
+    PartnerMembership,
+    PartnerMembershipPermission,
+    PartnerOrganization,
+)
 from app.procurement.requests.models import (
     ContractRequestPolicy,
     PurchaseRequest,
@@ -77,6 +82,9 @@ __all__ = [
     "Membership",
     "MembershipUnitScope",
     "OrganizationNode",
+    "PartnerMembership",
+    "PartnerMembershipPermission",
+    "PartnerOrganization",
     "PlatformRoleAssignment",
     "ProcessingRun",
     "PurchaseRequest",

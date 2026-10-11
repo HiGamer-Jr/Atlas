@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import ProgrammingError
 
 from alembic import command
 
@@ -191,3 +192,79 @@ def test_purchase_request_downgrade_refuses_evidence_loss(
             ).scalar_one()
     finally:
         migration_config.attributes.pop("connection", None)
+
+
+def test_partner_identity_migration_runtime_permissions(
+    db_owner, db_runtime, migration_config
+):
+    partner_tables = {
+        "partner_organizations",
+        "partner_memberships",
+        "partner_membership_permissions",
+    }
+    with db_runtime.connect() as conn:
+        assert partner_tables <= set(inspect(conn).get_table_names()), (
+            "Partner identity migration is missing"
+        )
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0015")
+            assert not partner_tables & set(inspect(conn).get_table_names())
+            command.upgrade(migration_config, "0016")
+            assert partner_tables <= set(inspect(conn).get_table_names())
+        with db_runtime.connect() as conn:
+            for table in sorted(partner_tables):
+                for privilege in ("SELECT", "INSERT", "UPDATE"):
+                    assert conn.execute(
+                        text(
+                            "SELECT has_table_privilege(current_user,:table,:privilege)"
+                        ),
+                        {"table": table, "privilege": privilege},
+                    ).scalar_one()
+                assert not conn.execute(
+                    text("SELECT has_table_privilege(current_user,:table,'DELETE')"),
+                    {"table": table},
+                ).scalar_one()
+            assert not conn.execute(
+                text("SELECT has_schema_privilege(current_user,'public','CREATE')")
+            ).scalar_one()
+        for table in sorted(partner_tables):
+            with pytest.raises(ProgrammingError) as error, db_runtime.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN forbidden INTEGER"))
+            assert error.value.orig.sqlstate == "42501"
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("unsafe", ["owner", "superuser", "missing"])
+def test_partner_identity_migration_rejects_unsafe_runtime_before_ddl(
+    db_owner, db_runtime, migration_config, unsafe
+):
+    with db_runtime.connect() as conn:
+        assert "partner_organizations" in inspect(conn).get_table_names(), (
+            "Partner identity migration is missing"
+        )
+    good_role = migration_config.attributes["runtime_role"]
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0015")
+            bad_role = (
+                db_owner.url.username
+                if unsafe == "owner"
+                else conn.execute(
+                    text("SELECT rolname FROM pg_roles WHERE rolsuper LIMIT 1")
+                ).scalar_one()
+                if unsafe == "superuser"
+                else None
+            )
+            migration_config.attributes["runtime_role"] = bad_role
+            with pytest.raises(RuntimeError, match="role"):
+                command.upgrade(migration_config, "0016")
+            assert "partner_organizations" not in inspect(conn).get_table_names()
+            migration_config.attributes["runtime_role"] = good_role
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+        migration_config.attributes["runtime_role"] = good_role
