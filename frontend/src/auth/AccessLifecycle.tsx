@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiClient } from '../api/client';
 import { ApiError, errorText, isAbort } from '../api/errors';
+import { parseTokenInspection } from '../partners/validate';
+import type { TokenInspectionDTO } from '../partners/types';
 import lightLogo from '../assets/hiatlas-light.png';
 import darkLogo from '../assets/hiatlas-dark.png';
 import './AccessLifecycle.css';
@@ -35,12 +37,17 @@ export default function AccessLifecycle({ path }: { path: string }) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [terminal, setTerminal] = useState(false);
+    const [inspection, setInspection] = useState<TokenInspectionDTO | null>(null);
     const [existing, setExisting] = useState(false);
     const [done, setDone] = useState(false);
     const [logoutPending, setLogoutPending] = useState(false);
     const [validationAttempt, setValidationAttempt] = useState(0);
     const submission = useRef<AbortController | null>(null);
-    useEffect(() => () => { submission.current?.abort(); }, []);
+    const formRef = useRef<HTMLFormElement | null>(null);
+    useLayoutEffect(() => () => {
+        submission.current?.abort(); api.cancelAll();
+        formRef.current?.reset();
+    }, [api]);
     const locked = useRef(false);
     const message = useRef<HTMLParagraphElement>(null);
     const initialToken = useRef(token);
@@ -49,6 +56,18 @@ export default function AccessLifecycle({ path }: { path: string }) {
         if (window.location.hash || window.location.search)
             window.history.replaceState(null, '', window.location.pathname);
     }, []);
+    useEffect(() => {
+        const replaceToken = () => {
+            submission.current?.abort(); api.cancelAll(); formRef.current?.reset();
+            const next = new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
+            window.history.replaceState(null, '', window.location.pathname);
+            initialToken.current = next; setToken(next); setInspection(null); setPolicy(null);
+            setExisting(false); setDone(false); setTerminal(false); setError(''); setBusy(false);
+            locked.current = false; setLoading(!forgot); setValidationAttempt(value => value + 1);
+        };
+        window.addEventListener('hashchange', replaceToken);
+        return () => window.removeEventListener('hashchange', replaceToken);
+    }, [api, forgot]);
     useEffect(() => {
         try { localStorage.setItem('hiatlas-theme', theme); }
         catch { /* Theme is optional; credentials never use storage. */ }
@@ -61,12 +80,16 @@ export default function AccessLifecycle({ path }: { path: string }) {
                 setError(invalidLink); setTerminal(true); setLoading(false); return;
             }
             try {
-                const result = await api.request<{ requires_authentication: boolean }>('/auth/token/validate', {
+                const wire = await api.request<unknown>('/auth/token/validate', {
                     method: 'POST', body: { token: initialToken.current, purpose: invite ? 'INVITE' : 'PASSWORD_RESET' }, contextId: null, signal: controller.signal,
                 });
+                if (controller.signal.aborted) return;
+                const result = parseTokenInspection(wire, invite);
+                if (!result) { setError(invalidLink); setTerminal(true); setToken(''); initialToken.current = ''; return; }
+                setInspection(result);
                 setExisting(invite && result.requires_authentication);
                 const requirements = await api.request<Policy>('/auth/password-policy', { contextId: null, signal: controller.signal });
-                setPolicy(requirements);
+                if (!controller.signal.aborted) setPolicy(requirements);
             } catch (cause) {
                 if (!controller.signal.aborted && !isAbort(cause)) {
                     setError(failure(cause));
@@ -86,14 +109,15 @@ export default function AccessLifecycle({ path }: { path: string }) {
         return () => window.clearTimeout(timer);
     }, [done, forgot, logoutPending]);
     async function endSession(signal?: AbortSignal) {
-        try { await api.request('/auth/logout', { method: 'POST', contextId: null, signal }); setLogoutPending(false); }
+        api.cancelAll(); formRef.current?.reset();
+        try { await api.request('/auth/logout', { method: 'POST', contextId: null, signal }); if (!signal?.aborted) setLogoutPending(false); }
         catch (cause) {
             if (!signal?.aborted) setLogoutPending(!(cause instanceof ApiError && cause.status === 401));
         }
     }
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked.current) return;
+        if (locked.current || (!forgot && (loading || terminal || !policy || !inspection))) return;
         const form = event.currentTarget;
         const data = new FormData(form);
         if (!forgot && !existing && data.get('password') !== data.get('confirmation')) {
@@ -112,8 +136,9 @@ export default function AccessLifecycle({ path }: { path: string }) {
                     authenticatedForInvite = true;
                 }
                 await api.request(invite ? '/auth/accept-invite' : '/auth/reset-password', {
-                    method: 'POST', body: existing ? { token } : { token, new_password: String(data.get('password')) }, contextId: null, signal: controller.signal,
+                    method: 'POST', body: { token, ...(invite ? { target_kind: inspection!.target_kind } : {}), ...(!existing ? { new_password: String(data.get('password')) } : {}) }, contextId: null, signal: controller.signal,
                 });
+                if (controller.signal.aborted) return;
                 setToken(''); initialToken.current = '';
                 await endSession(controller.signal);
             }
@@ -121,6 +146,7 @@ export default function AccessLifecycle({ path }: { path: string }) {
         } catch (cause) {
             if (!controller.signal.aborted && !isAbort(cause)) {
                 if (authenticatedForInvite) await endSession(controller.signal);
+                if (controller.signal.aborted) return;
                 setError(failure(cause));
                 if (cause instanceof ApiError && ['TOKEN_INVALID', 'TOKEN_EXPIRED'].includes(cause.code)) {
                     setTerminal(true); setToken(''); initialToken.current = '';
@@ -129,11 +155,13 @@ export default function AccessLifecycle({ path }: { path: string }) {
         } finally {
             for (const name of ['password', 'confirmation', 'current-password']) {
                 const field = form.elements.namedItem(name);
-                if (field instanceof HTMLInputElement) field.value = '';
+                if (submission.current === controller && field instanceof HTMLInputElement) field.value = '';
                 data.delete(name);
             }
-            locked.current = false;
-            if (!controller.signal.aborted) setBusy(false);
+            if (submission.current === controller) {
+                locked.current = false;
+                if (!controller.signal.aborted) setBusy(false);
+            }
         }
     }
     const title = forgot ? 'Recuperar acesso' : invite ? 'Aceitar convite' : 'Redefinir senha';
@@ -145,13 +173,14 @@ export default function AccessLifecycle({ path }: { path: string }) {
         <section className="access-content" aria-labelledby="lifecycle-title">
             <img className="hiatlas-logo" src={theme === 'light' ? lightLogo : darkLogo} alt="HiAtlas — Supply Chain Intelligence" width="1254" height="1254" />
             <div className="access-welcome"><h1 id="lifecycle-title">{title}</h1></div>
+            {invite && inspection && !terminal && <p>{inspection.target_kind === 'PARTNER' ? 'Convite para parceiro' : inspection.target_kind === 'INTERNAL' ? 'Convite para acesso interno' : 'Convite para organização'}</p>}
             {loading && <p role="status">Validando link…</p>}
             {error && <p ref={message} tabIndex={-1} id="access-error" role="alert">{error}</p>}
             {!loading && !terminal && !forgot && !policy && <button onClick={() => { setLoading(true); setError(''); setValidationAttempt(value => value + 1); }}>Tentar novamente</button>}
             {logoutPending && <><p role="alert">Não foi possível encerrar a sessão. Tente novamente antes de voltar ao login.</p><button onClick={() => void endSession()}>Encerrar sessão</button></>}
             {done ? <><p ref={message} tabIndex={-1} role="status">{forgot ? neutral : invite ? 'Convite aceito.' : 'Senha redefinida.'}</p>
                 {!forgot && <p>Entre novamente para acessar sua conta.</p>}
-            </> : !loading && !terminal && (forgot || policy) && !logoutPending && <form className="access-form" onSubmit={submit} aria-busy={busy}>
+            </> : !loading && !terminal && (forgot || policy) && !logoutPending && <form ref={formRef} className="access-form" onSubmit={submit} aria-busy={busy}>
                 {(forgot || existing) && <>
                     {existing && <p>Confirme sua identidade com a conta que recebeu o convite. Sua senha atual será preservada.</p>}
                     <label htmlFor="recovery-email">E-mail</label><input id="recovery-email" name="email" type="email" autoComplete="username" maxLength={320} required disabled={busy} aria-describedby={error ? 'access-error' : undefined} />
