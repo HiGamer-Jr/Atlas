@@ -1,8 +1,10 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
@@ -10,6 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -78,3 +81,45 @@ class PartnerMembershipPermission(Base):
     membership_id: Mapped[UUID] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(100), primary_key=True)
     active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+
+
+class PartnerLifecycleReceipt(Base):
+    __tablename__ = "partner_lifecycle_receipts"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "session_id",
+            "route",
+            "target_id",
+            "key",
+            name="uq_partner_lifecycle_receipt_key",
+            postgresql_nulls_not_distinct=True,
+        ),
+        CheckConstraint(
+            "digest ~ '^[0-9a-f]{64}$'", name="ck_partner_lifecycle_receipt_digest"
+        ),
+        CheckConstraint(
+            "status_code BETWEEN 200 AND 299 AND length(btrim(route)) > 0",
+            name="ck_partner_lifecycle_receipt_response",
+        ),
+        CheckConstraint(
+            "jsonb_typeof(response_json)='object' AND octet_length(response_json::text)<=65536",
+            name="ck_partner_lifecycle_receipt_body",
+        ),
+    )
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    session_id: Mapped[UUID] = mapped_column(
+        ForeignKey("auth_sessions.id", ondelete="RESTRICT")
+    )
+    route: Mapped[str] = mapped_column(String(200))
+    target_id: Mapped[UUID | None]
+    key: Mapped[UUID]
+    digest: Mapped[str] = mapped_column(String(64))
+    response_json: Mapped[dict] = mapped_column(JSONB)
+    status_code: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )

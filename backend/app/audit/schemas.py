@@ -232,6 +232,7 @@ class PartnerOrganizationSnapshot(BaseModel):
 
 
 class PartnerMembershipSnapshot(BaseModel):
+    recipient_provisioning: Literal["EXISTING", "CREATED"] = "EXISTING"
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, frozen=True)
     schema_version: Literal[1] = 1
     actor_kind: Literal["INTERNAL"] = "INTERNAL"

@@ -32,6 +32,7 @@ from app.organization.models import (
     OrganizationNode,
 )
 from app.partners.models import (
+    PartnerLifecycleReceipt,
     PartnerMembership,
     PartnerMembershipPermission,
     PartnerOrganization,
@@ -82,6 +83,7 @@ __all__ = [
     "Membership",
     "MembershipUnitScope",
     "OrganizationNode",
+    "PartnerLifecycleReceipt",
     "PartnerMembership",
     "PartnerMembershipPermission",
     "PartnerOrganization",

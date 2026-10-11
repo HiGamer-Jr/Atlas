@@ -27,6 +27,7 @@ from tests.identity_helpers import Clock, login, seed_user
 
 BACKEND = Path(__file__).resolve().parents[1]
 TABLES = (
+    "partner_lifecycle_receipts",
     "partner_membership_permissions",
     "partner_memberships",
     "partner_organizations",

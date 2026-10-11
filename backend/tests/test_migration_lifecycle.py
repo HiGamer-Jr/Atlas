@@ -268,3 +268,61 @@ def test_partner_identity_migration_rejects_unsafe_runtime_before_ddl(
     finally:
         migration_config.attributes.pop("connection", None)
         migration_config.attributes["runtime_role"] = good_role
+
+
+def test_partner_receipt_migration_roundtrip_constraints_and_privileges(
+    db_owner, db_runtime, migration_config
+):
+    from sqlalchemy import inspect
+
+    from alembic import command
+
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0017")
+            assert "partner_lifecycle_receipts" not in inspect(conn).get_table_names()
+            command.upgrade(migration_config, "0018")
+            inspector = inspect(conn)
+            assert {
+                fk["referred_table"]
+                for fk in inspector.get_foreign_keys("partner_lifecycle_receipts")
+            } == {"users", "auth_sessions"}
+            assert {
+                c["name"]
+                for c in inspector.get_check_constraints("partner_lifecycle_receipts")
+            } == {
+                "ck_partner_lifecycle_receipt_digest",
+                "ck_partner_lifecycle_receipt_response",
+                "ck_partner_lifecycle_receipt_body",
+            }
+            assert conn.scalar(
+                text(
+                    "SELECT indnullsnotdistinct FROM pg_index WHERE indexrelid='uq_partner_lifecycle_receipt_key'::regclass"
+                )
+            )
+            assert (
+                conn.scalar(
+                    text(
+                        "SELECT count(*) FROM pg_trigger WHERE tgrelid='partner_lifecycle_receipts'::regclass AND NOT tgisinternal"
+                    )
+                )
+                == 1
+            )
+        with db_runtime.connect() as conn:
+            for privilege in ("SELECT", "INSERT"):
+                assert conn.scalar(
+                    text(
+                        "SELECT has_table_privilege(current_user,'partner_lifecycle_receipts',:privilege)"
+                    ),
+                    {"privilege": privilege},
+                )
+            for privilege in ("UPDATE", "DELETE", "TRUNCATE"):
+                assert not conn.scalar(
+                    text(
+                        "SELECT has_table_privilege(current_user,'partner_lifecycle_receipts',:privilege)"
+                    ),
+                    {"privilege": privilege},
+                )
+    finally:
+        migration_config.attributes.pop("connection", None)

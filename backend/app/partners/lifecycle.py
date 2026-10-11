@@ -126,7 +126,11 @@ def create_partner_organization(
 
 
 def create_partner_membership(
-    db: Session, principal: Principal, command: PartnerMembershipCreate
+    db: Session,
+    principal: Principal,
+    command: PartnerMembershipCreate,
+    *,
+    recipient_provisioning="EXISTING",
 ) -> PartnerMembership:
     capability = "partners.memberships.manage"
     try:
@@ -150,7 +154,7 @@ def create_partner_membership(
                 "partner.membership.created",
                 "partner_membership",
                 member.id,
-                audit.membership_snapshot(member, desired),
+                audit.membership_snapshot(member, desired, recipient_provisioning),
             )
             return member
     except IntegrityError:
@@ -214,3 +218,49 @@ def replace_partner_membership(
             command.reason,
         )
         return member
+
+
+def create_partner_recipient_membership(db, principal, organization_id, payload):
+    """Provision a real global identity only for a curated membership command."""
+    from app.identity.tokens import lifecycle_lock
+
+    with db.begin_nested():
+        lifecycle_lock(db)
+        lock_operator_population(db)
+        existing = (
+            db.scalar(
+                select(User).where(User.email_normalized == payload.recipient.email)
+            )
+            if payload.recipient is not None
+            else db.get(User, payload.user_id)
+        )
+        identity_locks(
+            db,
+            principal,
+            "partners.memberships.manage",
+            existing.id if existing else None,
+        )
+        organization_lock(db, organization_id)
+        revalidate(db, principal, "partners.memberships.manage")
+        provisioning = "EXISTING"
+        if existing is None and payload.recipient is not None:
+            existing = User(
+                email_normalized=payload.recipient.email,
+                display_name=payload.recipient.display_name,
+                active=True,
+                blocked=False,
+            )
+            db.add(existing)
+            db.flush()
+            provisioning = "CREATED"
+        if existing is None or not existing.active or existing.blocked:
+            raise ApiError(404, "NOT_FOUND", "Registro não encontrado.")
+        command = PartnerMembershipCreate(
+            organization_id=organization_id,
+            user_id=existing.id,
+            permissions=payload.permissions,
+            expected_version=payload.expected_version,
+        )
+        return create_partner_membership(
+            db, principal, command, recipient_provisioning=provisioning
+        )

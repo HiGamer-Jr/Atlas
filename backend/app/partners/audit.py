@@ -16,8 +16,9 @@ def organization_snapshot(organization):
     )
 
 
-def membership_snapshot(membership, permissions):
+def membership_snapshot(membership, permissions, recipient_provisioning="EXISTING"):
     return PartnerMembershipSnapshot(
+        recipient_provisioning=recipient_provisioning,
         partner_org_id=membership.organization_id,
         partner_membership_id=membership.id,
         user_id=membership.user_id,
