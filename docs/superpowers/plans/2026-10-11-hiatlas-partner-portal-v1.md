@@ -58,7 +58,7 @@ Backend: iniciar PostgreSQL descartável pelo módulo oficial, na raiz: Import-M
 
 Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm.cmd run build. Não rodar teste vermelho que dependa de arquivos ocultos de outra worktree.
 
-### T1 — Persistência PARTNER com integridade e migração
+### Task 1: Persistência PARTNER com integridade e migração
 
 **Files:** criar backend/app/partners/models.py, __init__.py, backend/alembic/versions/0016_partner_identity.py, backend/tests/fixtures/partners.py, backend/tests/test_partner_models.py; modificar backend/app/db/models.py, backend/tests/conftest.py e test_migration_lifecycle.py.
 
@@ -70,7 +70,7 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 - [ ] Rodar comando anterior; exigir PASS sem skips e nenhuma regressão de migration lifecycle.
 - [ ] Revisar e commit local: feat: add separate partner identity persistence.
 
-### T2 — Lifecycle curado, catálogo exclusivo e auditoria atômica
+### Task 2: Lifecycle curado, catálogo exclusivo e auditoria atômica
 
 **Files:** criar backend/app/partners/{capabilities,schemas,audit,lifecycle}.py e tests/test_partner_lifecycle.py; modificar app/audit/schemas.py e app/platform/capabilities.py somente para operações internas dedicadas.
 
@@ -82,7 +82,7 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 - [ ] Rodar testes T1/T2 e regressões de roles/audit existentes identificadas por rg; PASS e diff check.
 - [ ] Commit: feat: add curated partner lifecycle and audit.
 
-### T3 — Convites discriminados e preservação da identidade existente
+### Task 3: Convites discriminados e preservação da identidade existente
 
 **Files:** criar app/partners/invitations.py e tests/test_partner_invitations.py; modificar app/identity/models.py,tokens.py, alembic/versions/0017_partner_invitation_target.py (revision 0017, down_revision 0016), schemas/rotas identity apenas nos pontos de invite realmente existentes.
 
@@ -94,7 +94,7 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 - [ ] Rodar testes anteriores + tokens/outbox atuais; PASS zero skips.
 - [ ] Commit: feat: support typed partner invitations safely.
 
-### T4 — API mínima, disponibilidade fechada e isolamento de classe
+### Task 4: API mínima, disponibilidade fechada e isolamento de classe
 
 **Files:** criar app/partners/availability.py,routes.py,receipts.py, alembic/versions/0018_partner_lifecycle_receipts.py e tests/test_partner_availability.py; modificar app/api/router.py, partners/models.py, db/models.py e tests/conftest.py. Contratos Pydantic em partners/schemas.py.
 
@@ -108,7 +108,7 @@ Lifecycle interno expõe POST /api/platform/partners/organizations, POST /api/pl
 - [ ] Rodar testes T1–T4 e auth/context existentes; PASS sem expor dados estrangeiros.
 - [ ] Commit: feat: expose guarded partner lifecycle and unavailable domain boundary.
 
-### T5 — Frontend tipado, convite PARTNER e estado indisponível
+### Task 5: Frontend tipado, convite PARTNER e estado indisponível
 
 **Files:** criar frontend/src/partners/types.ts,validate.ts,api.ts,PartnerAvailability.tsx e validate.test.ts,api.test.ts,PartnerAvailability.test.tsx; modificar auth/AccessLifecycle.tsx e AccessLifecycle.test.tsx apenas para alvo discriminado.
 
@@ -120,7 +120,7 @@ Lifecycle interno expõe POST /api/platform/partners/organizations, POST /api/pl
 - [ ] Rodar comando anterior, npm.cmd run lint e npm.cmd run build; PASS.
 - [ ] Commit: feat: consume partner invitation and unavailable domain contracts.
 
-### T6 — Concorrência, regressão integral e fechamento da entrega A
+### Task 6: Concorrência, regressão integral e fechamento da entrega A
 
 **Files:** criar backend/tests/test_partner_concurrency.py; complementar testes das tarefas proprietárias; atualizar docs/superpowers/plans/2026-10-11-hiatlas-partner-portal-v1.md com evidências e limites entregues.
 
@@ -153,4 +153,18 @@ Spec 1–5 e identidade de 6/8/9/13–15: T1–T6. Segurança operacional de 6�
 
 Assinaturas de T1–T5 são contratos deste plano; referências cruzadas usam os mesmos nomes. T4 não depende de contexto/processo inexistente; T5 não inventa login/role. A disponibilidade negativa é software real testável, sem afirmar testes positivos de sharing antes de B. Cada tarefa fecha ciclo de testes/revisão/commit. Review Focus possui testes nas tarefas indicadas. Habilitar B/C depende de novas bases validadas e planos revisados.
 
-Status: plano escrito e self-reviewed; aguardando revisão do usuário e escolha de método para esta fase. Nenhum código foi implementado.
+Status: execução da entrega A autorizada pelo usuário; método Subagent-driven confirmado em 2026-10-11. Gates B/C permanecem bloqueados pelas dependências documentadas.
+
+## Execution evidence and controller delegation — 2026-10-12
+
+Exactly Tasks 1–6 implement delivery A. Tasks 1–5 have independent spec/quality approval; Task 6 adds real PostgreSQL concurrency regressions and this execution record, with its independent review pending. The actual task reports in .superpowers/sdd/2026-10-11-hiatlas-partner-portal-v1/task-N-report.md retain detailed commands, RED/GREEN evidence, cleanup and local commits; progress.md records review corrections and rulings.
+
+Task 1: persistence/catalog/migrations (39 targeted PASS), reviewed through 65e5593. Task 2: curated lifecycle, dedicated capability/current identity/version/audit (122 combined plus 9 final lifecycle PASS), reviewed through 52e51b6. Task 3: typed partner invitation with recipient authentication, preserved identity and reset revocation (123 PASS; recovery lock correction 48 PASS), reviewed through be2987c. Task 4: guarded API, immutable receipts, genuinely new recipient onboarding and explicit unavailable domain (183 scoped PASS), reviewed through fed0d6d. Task 5: typed frontend and invitation lifecycle, corrected stale logout retry ownership (54 targeted PASS, lint/build PASS), reviewed through 3bf03c7. Counts describe historical task selections, not distinct total branch tests or canonical gate results.
+
+Compatibility rulings: preserve INTERNAL operator invitations alongside TENANT/PARTNER targets; nullable membership fields alone never establish INTERNAL authority. Curated membership POST accepts exactly one existing user_id or recipient{email,display_name}; a genuinely new recipient creates a passwordless User with no tenant/platform role, existing identity is preserved, inactive/blocked identity fails closed. Shared invitation and admin recovery paths acquire LIFECYCLE_LOCK before OPERATOR_LOCK, then sorted user/session locks; the approved recovery correction prevents inversion. Lifecycle PATCH requires Idempotency-Key just as POST; current authority and original target binding are checked for replay.
+
+Task 6 controller ruling supersedes its original full-gate timing: scoped races/necessary regression tests and local tests/docs commit happen first; controller performs independent Task 6 review and whole-branch review, then runs the canonical .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18' once against the reviewed final branch. Full completion remains pending that gate's actual PASS, zero skips and normal CLEAN; this record does not claim the gate ran. The controller records final counts and final evidence/commit afterward.
+
+Delivery A contains partner identity/catalog/lifecycle/invitation and authenticated DOMAIN_UNAVAILABLE/options[]/context503 behavior. It creates no COMEX Process, sharing grant, operational PartnerAccessContext, scanner/document/payment entities or operational provider. Gate B requires an independently approved real COMEX Process Foundation, resource-scoped grants and current revocation semantics. Gate C requires real scanner and closed Finance intake contracts after B. Gate B/C text is future planning context, not additional implementation tasks in this six-task execution. Existing Starlette warning and frozen source-map-js GHSA-68fv-2mgg-jv7q advisory remain disclosed/deferred; dependency remediation is separate and no lockfile change is authorized here. No push, merge, deploy or protected-reference change.
+
+Task6 scoped verification:7 new concurrency/atomicity cases plus Task1–4/identity/recovery regressions returned137 PASS, zero failures/errors/skips, existing Starlette warning (201.12s). Canonical gate remains pending controller review sequence; no fullPASS claim.
