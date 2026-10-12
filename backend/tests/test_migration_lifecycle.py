@@ -326,3 +326,218 @@ def test_partner_receipt_migration_roundtrip_constraints_and_privileges(
                 )
     finally:
         migration_config.attributes.pop("connection", None)
+
+
+def test_partner_receipt_downgrade_preserves_original_replay(
+    admin, db_owner, db_runtime, migration_config
+):
+    from tests.test_partner_availability import ORG, headers
+
+    key = headers()
+    payload = {"name": "Durable external", "category": "OTHER"}
+    first = admin.post(ORG, json=payload, headers=key)
+    assert first.status_code == 201, first.text
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            before = conn.execute(
+                text("SELECT * FROM partner_lifecycle_receipts")
+            ).all()
+            with pytest.raises(RuntimeError, match="receipt evidence must be empty"):
+                command.downgrade(migration_config, "0017")
+            assert (
+                conn.scalar(text("SELECT version_num FROM alembic_version")) == "0018"
+            )
+            assert (
+                conn.execute(text("SELECT * FROM partner_lifecycle_receipts")).all()
+                == before
+            )
+            assert (
+                conn.scalar(
+                    text(
+                        "SELECT count(*) FROM pg_trigger WHERE tgrelid='partner_lifecycle_receipts'::regclass AND NOT tgisinternal"
+                    )
+                )
+                == 1
+            )
+        replay = admin.post(ORG, json=payload, headers=key)
+        assert replay.status_code == first.status_code
+        assert replay.json() == first.json()
+        with db_runtime.connect() as conn:
+            for table in (
+                "partner_organizations",
+                "partner_lifecycle_receipts",
+                "audit_events",
+            ):
+                assert conn.scalar(text(f"SELECT count(*) FROM {table}")) == 1
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("evidence", ["organization", "membership", "permission"])
+def test_partner_identity_downgrade_refuses_populated_evidence(
+    db_owner, db_runtime, migration_config, auth_users, evidence
+):
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0016")
+            org = conn.scalar(
+                text(
+                    "INSERT INTO partner_organizations(name,category) VALUES ('Durable','OTHER') RETURNING id"
+                )
+            )
+            if evidence != "organization":
+                member = conn.scalar(
+                    text(
+                        "INSERT INTO partner_memberships(organization_id,user_id) VALUES (:org,:user) RETURNING id"
+                    ),
+                    {"org": org, "user": auth_users["member_user"]},
+                )
+                if evidence == "permission":
+                    conn.execute(
+                        text(
+                            "INSERT INTO partner_membership_permissions(organization_id,membership_id,code,active) VALUES (:org,:member,'partner.processes.read',false)"
+                        ),
+                        {"org": org, "member": member},
+                    )
+            tables = (
+                "partner_organizations",
+                "partner_memberships",
+                "partner_membership_permissions",
+            )
+            before = {
+                table: conn.execute(text(f"SELECT * FROM {table}")).all()
+                for table in tables
+            }
+            expected_table = {
+                "organization": "partner_organizations",
+                "membership": "partner_memberships",
+                "permission": "partner_membership_permissions",
+            }[evidence]
+            with pytest.raises(
+                RuntimeError, match=f"identity evidence must be empty.*{expected_table}"
+            ):
+                command.downgrade(migration_config, "0015")
+            assert (
+                conn.scalar(text("SELECT version_num FROM alembic_version")) == "0016"
+            )
+            assert {
+                table: conn.execute(text(f"SELECT * FROM {table}")).all()
+                for table in tables
+            } == before
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize("binding", ["partner", "issuer"])
+@pytest.mark.parametrize("state", ["pending", "consumed", "invalidated"])
+def test_partner_token_downgrade_refuses_binding_history(
+    db_owner, db_runtime, migration_config, auth_users, partner_case, binding, state
+):
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, "0017")
+            conn.execute(
+                text(
+                    "INSERT INTO security_tokens(token_hash,purpose,recipient_user_id,recipient_email,issuer_role,issuer_user_id,partner_membership_id,created_at,expires_at,consumed_at,invalidated_at) VALUES (repeat('a',64),'INVITE',:recipient,'partner@example.test','PLATFORM_ADMIN',:issuer,:member,now(),now()+interval '1 hour',CASE WHEN :state='consumed' THEN now() END,CASE WHEN :state='invalidated' THEN now() END)"
+                ),
+                {
+                    "recipient": partner_case["user"],
+                    "issuer": auth_users["admin_user"],
+                    "member": partner_case["membership"]
+                    if binding == "partner"
+                    else None,
+                    "state": state,
+                },
+            )
+            before = conn.execute(text("SELECT * FROM security_tokens")).all()
+            with pytest.raises(
+                RuntimeError, match="invitation binding evidence must be empty"
+            ):
+                command.downgrade(migration_config, "0016")
+            assert (
+                conn.scalar(text("SELECT version_num FROM alembic_version")) == "0017"
+            )
+            assert conn.execute(text("SELECT * FROM security_tokens")).all() == before
+            assert {"fk_security_partner_membership", "fk_security_issuer_user"} <= {
+                fk["name"] for fk in inspect(conn).get_foreign_keys("security_tokens")
+            }
+            assert "ck_security_invitation_target" in {
+                check["name"]
+                for check in inspect(conn).get_check_constraints("security_tokens")
+            }
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)
+
+
+@pytest.mark.parametrize(
+    "revision,target,tables",
+    [
+        ("0018", "0017", ("partner_lifecycle_receipts",)),
+        ("0017", "0016", ("security_tokens",)),
+        (
+            "0016",
+            "0015",
+            (
+                "partner_organizations",
+                "partner_memberships",
+                "partner_membership_permissions",
+            ),
+        ),
+    ],
+)
+def test_partner_downgrade_serializes_writers_before_evidence_check(
+    db_owner, db_runtime, migration_config, revision, target, tables
+):
+    from sqlalchemy import event
+    from sqlalchemy.exc import DBAPIError
+
+    checked = set()
+    advisory_order = []
+
+    def before_check(conn, cursor, statement, parameters, context, executemany):
+        if statement.startswith("SELECT pg_advisory_xact_lock("):
+            advisory_order.append(int(statement.split("(", 1)[1].split(")", 1)[0]))
+        if statement.startswith("LOCK TABLE "):
+            assert advisory_order == [720260925, 720260922]
+            with db_owner.begin() as contender:
+                for key in advisory_order:
+                    assert not contender.scalar(
+                        text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": key}
+                    )
+        if not statement.startswith("SELECT EXISTS(SELECT 1 FROM "):
+            return
+        table = statement.split("FROM ", 1)[1].split(")", 1)[0].split()[0]
+        if table not in tables:
+            return
+        for protected in tables:
+            assert conn.scalar(
+                text(
+                    "SELECT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() "
+                    "AND relation=to_regclass(:table) AND mode='AccessExclusiveLock' AND granted)"
+                ),
+                {"table": protected},
+            )
+            with pytest.raises(DBAPIError) as blocked, db_owner.begin() as writer:
+                writer.execute(text("SET LOCAL lock_timeout='50ms'"))
+                writer.execute(text(f"INSERT INTO {protected} DEFAULT VALUES"))
+            assert blocked.value.orig.sqlstate == "55P03"
+        checked.add(table)
+
+    try:
+        with db_owner.begin() as conn:
+            migration_config.attributes["connection"] = conn
+            command.downgrade(migration_config, revision)
+            event.listen(conn, "before_cursor_execute", before_check)
+            try:
+                command.downgrade(migration_config, target)
+            finally:
+                event.remove(conn, "before_cursor_execute", before_check)
+            assert checked == set(tables)
+            command.upgrade(migration_config, "head")
+    finally:
+        migration_config.attributes.pop("connection", None)

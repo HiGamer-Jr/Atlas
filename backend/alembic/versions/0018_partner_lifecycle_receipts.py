@@ -104,5 +104,16 @@ def upgrade():
 
 def downgrade():
     guard()
+    # Match invitation/lifecycle maintenance order before acquiring DDL table locks.
+    op.execute("SELECT pg_advisory_xact_lock(720260925)")  # LIFECYCLE_LOCK
+    op.execute("SELECT pg_advisory_xact_lock(720260922)")  # OPERATOR_LOCK
+    conn = op.get_bind()
+    op.execute("LOCK TABLE partner_lifecycle_receipts IN ACCESS EXCLUSIVE MODE")
+    if conn.execute(
+        sa.text("SELECT EXISTS(SELECT 1 FROM partner_lifecycle_receipts)")
+    ).scalar_one():
+        raise RuntimeError(
+            "Partner lifecycle receipt evidence must be empty before technical downgrade"
+        )
     op.drop_table("partner_lifecycle_receipts")
     op.execute("DROP FUNCTION partner_lifecycle_receipt_immutable()")

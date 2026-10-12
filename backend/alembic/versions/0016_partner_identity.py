@@ -141,5 +141,15 @@ def upgrade():
 
 def downgrade():
     guard()
+    # Match invitation/lifecycle maintenance order before acquiring DDL table locks.
+    op.execute("SELECT pg_advisory_xact_lock(720260925)")  # LIFECYCLE_LOCK
+    op.execute("SELECT pg_advisory_xact_lock(720260922)")  # OPERATOR_LOCK
+    conn = op.get_bind()
+    op.execute("LOCK TABLE " + ", ".join(TABLES) + " IN ACCESS EXCLUSIVE MODE")
+    for table in reversed(TABLES):
+        if conn.execute(sa.text(f"SELECT EXISTS(SELECT 1 FROM {table})")).scalar_one():
+            raise RuntimeError(
+                f"Partner identity evidence must be empty before technical downgrade: {table}"
+            )
     for table in reversed(TABLES):
         op.drop_table(table)
