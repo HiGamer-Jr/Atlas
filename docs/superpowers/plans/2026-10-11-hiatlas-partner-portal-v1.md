@@ -1,6 +1,6 @@
 # HiAtlas Partner Portal V1 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Entregar primeiro a fundação testável de identidade PARTNER, preservando os gates que impedem habilitar um portal sem COMEX operacional, scanner e payment intake reais.
 
@@ -64,11 +64,11 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 
 **Interfaces:** produzir PartnerOrganization(id: UUID, name: str, category: Literal[TRADE,CUSTOMS_BROKER,LOGISTICS_OPERATOR,FREIGHT_FORWARDER,OTHER], active: bool, version: int); PartnerMembership(id: UUID, organization_id: UUID, user_id: UUID, active: bool, blocked: bool, invitation_pending: bool, version: int); PartnerMembershipPermission(organization_id: UUID, membership_id: UUID, code: str). version começa em 1; criação recebe expected_version=0. Permission pertence ao catálogo PARTNER, não TenantRolePermission.
 
-- [ ] RED: test_partner_member_is_not_tenant_membership afirma nenhuma Membership/TenantRole criada; test_partner_permission_cross_org_fk_rejected afirma FK composta nega membership de outra organização; test_partner_user_org_unique afirma duplicata é rejeitada; test_partner_identity_migration_runtime_permissions verifica runtime não pode DDL, upgrade/downgrade e limpeza em ordem.
-- [ ] Rodar uv run --frozen pytest tests/test_partner_models.py tests/test_migration_lifecycle.py -q; registrar FAIL por recurso ausente.
-- [ ] GREEN: criar constraints/FKs/unique e registrar modelos. Integrar tabelas ao cleanup do fixture antes de users; sem grants/processos/contexto fake.
-- [ ] Rodar comando anterior; exigir PASS sem skips e nenhuma regressão de migration lifecycle.
-- [ ] Revisar e commit local: feat: add separate partner identity persistence.
+- [x] RED: test_partner_member_is_not_tenant_membership afirma nenhuma Membership/TenantRole criada; test_partner_permission_cross_org_fk_rejected afirma FK composta nega membership de outra organização; test_partner_user_org_unique afirma duplicata é rejeitada; test_partner_identity_migration_runtime_permissions verifica runtime não pode DDL, upgrade/downgrade e limpeza em ordem.
+- [x] Rodar uv run --frozen pytest tests/test_partner_models.py tests/test_migration_lifecycle.py -q; registrar FAIL por recurso ausente.
+- [x] GREEN: criar constraints/FKs/unique e registrar modelos. Integrar tabelas ao cleanup do fixture antes de users; sem grants/processos/contexto fake.
+- [x] Rodar comando anterior; exigir PASS sem skips e nenhuma regressão de migration lifecycle.
+- [x] Revisar e commit local: feat: add separate partner identity persistence.
 
 ### Task 2: Lifecycle curado, catálogo exclusivo e auditoria atômica
 
@@ -76,11 +76,11 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 
 **Interfaces:** PartnerOrganizationCreate(name,category,expected_version=0); PartnerMembershipCreate(organization_id,user_id,permissions,expected_version=0); PartnerMembershipReplace(active,blocked,permissions,expected_version,reason). Produzir create_partner_organization(db: Session, principal: Principal, command: PartnerOrganizationCreate) -> PartnerOrganization; create_partner_membership(db,principal,command: PartnerMembershipCreate) -> PartnerMembership; replace_partner_membership(db,principal,membership_id: UUID,command: PartnerMembershipReplace) -> PartnerMembership. Services exigem PLATFORM_ADMIN atual e capability interna partners.organizations.manage ou partners.memberships.manage; dependências de autenticação permanecem necessárias, não confiar no Principal sem revalidar role em lock.
 
-- [ ] RED: test_support_and_tenant_cannot_provision afirma 403, sem linha/audit residual; test_partner_capabilities_never_enter_tenant_role_catalog afirma ausência na lista atribuível TENANT; test_membership_replace_version_and_audit_atomic afirma uma versão/audit, segundo expected_version antigo dá 409 e auditoria falha provoca rollback; test_reactivate_does_not_restore_removed_permissions afirma conjunto explicitamente substituído.
-- [ ] Rodar uv run --frozen pytest tests/test_partner_lifecycle.py -q; confirmar FAIL comportamental.
-- [ ] GREEN: usar catálogo fechado da seção 8 do spec, substituição atômica e snapshots audit tipados; actor_role permanece plataforma/NULL, actor_kind separado/versionado. Nenhum auto-seed de membro/capability ou permissão administrativa PARTNER.
-- [ ] Rodar testes T1/T2 e regressões de roles/audit existentes identificadas por rg; PASS e diff check.
-- [ ] Commit: feat: add curated partner lifecycle and audit.
+- [x] RED: test_support_and_tenant_cannot_provision afirma 403, sem linha/audit residual; test_partner_capabilities_never_enter_tenant_role_catalog afirma ausência na lista atribuível TENANT; test_membership_replace_version_and_audit_atomic afirma uma versão/audit, segundo expected_version antigo dá 409 e auditoria falha provoca rollback; test_reactivate_does_not_restore_removed_permissions afirma conjunto explicitamente substituído.
+- [x] Rodar uv run --frozen pytest tests/test_partner_lifecycle.py -q; confirmar FAIL comportamental.
+- [x] GREEN: usar catálogo fechado da seção 8 do spec, substituição atômica e snapshots audit tipados; actor_role permanece plataforma/NULL, actor_kind separado/versionado. Nenhum auto-seed de membro/capability ou permissão administrativa PARTNER.
+- [x] Rodar testes T1/T2 e regressões de roles/audit existentes identificadas por rg; PASS e diff check.
+- [x] Commit: feat: add curated partner lifecycle and audit.
 
 ### Task 3: Convites discriminados e preservação da identidade existente
 
@@ -88,11 +88,11 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 
 **Interfaces:** produzir issue_partner_invitation(db: Session,principal: Principal,membership_id: UUID) -> None e accept_partner_invitation(db: Session,raw_token: str,authenticated_user_id: UUID | None,new_password: str | None) -> PartnerMembership. SecurityToken recebe partner_membership_id FK e constraint de alvo exclusivo tenant OU partner para INVITE; PASSWORD_RESET preserva alvo User e não ganha membership arbitrária. DTO de inspect/accept inclui target_kind TENANT/PARTNER, nunca inferido por null sem discriminação.
 
-- [ ] RED: test_partner_invite_existing_user_preserves_identity afirma password_hash/status/roles/TENANT memberships idênticos; destinatário diferente é negado; test_invite_target_exclusive_and_single_use afirma XOR alvo e segundo aceite negado; test_reissue_invalidates_old_partner_invite afirma somente novo token/outbox válido; test_reset_revokes_partner_user_sessions afirma sessão antiga rejeitada em todas as classes.
-- [ ] Rodar uv run --frozen pytest tests/test_partner_invitations.py tests/test_access_tokens.py -q; confirmar RED sem bypass de envio/credenciais.
-- [ ] GREEN: lifecycle_lock antes de usuários/sessões/memberships; hashes, expiração e outbox existente; conta existente precisa autenticar destinatário, sem troca de senha via convite. Criar credencial de novo User somente pelo fluxo inicial existente. Não alterar comportamento de convites TENANT.
-- [ ] Rodar testes anteriores + tokens/outbox atuais; PASS zero skips.
-- [ ] Commit: feat: support typed partner invitations safely.
+- [x] RED: test_partner_invite_existing_user_preserves_identity afirma password_hash/status/roles/TENANT memberships idênticos; destinatário diferente é negado; test_invite_target_exclusive_and_single_use afirma XOR alvo e segundo aceite negado; test_reissue_invalidates_old_partner_invite afirma somente novo token/outbox válido; test_reset_revokes_partner_user_sessions afirma sessão antiga rejeitada em todas as classes.
+- [x] Rodar uv run --frozen pytest tests/test_partner_invitations.py tests/test_access_tokens.py -q; confirmar RED sem bypass de envio/credenciais.
+- [x] GREEN: lifecycle_lock antes de usuários/sessões/memberships; hashes, expiração e outbox existente; conta existente precisa autenticar destinatário, sem troca de senha via convite. Criar credencial de novo User somente pelo fluxo inicial existente. Não alterar comportamento de convites TENANT.
+- [x] Rodar testes anteriores + tokens/outbox atuais; PASS zero skips.
+- [x] Commit: feat: support typed partner invitations safely.
 
 ### Task 4: API mínima, disponibilidade fechada e isolamento de classe
 
@@ -102,11 +102,11 @@ Frontend: a partir de frontend, npm.cmd test -- <arquivo>; npm.cmd run lint; npm
 
 Lifecycle interno expõe POST /api/platform/partners/organizations, POST /api/platform/partners/organizations/{id}/memberships, PATCH /api/platform/partners/memberships/{id}, POST /api/platform/partners/memberships/{id}/invite. Usar autenticação/reautenticação/CSRF e políticas internas atuais; sem busca/listagem global TENANT. Para POSTs internos, criar receipt idempotente namespace user/session/route/target/key com digest e resultado, autorização atual antes de replay, mesma transação; adicionar PartnerLifecycleReceipt(id,user_id,session_id,route,target_id nullable,key,digest,response_json,status_code,created_at), unique user/session/route/target/key com NULLS NOT DISTINCT e proteções append-only; namespace não inclui tenant/contract pois lifecycle global não opera processo. Produzir run_lifecycle_command(db: Session, principal: Principal, route: str, target_id: UUID | None, key: UUID, payload: BaseModel, execute: Callable[[], BaseModel]) -> LifecycleCommandResult(status_code: int, body: dict). Revalidar autoridade e alvo da resposta original antes de replay; recibo/audit/mutação no mesmo commit. Não confundir com PartnerCommandReceipt de processo futuro.
 
-- [ ] RED: test_comex_commercial_active_is_not_operational afirma access-options=[], seleção 503 e nenhuma tabela de contexto tenant alterada; test_internal_cannot_select_partner_context afirma 403; test_unknown_fields_fail_closed afirma 422 para tenant/role/grant arbitrários; test_lifecycle_post_idempotency afirma mesma chave um efeito, payload diferente 409, role revogada nega replay; CSRF ausente nega mutação.
-- [ ] Rodar uv run --frozen pytest tests/test_partner_availability.py tests/test_partner_lifecycle.py -q; FAIL esperado.
-- [ ] GREEN: ligar T2/T3 às rotas e somente DTOs mínimos de indisponibilidade. Contexto tenant no header nunca aceita entrada PARTNER. Revalidar platform assignment depois dos locks. Nenhum feature flag do browser liga COMEX ou Finance.
-- [ ] Rodar testes T1–T4 e auth/context existentes; PASS sem expor dados estrangeiros.
-- [ ] Commit: feat: expose guarded partner lifecycle and unavailable domain boundary.
+- [x] RED: test_comex_commercial_active_is_not_operational afirma access-options=[], seleção 503 e nenhuma tabela de contexto tenant alterada; test_internal_cannot_select_partner_context afirma 403; test_unknown_fields_fail_closed afirma 422 para tenant/role/grant arbitrários; test_lifecycle_post_idempotency afirma mesma chave um efeito, payload diferente 409, role revogada nega replay; CSRF ausente nega mutação.
+- [x] Rodar uv run --frozen pytest tests/test_partner_availability.py tests/test_partner_lifecycle.py -q; FAIL esperado.
+- [x] GREEN: ligar T2/T3 às rotas e somente DTOs mínimos de indisponibilidade. Contexto tenant no header nunca aceita entrada PARTNER. Revalidar platform assignment depois dos locks. Nenhum feature flag do browser liga COMEX ou Finance.
+- [x] Rodar testes T1–T4 e auth/context existentes; PASS sem expor dados estrangeiros.
+- [x] Commit: feat: expose guarded partner lifecycle and unavailable domain boundary.
 
 ### Task 5: Frontend tipado, convite PARTNER e estado indisponível
 
@@ -114,11 +114,11 @@ Lifecycle interno expõe POST /api/platform/partners/organizations, POST /api/pl
 
 **Interfaces:** parsePartnerAvailability(value: unknown): PartnerAvailabilityDTO | null; fetchPartnerAccessOptions(client: ApiClient, signal: AbortSignal): Promise<PartnerAccessOptionsDTO>; PartnerAvailability(props: {state: 'loading'|'unavailable'|'invalid'|'unauthenticated'}). Nenhum provider operacional fake ou lista de processos local nesta entrega.
 
-- [ ] RED: unknown schema/status/extra autoridade resulta null e controles bloqueados; resposta atrasada após logout/convite trocado não altera view; convite PARTNER mostra alvo correto sem catálogo de perfis; DOMAIN_UNAVAILABLE apresenta mensagem clara, sem empresas/unidades fake ou controles financeiros.
-- [ ] Rodar npm.cmd test -- src/partners/validate.test.ts src/partners/api.test.ts src/partners/PartnerAvailability.test.tsx src/auth/AccessLifecycle.test.tsx; FAIL esperado.
-- [ ] GREEN: DTO discriminado e validation runtime; reutilizar ApiClient/AbortSignal, guards de geração e sessão; sem inferir classe de platform_role=null ou alterar operational/types.ts. Não introduzir entrypoint operacional na Demo/Workspace.
-- [ ] Rodar comando anterior, npm.cmd run lint e npm.cmd run build; PASS.
-- [ ] Commit: feat: consume partner invitation and unavailable domain contracts.
+- [x] RED: unknown schema/status/extra autoridade resulta null e controles bloqueados; resposta atrasada após logout/convite trocado não altera view; convite PARTNER mostra alvo correto sem catálogo de perfis; DOMAIN_UNAVAILABLE apresenta mensagem clara, sem empresas/unidades fake ou controles financeiros.
+- [x] Rodar npm.cmd test -- src/partners/validate.test.ts src/partners/api.test.ts src/partners/PartnerAvailability.test.tsx src/auth/AccessLifecycle.test.tsx; FAIL esperado.
+- [x] GREEN: DTO discriminado e validation runtime; reutilizar ApiClient/AbortSignal, guards de geração e sessão; sem inferir classe de platform_role=null ou alterar operational/types.ts. Não introduzir entrypoint operacional na Demo/Workspace.
+- [x] Rodar comando anterior, npm.cmd run lint e npm.cmd run build; PASS.
+- [x] Commit: feat: consume partner invitation and unavailable domain contracts.
 
 ### Task 6: Concorrência, regressão integral e fechamento da entrega A
 
@@ -126,12 +126,12 @@ Lifecycle interno expõe POST /api/platform/partners/organizations, POST /api/pl
 
 **Interfaces:** consumir services T2/T3/T4; usar Session/engines reais e barreiras como tests/test_access_tokens.py, sem mocks de autorização/DB para aceitar segurança.
 
-- [ ] RED: test_concurrent_invite_accept_has_one_effect; test_reissue_vs_accept_linearizes; test_platform_role_revoked_while_waiting_denies_lifecycle; test_membership_replace_same_version_one_winner; test_receipt_audit_failure_rolls_back. Assert um único efeito/audit, conflito explícito, permissões finais completas e ausência de sessão privilegiada residual.
-- [ ] Rodar uv run --frozen pytest tests/test_partner_concurrency.py -q; documentar falha real antes de corrigir tarefa proprietária. Se invariantes já passam, registrar teste de regressão GREEN e não inventar RED artificial.
-- [ ] Aplicar somente correções necessárias com ordem de locks do spec; rodar testes T1–T6.
-- [ ] Revisar branch integral: diff desde c50353a, nenhuma Demo/main/outro módulo habilitado, nenhum Process fake, nenhum catálogo PARTNER atribuível a TenantRole, nenhuma edição de classificação financeira.
-- [ ] Executar da raiz .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'. Exigir backend/frontend/scripts/lint/TypeScript/Vite/build/diff PASS, zero skips e cleanup PASS com exit 0. Guardar contagens e saída real; gate falho requer diagnóstico/correção/reexecução, sem declarar sucesso parcial.
-- [ ] Commit final local, git status --short vazio, registrar SHA e limites. Nenhum push. Entrega A permanece fundação sem processos operacionais.
+- [x] RED: test_concurrent_invite_accept_has_one_effect; test_reissue_vs_accept_linearizes; test_platform_role_revoked_while_waiting_denies_lifecycle; test_membership_replace_same_version_one_winner; test_receipt_audit_failure_rolls_back. Assert um único efeito/audit, conflito explícito, permissões finais completas e ausência de sessão privilegiada residual.
+- [x] Rodar uv run --frozen pytest tests/test_partner_concurrency.py -q; documentar falha real antes de corrigir tarefa proprietária. Se invariantes já passam, registrar teste de regressão GREEN e não inventar RED artificial.
+- [x] Aplicar somente correções necessárias com ordem de locks do spec; rodar testes T1–T6.
+- [x] Revisar branch integral: diff desde c50353a, nenhuma Demo/main/outro módulo habilitado, nenhum Process fake, nenhum catálogo PARTNER atribuível a TenantRole, nenhuma edição de classificação financeira.
+- [x] Executar da raiz .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18'. Exigir backend/frontend/scripts/lint/TypeScript/Vite/build/diff PASS, zero skips e cleanup PASS com exit 0. Guardar contagens e saída real; gate falho requer diagnóstico/correção/reexecução, sem declarar sucesso parcial.
+- [x] Commit final local, git status --short vazio, registrar SHA e limites. Nenhum push. Entrega A permanece fundação sem processos operacionais.
 
 ## Gate B — antes do plano de sharing/logística/timeline
 
@@ -153,18 +153,22 @@ Spec 1–5 e identidade de 6/8/9/13–15: T1–T6. Segurança operacional de 6�
 
 Assinaturas de T1–T5 são contratos deste plano; referências cruzadas usam os mesmos nomes. T4 não depende de contexto/processo inexistente; T5 não inventa login/role. A disponibilidade negativa é software real testável, sem afirmar testes positivos de sharing antes de B. Cada tarefa fecha ciclo de testes/revisão/commit. Review Focus possui testes nas tarefas indicadas. Habilitar B/C depende de novas bases validadas e planos revisados.
 
-Status: execução da entrega A autorizada pelo usuário; método Subagent-driven confirmado em 2026-10-11. Gates B/C permanecem bloqueados pelas dependências documentadas.
+Status: entrega A concluída e validada; fechamento documental em 2026-10-13. Gates B/C permanecem bloqueados pelas dependências documentadas.
 
 ## Execution evidence and controller delegation — 2026-10-12
 
-Exactly Tasks 1–6 implement delivery A. Tasks 1–5 have independent spec/quality approval; Task 6 adds real PostgreSQL concurrency regressions and this execution record, with its independent review pending. The actual task reports in .superpowers/sdd/2026-10-11-hiatlas-partner-portal-v1/task-N-report.md retain detailed commands, RED/GREEN evidence, cleanup and local commits; progress.md records review corrections and rulings.
+Exactly Tasks 1–6 implement delivery A. Tasks 1–5 have independent spec/quality approval; Task 6 adds real PostgreSQL concurrency regressions and this execution record, with its independent review completed and approved. The temporary task reports and ledger supplied detailed RED/GREEN, cleanup, commit and review evidence during execution. The final validation report preserves results, decisions and the file inventory before temporary SDD artifacts are removed.
 
 Task 1: persistence/catalog/migrations (39 targeted PASS), reviewed through 65e5593. Task 2: curated lifecycle, dedicated capability/current identity/version/audit (122 combined plus 9 final lifecycle PASS), reviewed through 52e51b6. Task 3: typed partner invitation with recipient authentication, preserved identity and reset revocation (123 PASS; recovery lock correction 48 PASS), reviewed through be2987c. Task 4: guarded API, immutable receipts, genuinely new recipient onboarding and explicit unavailable domain (183 scoped PASS), reviewed through fed0d6d. Task 5: typed frontend and invitation lifecycle, corrected stale logout retry ownership (54 targeted PASS, lint/build PASS), reviewed through 3bf03c7. Counts describe historical task selections, not distinct total branch tests or canonical gate results.
 
 Compatibility rulings: preserve INTERNAL operator invitations alongside TENANT/PARTNER targets; nullable membership fields alone never establish INTERNAL authority. Curated membership POST accepts exactly one existing user_id or recipient{email,display_name}; a genuinely new recipient creates a passwordless User with no tenant/platform role, existing identity is preserved, inactive/blocked identity fails closed. Shared invitation and admin recovery paths acquire LIFECYCLE_LOCK before OPERATOR_LOCK, then sorted user/session locks; the approved recovery correction prevents inversion. Lifecycle PATCH requires Idempotency-Key just as POST; current authority and original target binding are checked for replay.
 
-Task 6 controller ruling supersedes its original full-gate timing: scoped races/necessary regression tests and local tests/docs commit happen first; controller performs independent Task 6 review and whole-branch review, then runs the canonical .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18' once against the reviewed final branch. Full completion remains pending that gate's actual PASS, zero skips and normal CLEAN; this record does not claim the gate ran. The controller records final counts and final evidence/commit afterward.
+Task 6 controller ruling supersedes its original full-gate timing: scoped races/necessary regression tests and local tests/docs commit happen first; controller performs independent Task 6 review and whole-branch review, then runs the canonical .\scripts\check-local.ps1 -PostgresRoot 'D:\Atlas\.tools\pgsql18' once against the reviewed final branch. The controller subsequently ran the complete canonical gate: 1323 backend, 441 frontend and 37 scripts PASS, zero skips, lint/build/diff PASS and normal CLEAN, exit 0. Final evidence is recorded in the validation report.
 
 Delivery A contains partner identity/catalog/lifecycle/invitation and authenticated DOMAIN_UNAVAILABLE/options[]/context503 behavior. It creates no COMEX Process, sharing grant, operational PartnerAccessContext, scanner/document/payment entities or operational provider. Gate B requires an independently approved real COMEX Process Foundation, resource-scoped grants and current revocation semantics. Gate C requires real scanner and closed Finance intake contracts after B. Gate B/C text is future planning context, not additional implementation tasks in this six-task execution. Existing Starlette warning and frozen source-map-js GHSA-68fv-2mgg-jv7q advisory remain disclosed/deferred; dependency remediation is separate and no lockfile change is authorized here. No push, merge, deploy or protected-reference change.
 
-Task6 scoped verification:7 new concurrency/atomicity cases plus Task1–4/identity/recovery regressions returned137 PASS, zero failures/errors/skips, existing Starlette warning (201.12s). Canonical gate remains pending controller review sequence; no fullPASS claim.
+Task6 scoped verification:7 new concurrency/atomicity cases plus Task1–4/identity/recovery regressions returned137 PASS, zero failures/errors/skips, existing Starlette warning (201.12s). Whole-branch review and final scoped re-review approved; canonical gate subsequently PASS, exit 0 and normal CLEAN. See final validation report.
+
+## Fechamento — 2026-10-13
+
+[Evidência final e arquivos alterados](D:/Atlas/.worktrees/hiatlas-partner-portal-v1/docs/superpowers/reports/2026-10-13-hiatlas-partner-foundation-v1-validation.md). Todos os findings importantes foram corrigidos/re-reviewados, inclusive preservação de receipts/token bindings/identidades em downgrade. Artefatos temporários SDD são removidos após fechamento; decisões e resultados estão preservados neste registro e no relatório final. O log integral do gate permanece local em logs. Branch mantida local, sem push/merge/deploy.
